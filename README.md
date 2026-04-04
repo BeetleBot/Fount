@@ -1,5 +1,5 @@
 # Fount
-A fork of [Lottie], (https://github.com/coignard/lottie)
+A fork of [Lottie](https://github.com/coignard/lottie)
 
 
 A simple yet powerful terminal-based **Fountain screenplay editor** built with Rust.
