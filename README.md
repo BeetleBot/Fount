@@ -4,7 +4,7 @@ A simple yet powerful terminal-based **Fountain screenplay editor** built with R
 
 **Fount** is designed to be a lightweight and efficient tool for screenwriters who prefer the terminal environment. It handles the [Fountain](https://fountain.io) markup language natively, providing a seamless writing experience with real-time formatting.
 
-![Fount Screenshot](https://raw.githubusercontent.com/BeetleBot/Fount/main/assets/logo.svg)
+
 
 ## Features
 
