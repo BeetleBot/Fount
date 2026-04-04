@@ -540,14 +540,22 @@ pub fn draw(f: &mut Frame, app: &mut App) {
         };
 
         let mode_fg = Color::Black;
-        let mid_bg = Color::Rgb(40, 44, 52); // Darker grey
+        let cmd_bg = Color::Rgb(60, 65, 75); // Lighter grey for F1 block
+        let cmd_fg = Color::White;
+        let mid_bg = Color::Rgb(40, 44, 52); // Darker grey for filename
         let mid_fg = Color::White;
 
         let mut spans = Vec::new();
 
+        // 1. Mode Block
         spans.push(Span::styled(mode_str, Style::default().bg(mode_bg).fg(mode_fg).add_modifier(Modifier::BOLD)));
-        spans.push(Span::styled("", Style::default().fg(mode_bg).bg(mid_bg)));
+        spans.push(Span::styled("", Style::default().fg(mode_bg).bg(cmd_bg)));
 
+        // 2. Commands [F1] Block
+        spans.push(Span::styled(" COMMANDS [F1] ", Style::default().bg(cmd_bg).fg(cmd_fg)));
+        spans.push(Span::styled("", Style::default().fg(cmd_bg).bg(mid_bg)));
+
+        // 3. Center Text (Filename or Prompt)
         let center_text = if let Some(msg) = &app.status_msg {
             format!(" {} ", msg)
         } else {
@@ -576,29 +584,24 @@ pub fn draw(f: &mut Frame, app: &mut App) {
         
         spans.push(Span::styled(center_text.clone(), Style::default().bg(mid_bg).fg(mid_fg)));
 
-        let right_bg1 = Color::Rgb(60, 65, 75); // Lighter gray than mid_bg
+        // 4. Right Side (Counts & Cursor)
+        let right_bg1 = cmd_bg; // Match the Commands block color
         let right_fg1 = Color::White;
-        let total_lines = app.layout.len();
-        let scroll_str = if total_lines <= app.visible_height {
-            " All ".to_string()
-        } else if app.scroll == 0 {
-            " Top ".to_string()
-        } else if app.scroll + app.visible_height >= total_lines {
-            " Bot ".to_string()
-        } else {
-            let pct = (app.scroll as f32 / total_lines as f32 * 100.0) as u8;
-            format!(" {}% ", pct)
-        };
+        
+        let word_count = app.total_word_count();
+        let line_count = app.lines.len();
         
         let right_bg2 = mode_bg;
         let right_fg2 = Color::Black;
         let pos_str = format!(" {}:{} ", app.cursor_y + 1, app.cursor_x + 1);
 
         let mut right_spans = Vec::new();
+        // Transition into Counts block
         right_spans.push(Span::styled("", Style::default().fg(right_bg1).bg(mid_bg)));
-        
-        let right_text1 = format!(" Δ {} ", scroll_str.trim());
+        let right_text1 = format!(" {} WORDS  {} LINES ", word_count, line_count);
         right_spans.push(Span::styled(right_text1, Style::default().bg(right_bg1).fg(right_fg1)));
+        
+        // Transition into Cursor block
         right_spans.push(Span::styled("", Style::default().fg(right_bg2).bg(right_bg1)));
         right_spans.push(Span::styled(pos_str, Style::default().bg(right_bg2).fg(right_fg2).add_modifier(Modifier::BOLD)));
 
