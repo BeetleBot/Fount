@@ -216,7 +216,7 @@ pub fn base_style(lt: LineType, config: &Config) -> Style {
             Style::default().add_modifier(Modifier::BOLD)
         }
         LineType::Parenthetical => {
-            Style::default().fg(Color::Gray).add_modifier(Modifier::DIM)
+            Style::default().add_modifier(Modifier::DIM) // Removed hardcoded Gray color for better light mode contrast
         }
         LineType::Dialogue => Style::default(),
         LineType::Transition => Style::default(),

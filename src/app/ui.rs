@@ -24,10 +24,8 @@ pub fn draw(f: &mut Frame, app: &mut App) {
     let is_prompt = app.mode != AppMode::Normal;
     let has_status = app.status_msg.is_some();
 
-    let show_top = !app.config.focus_mode;
     let show_bottom = !app.config.focus_mode || is_prompt || has_status;
 
-    let title_height = if show_top { 1 } else { 0 };
     let in_command_mode = app.mode == AppMode::Command;
     let footer_height = if in_command_mode {
         if show_bottom { 2 } else { 1 }
@@ -38,13 +36,12 @@ pub fn draw(f: &mut Frame, app: &mut App) {
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
-            Constraint::Length(title_height),
             Constraint::Min(0),
             Constraint::Length(footer_height),
         ])
         .split(area);
 
-    let (_title_area, mut text_area, footer_area) = (chunks[0], chunks[1], chunks[2]);
+    let (mut text_area, footer_area) = (chunks[0], chunks[1]);
 
     app.sidebar_area = Rect::default();
     if app.mode == AppMode::SceneNavigator {
@@ -381,47 +378,7 @@ pub fn draw(f: &mut Frame, app: &mut App) {
         f.render_stateful_widget(list, app.sidebar_area, &mut app.navigator_state);
     }
 
-    if _title_area.height > 0 {
-        let left_text = match app.mode {
-            AppMode::SceneNavigator => "  SCENE NAVIGATOR".to_string(),
-            AppMode::SettingsPane => "  SETTINGS".to_string(),
-            AppMode::ExportPane => "  EXPORT OPTIONS".to_string(),
-            _ => {
-                if app.has_multiple_buffers {
-                    format!("  [{}/{}]", app.current_buf_idx + 1, app.buffers.len())
-                } else {
-                    "  ".to_string()
-                }
-            }
-        };
 
-        let right_text = if app.dirty { "Modified  " } else { "  " };
-        let center_text = app
-            .file
-            .as_ref()
-            .and_then(|p| p.file_name())
-            .map(|n| n.to_string_lossy().into_owned())
-            .unwrap_or_else(|| "New Script".to_string());
-
-        let width = _title_area.width as usize;
-        let left_len = left_text.chars().count();
-        let right_len = right_text.chars().count();
-        let center_len = center_text.chars().count();
-
-        let center_start = (width.saturating_sub(center_len)) / 2;
-        let pad1 = center_start.saturating_sub(left_len);
-        let pad2 = width.saturating_sub(left_len + pad1 + center_len + right_len);
-
-        let title_line = format!(
-            "{}{}{}{}{}",
-            left_text,
-            " ".repeat(pad1),
-            center_text,
-            " ".repeat(pad2),
-            right_text
-        );
-        f.render_widget(Paragraph::new(title_line).style(panel_style), _title_area);
-    }
 
     if app.mode == AppMode::SettingsPane {
         let settings = vec![
