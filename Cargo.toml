@@ -28,7 +28,7 @@ clipboard-win = "5.4.0"
 [dependencies]
 ratatui = "0.29.0"
 crossterm = { version = "0.28.1", features = ["event-stream"] }
-unicode-width = "0.2.2"
+unicode-width = "0.2.0"
 regex = "1.11.1"
 clap = { version = "4.5.23", features = ["derive"] }
 directories = "6.0.0"
