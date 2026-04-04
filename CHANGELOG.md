@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0] - 2026-04-04
+
+### Added
+- **Zen Studio UI**: Complete aesthetic overhaul for a distraction-free, premium experience.
+- **Unified Footer**: Consolidated status messages, real-time word/page counts, and shortcut hints into a single, clean bar.
+- **Shortcuts Sidebar**: Interactive right-side pane (F1) for keybinding reference, keeping the main editor area uncluttered.
+- **Vertical Pane Borders**: Added `│` separators for better visual pane isolation.
+- **Selection Cursors**: Interactive `»` focus indicators in the Scene Navigator.
+- **Adaptive Contrast**: Automated theme detection (Light/Dark) using `Modifier::DIM` and standard terminal colors (Color::Reset) instead of hardcoded white/black.
+
+### Changed
+- Refined typography and spacing across the TUI for a more "human" feel.
+- Removed legacy `High Contrast` toggle in favor of the new adaptive system.
+
+### Fixed
+- Updated the test suite to align with the new consolidated layout and string labels.
+
 ## [0.1.3] - 2026-04-04
 
 ### Added

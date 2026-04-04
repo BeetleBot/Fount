@@ -2,9 +2,9 @@ use std::hint::black_box;
 
 use criterion::{Criterion, criterion_group, criterion_main};
 
-use fount_rs::config::Config;
-use fount_rs::layout::build_layout;
-use fount_rs::parser::Parser;
+use fount::config::Config;
+use fount::layout::build_layout;
+use fount::parser::Parser;
 
 fn generate_doc(num_lines: usize) -> Vec<String> {
     let chunk = vec![
