@@ -4,6 +4,10 @@
 - [ ] **Release Automation (GitHub Actions)**: Get `.msi`/`.exe` and `.dmg` installers ready for future releases. Tentative timing. 
 - [ ] **Home Page**: A simple landing area when opening without a file. (New, Open, Tutorial, Exit).
 - [ ] **PDF Export**: The big one—implementing a clean PDF generator.
+- [ ] **Refactoring app.rs**: It's getting huge (~197KB). Break it down into logic and UI modules for better maintenance.
+- [ ] **Status Bar Overhaul**: 
+    - Move shortcut legend to the side bar.
+    - Add real-time stats (Word count, Page count, etc.) to the bar.
 - [ ] **Structure & Navigation**: 
     - Way to implement structures into the screenplay.
     - Making those structures visible in the Scene Navigator.
