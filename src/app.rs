@@ -1746,9 +1746,6 @@ impl App {
                                         6 => "Automatically append (CONT'D) to character names.",
                                         7 => "Insert paragraph breaks after screenplay elements.",
                                         8 => "Hide the UI bars for a distraction-free view.",
-                                        9 => {
-                                            "Improve text visibility on light terminal backgrounds."
-                                        }
                                         _ => "",
                                     };
                                     if !desc.is_empty() {
@@ -1777,7 +1774,6 @@ impl App {
                                                 !self.config.auto_paragraph_breaks
                                         }
                                         8 => self.config.focus_mode = !self.config.focus_mode,
-                                        9 => self.config.high_contrast = !self.config.high_contrast,
                                         _ => {}
                                     }
                                     *text_changed = true;
@@ -1966,7 +1962,7 @@ impl App {
                     return Ok(false);
                 }
                 AppMode::SettingsPane => {
-                    let settings_count = 10;
+                    let settings_count = 9;
                     match key.code {
                         KeyCode::Esc => {
                             self.mode = AppMode::Normal;
@@ -1977,15 +1973,12 @@ impl App {
                         KeyCode::Char('h') if ctrl => {
                             self.open_scene_navigator();
                         }
-                        KeyCode::Up => {
-                            if self.selected_setting > 0 {
-                                self.selected_setting -= 1;
-                            }
+                        KeyCode::Up | KeyCode::Char('k') => {
+                            self.selected_setting = self.selected_setting.saturating_sub(1);
                         }
-                        KeyCode::Down => {
-                            if self.selected_setting < settings_count - 1 {
-                                self.selected_setting += 1;
-                            }
+                        KeyCode::Down | KeyCode::Char('j') => {
+                            self.selected_setting =
+                                (self.selected_setting + 1).min(settings_count - 1);
                         }
                         KeyCode::Enter | KeyCode::Char(' ') => {
                             match self.selected_setting {
@@ -2006,7 +1999,6 @@ impl App {
                                         !self.config.auto_paragraph_breaks
                                 }
                                 8 => self.config.focus_mode = !self.config.focus_mode,
-                                9 => self.config.high_contrast = !self.config.high_contrast,
                                 _ => {}
                             }
                             *text_changed = true;
@@ -2017,12 +2009,11 @@ impl App {
                                 1 => "Periodically save the current buffer to disk.",
                                 2 => "Display scene numbers in the left margin.",
                                 3 => "Display page numbers in the right margin.",
-                                4 => "Hide Fountain markup unless the line is active.",
-                                5 => "Enable scene heading/character name completion.",
+                                4 => "Hide Fountain markup (headings, blocks) except for active line.",
+                                5 => "Suggest character names and scene prefixes.",
                                 6 => "Automatically append (CONT'D) to character names.",
                                 7 => "Insert paragraph breaks after screenplay elements.",
                                 8 => "Hide the UI bars for a distraction-free view.",
-                                9 => "Improve text visibility on light terminal backgrounds.",
                                 _ => "",
                             };
                             if !desc.is_empty() {
@@ -2336,32 +2327,17 @@ pub fn draw(f: &mut Frame, app: &mut App) {
 
     let mut dark_gray_style = Style::default();
     if !app.config.no_color {
-        dark_gray_style.fg = Some(if app.config.high_contrast {
-            Color::DarkGray
-        } else {
-            Color::DarkGray
-        });
+        dark_gray_style = dark_gray_style.add_modifier(Modifier::DIM);
     }
 
     let mut sug_style = Style::default();
     if !app.config.no_formatting {
         sug_style = sug_style.add_modifier(Modifier::DIM | Modifier::BOLD);
     }
-    if !app.config.no_color {
-        sug_style.fg = Some(if app.config.high_contrast {
-            Color::Black
-        } else {
-            Color::DarkGray
-        });
-    }
 
     let mut page_num_style = Style::default();
     if !app.config.no_color {
-        page_num_style.fg = Some(if app.config.high_contrast {
-            Color::DarkGray
-        } else {
-            Color::DarkGray
-        });
+        page_num_style = page_num_style.add_modifier(Modifier::DIM);
     }
 
     let mut visible: Vec<Line> = Vec::new();
@@ -2620,20 +2596,19 @@ pub fn draw(f: &mut Frame, app: &mut App) {
 
     if app.mode == AppMode::SettingsPane {
         let settings = vec![
-            ("Typewriter Mode", app.config.strict_typewriter_mode),
-            ("Auto Save", app.config.auto_save),
-            ("Show Scene Numbers", app.config.show_scene_numbers),
-            ("Show Page Numbers", app.config.show_page_numbers),
-            ("Hide Markup", app.config.hide_markup),
-            ("Autocomplete", app.config.autocomplete),
-            ("Auto (CONT'D)", app.config.auto_contd),
-            ("Auto Paragraphs", app.config.auto_paragraph_breaks),
-            ("Focus Mode", app.config.focus_mode),
-            ("Contrast Text", app.config.high_contrast),
+            ("Typewriter Mode", &app.config.strict_typewriter_mode),
+            ("Auto-Save", &app.config.auto_save),
+            ("Scene Numbers", &app.config.show_scene_numbers),
+            ("Page Numbers", &app.config.show_page_numbers),
+            ("Hide Markup", &app.config.hide_markup),
+            ("Autocomplete", &app.config.autocomplete),
+            ("Auto-CONT'D", &app.config.auto_contd),
+            ("Auto-Breaks", &app.config.auto_paragraph_breaks),
+            ("Focus Mode", &app.config.focus_mode),
         ];
 
         let items: Vec<ListItem> = settings
-            .iter()
+            .into_iter()
             .enumerate()
             .map(|(i, (label, value))| {
                 let style = if i == app.selected_setting {
@@ -2692,13 +2667,13 @@ pub fn draw(f: &mut Frame, app: &mut App) {
     }
 
     if footer_area.height > 0 {
-        let left_text = "  [F1] Shortcuts".to_string();
+        let left_text = "  SHORTCUTS [F1]".to_string();
 
         let cur_page = app.current_page_number();
         let total_pages = app.total_page_count();
         let word_count = app.total_word_count();
 
-        let right_text = format!("Page {}/{} | {} words  ", cur_page, total_pages, word_count);
+        let right_text = format!("PAGE {}/{} | {} WORDS  ", cur_page, total_pages, word_count);
 
         let mut center_text = String::new();
         if let Some(msg) = &app.status_msg {
@@ -2707,15 +2682,15 @@ pub fn draw(f: &mut Frame, app: &mut App) {
             match app.mode {
                 AppMode::Search => {
                     let prompt_base = if app.last_search.is_empty() {
-                        "Search: ".to_string()
+                        "SEARCH: ".to_string()
                     } else {
-                        format!("Search [{}]: ", app.last_search)
+                        format!("SEARCH [{}]: ", app.last_search)
                     };
                     center_text = format!("{}{}", prompt_base, app.search_query);
                 }
-                AppMode::PromptSave => center_text = "Save modified script? (Y/N/C)".to_string(),
+                AppMode::PromptSave => center_text = "SAVE MODIFIED SCRIPT? (Y/N/C)".to_string(),
                 AppMode::PromptFilename => {
-                    center_text = format!("File Name to Write: {}", app.filename_input)
+                    center_text = format!("FILENAME: {}", app.filename_input)
                 }
                 _ => {}
             }
@@ -3348,12 +3323,12 @@ mod app_tests {
         }
 
         assert!(
-            content.contains("Save modified script?"),
+            content.contains("SAVE MODIFIED SCRIPT?"),
             "Prompt should appear even in focus mode"
         );
         assert!(
-            content.contains("Yes"),
-            "Shortcuts should reappear for the prompt"
+            content.contains("SHORTCUTS"),
+            "Shortcuts hint should reappear for the prompt"
         );
     }
 
@@ -3382,8 +3357,8 @@ mod app_tests {
             "Status message should appear even in focus mode"
         );
         assert!(
-            content.contains("^X"),
-            "Shortcuts should reappear when status is shown"
+            content.contains("SHORTCUTS"),
+            "Shortcuts hint should reappear when status is shown"
         );
     }
 
@@ -3431,7 +3406,7 @@ mod app_tests {
         terminal.draw(|f| super::draw(f, &mut app)).unwrap();
 
         let buffer = terminal.backend().buffer();
-        let status_cell = &buffer[(0, 22)];
+        let status_cell = &buffer[(0, 23)];
         assert_eq!(
             status_cell.fg,
             Color::Reset,
