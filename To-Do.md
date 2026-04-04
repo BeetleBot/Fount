@@ -9,7 +9,6 @@
     - Way to implement structures into the screenplay.
     - Making those structures visible in the Scene Navigator.
 - [ ] **Visual Selection**: Restore text selection within the editor when mouse capture is active.
-- [ ] **Navigator Clicking**: Enable clicking on a line in the Scene Navigator to jump there.
 - [ ] **Settings Fix**: Ensure settings changed in the pane actually save back to the config file.
 
 ### Already Done
@@ -33,3 +32,4 @@
 - [x] **Status Bar Overhaul**: 
     - Move shortcut legend to the side bar.
     - Add real-time stats (Word count, Page count, etc.) to the bar.
+- [x] **Navigator Clicking**: Enable clicking on a line in the Scene Navigator to jump there.
