@@ -1,7 +1,7 @@
 use ratatui::{
     Frame,
     layout::{Constraint, Direction, Layout, Rect},
-    style::{Modifier, Style},
+    style::{Color, Modifier, Style},
     text::{Line, Span},
     widgets::{Block, Borders, List, ListItem, Paragraph},
 };
@@ -28,7 +28,12 @@ pub fn draw(f: &mut Frame, app: &mut App) {
     let show_bottom = !app.config.focus_mode || is_prompt || has_status;
 
     let title_height = if show_top { 1 } else { 0 };
-    let footer_height = if show_bottom { 1 } else { 0 };
+    let in_command_mode = app.mode == AppMode::Command;
+    let footer_height = if in_command_mode {
+        if show_bottom { 2 } else { 1 }
+    } else {
+        if show_bottom { 1 } else { 0 }
+    };
 
     let chunks = Layout::default()
         .direction(Direction::Vertical)
@@ -513,50 +518,95 @@ pub fn draw(f: &mut Frame, app: &mut App) {
     }
 
     if app.mode == AppMode::Shortcuts {
-        let shortcuts = vec![
-            ("^S", "Save Script"),
-            ("^X", "Exit Buffer"),
-            ("^K", "Cut Line"),
-            ("^U", "Paste Line"),
-            ("^Z", "Undo Change"),
-            ("^R", "Redo Change"),
-            ("^E", "Export PDF"),
-            ("^H", "Scene Navigator"),
-            ("^P", "Settings Pane"),
-            ("^W", "Search Text"),
-            ("^C", "Cursor Position"),
-            ("F1", "Toggle Legend"),
+        // Categorized Command Legend
+        enum LegendRow {
+            Header(&'static str),
+            Entry(&'static str, &'static str),
+        }
+        let legend: Vec<LegendRow> = vec![
+            LegendRow::Header("── FILE ─────────────────────────"),
+            LegendRow::Entry(":w",        "Save script"),
+            LegendRow::Entry(":w <name>", "Save as new file"),
+            LegendRow::Entry(":q",        "Quit (safe)"),
+            LegendRow::Entry(":q!",       "Force quit"),
+            LegendRow::Entry(":wq",       "Save and quit"),
+            LegendRow::Entry("^X",        "Close buffer"),
+            LegendRow::Header("── EDIT ─────────────────────────"),
+            LegendRow::Entry(":u / :undo","Undo last change"),
+            LegendRow::Entry(":redo",     "Redo last change"),
+            LegendRow::Entry(":cut",      "Cut current line"),
+            LegendRow::Entry(":paste",    "Paste cut line"),
+            LegendRow::Entry(":pos",      "Report cursor position"),
+            LegendRow::Header("── SCENES ───────────────────────"),
+            LegendRow::Entry(":renum",         "Renumber all scenes"),
+            LegendRow::Entry(":clearnum",      "Strip all scene numbers"),
+            LegendRow::Entry(":injectnum",     "Inject num at cursor"),
+            LegendRow::Entry(":injectnum[N]",  "Inject specific number N"),
+            LegendRow::Header("── SEARCH & JUMP ──────────────"),
+            LegendRow::Entry(":search [q]",   "Search for text"),
+            LegendRow::Entry(":[n]",          "Jump to line number"),
+            LegendRow::Entry(":s[n]",         "Jump to scene number"),
+            LegendRow::Header("── SETTINGS ──────────────────"),
+            LegendRow::Entry(":locknum",       "Enable production lock"),
+            LegendRow::Entry(":unlocknum",     "Disable production lock"),
+            LegendRow::Entry(":set markup on/off",   "Show/hide markup"),
+            LegendRow::Entry(":set pagenums on/off", "Show/hide page nums"),
+            LegendRow::Header("── PANES (Keys) ─────────────"),
+            LegendRow::Entry("^H", "Scene Navigator"),
+            LegendRow::Entry("^P", "Settings Pane"),
+            LegendRow::Entry("^F", "Format Pane"),
+            LegendRow::Entry("^E", "Export Pane"),
+            LegendRow::Entry("F1", "Toggle this legend"),
+            LegendRow::Entry("^. / ^,", "Next / prev buffer"),
         ];
 
-        let items: Vec<ListItem> = shortcuts
-            .iter()
-            .map(|(key, desc)| {
-                let lines = vec![Line::from(vec![
-                    Span::styled(
-                        format!(" {:<3}", key),
-                        Style::default().add_modifier(Modifier::BOLD),
-                    ),
-                    Span::raw(format!("  {}", desc)),
-                ])];
-                ListItem::new(lines)
-            })
-            .collect();
+        let items: Vec<ListItem> = legend.iter().map(|row| {
+            match row {
+                LegendRow::Header(h) => {
+                    let line = Line::from(vec![
+                        Span::styled(*h, Style::default().add_modifier(Modifier::DIM)),
+                    ]);
+                    ListItem::new(line)
+                }
+                LegendRow::Entry(key, desc) => {
+                    let line = Line::from(vec![
+                        Span::styled(
+                            format!(" {:17}", key),
+                            Style::default().add_modifier(Modifier::BOLD),
+                        ),
+                        Span::raw(desc.to_string()),
+                    ]);
+                    ListItem::new(line)
+                }
+            }
+        }).collect();
 
         let list = List::new(items).block(
             Block::default()
-                .title(" Shortcuts ")
+                .title(" Command Legend ")
                 .border_style(panel_style),
         );
         f.render_widget(list, app.settings_area);
     }
 
+    // ── Footer rendering ──────────────────────────────────────────────────
     if footer_area.height > 0 {
-        let left_text = "  SHORTCUTS [F1]".to_string();
+        // When in command mode, split the footer into status bar (top) + command bar (bottom)
+        let (status_area, cmd_area) = if in_command_mode && footer_area.height >= 2 {
+            let rows = Layout::default()
+                .direction(Direction::Vertical)
+                .constraints([Constraint::Length(1), Constraint::Length(1)])
+                .split(footer_area);
+            (rows[0], Some(rows[1]))
+        } else {
+            (footer_area, None)
+        };
 
+        // ── Status bar ────────────────────────────────────────────────────
+        let left_text = "  COMMANDS [F1]".to_string();
         let cur_page = app.current_page_number();
         let total_pages = app.total_page_count();
         let word_count = app.total_word_count();
-
         let right_text = format!("PAGE {}/{} | {} WORDS  ", cur_page, total_pages, word_count);
 
         let mut center_text = String::new();
@@ -583,16 +633,15 @@ pub fn draw(f: &mut Frame, app: &mut App) {
             }
         }
 
-        let width = footer_area.width as usize;
+        let width = status_area.width as usize;
         let left_len = left_text.chars().count();
         let right_len = right_text.chars().count();
         let center_len = center_text.chars().count();
-
         let center_start = (width.saturating_sub(center_len)) / 2;
         let pad_left = center_start.saturating_sub(left_len);
         let pad_right = width.saturating_sub(left_len + pad_left + center_len + right_len);
 
-        let footer_line = format!(
+        let status_line = format!(
             "{}{}{}{}{}",
             left_text,
             " ".repeat(pad_left),
@@ -600,42 +649,90 @@ pub fn draw(f: &mut Frame, app: &mut App) {
             " ".repeat(pad_right),
             right_text
         );
-        f.render_widget(Paragraph::new(footer_line).style(panel_style), footer_area);
+        f.render_widget(Paragraph::new(status_line).style(panel_style), status_area);
+
+        // ── Command bar (only in Command mode) ────────────────────────────
+        if let Some(cmd_rect) = cmd_area {
+            let cmd_style = if app.command_error {
+                Style::default()
+                    .fg(Color::White)
+                    .bg(Color::Red)
+                    .add_modifier(Modifier::BOLD)
+            } else {
+                Style::default()
+                    .fg(Color::Black)
+                    .bg(Color::Yellow)
+                    .add_modifier(Modifier::BOLD)
+            };
+
+            // Build styled spans: bold ':' prefix + command text + blinking cursor hint
+            let prefix = Span::styled(" : ", cmd_style.add_modifier(Modifier::BOLD));
+            let cmd_text = Span::styled(
+                format!("{} ", app.command_input),
+                cmd_style,
+            );
+            let hint_text = if app.command_input.is_empty() && !app.command_error {
+                Span::styled(" type a command, Tab to complete, Esc to cancel ", 
+                    Style::default().fg(Color::DarkGray).bg(Color::Yellow))
+            } else {
+                Span::raw("")
+            };
+
+            let cmd_line = ratatui::text::Line::from(vec![prefix, cmd_text, hint_text]);
+            f.render_widget(Paragraph::new(cmd_line), cmd_rect);
+
+            // Place cursor in command bar
+            let cur_x = cmd_rect.x + 3 + UnicodeWidthStr::width(app.command_input.as_str()) as u16;
+            f.set_cursor_position((cur_x, cmd_rect.y));
+        }
     }
 
-    match app.mode {
-        AppMode::Search if footer_area.height > 0 => {
-            let prompt_base = if app.last_search.is_empty() {
-                "Search: ".to_string()
-            } else {
-                format!("Search [{}]: ", app.last_search)
-            };
-            let query_w = UnicodeWidthStr::width(prompt_base.as_str())
-                + UnicodeWidthStr::width(app.search_query.as_str());
-
-            let center_start = (footer_area.width as usize).saturating_sub(query_w) / 2;
-            let cur_screen_x = footer_area.x
-                + center_start as u16
-                + UnicodeWidthStr::width(prompt_base.as_str()) as u16;
-            f.set_cursor_position((cur_screen_x, footer_area.y));
-        }
-        AppMode::PromptFilename if footer_area.height > 0 => {
-            let prompt_base = "File Name to Write: ";
-            let query_w = UnicodeWidthStr::width(prompt_base)
-                + UnicodeWidthStr::width(app.filename_input.as_str());
-            let center_start = (footer_area.width as usize).saturating_sub(query_w) / 2;
-            let cur_screen_x =
-                footer_area.x + center_start as u16 + UnicodeWidthStr::width(prompt_base) as u16;
-            f.set_cursor_position((cur_screen_x, footer_area.y));
-        }
-        AppMode::Normal => {
-            let cur_screen_y =
-                text_area.y + pad_top as u16 + (vis_row.saturating_sub(app.scroll)) as u16;
-            let cur_screen_x = text_area.x + global_pad + vis_x;
-            if cur_screen_y < text_area.y + text_area.height {
-                f.set_cursor_position((cur_screen_x, cur_screen_y));
+    // ── Cursor for non-command modes ──────────────────────────────────────
+    if !in_command_mode {
+        match app.mode {
+            AppMode::Search if footer_area.height > 0 => {
+                let prompt_base = if app.last_search.is_empty() {
+                    "Search: ".to_string()
+                } else {
+                    format!("Search [{}]: ", app.last_search)
+                };
+                let query_w = UnicodeWidthStr::width(prompt_base.as_str())
+                    + UnicodeWidthStr::width(app.search_query.as_str());
+                let center_start = (footer_area.width as usize).saturating_sub(query_w) / 2;
+                let cur_screen_x = footer_area.x
+                    + center_start as u16
+                    + UnicodeWidthStr::width(prompt_base.as_str()) as u16;
+                f.set_cursor_position((cur_screen_x, footer_area.y));
             }
+            AppMode::PromptFilename if footer_area.height > 0 => {
+                let prompt_base = "File Name to Write: ";
+                let query_w = UnicodeWidthStr::width(prompt_base)
+                    + UnicodeWidthStr::width(app.filename_input.as_str());
+                let center_start = (footer_area.width as usize).saturating_sub(query_w) / 2;
+                let cur_screen_x = footer_area.x
+                    + center_start as u16
+                    + UnicodeWidthStr::width(prompt_base) as u16;
+                f.set_cursor_position((cur_screen_x, footer_area.y));
+            }
+            AppMode::PromptExportFilename if footer_area.height > 0 => {
+                let prompt_base = format!("EXPORT {}: ", app.config.export_format.to_uppercase());
+                let query_w = UnicodeWidthStr::width(prompt_base.as_str())
+                    + UnicodeWidthStr::width(app.filename_input.as_str());
+                let center_start = (footer_area.width as usize).saturating_sub(query_w) / 2;
+                let cur_screen_x = footer_area.x
+                    + center_start as u16
+                    + UnicodeWidthStr::width(prompt_base.as_str()) as u16;
+                f.set_cursor_position((cur_screen_x, footer_area.y));
+            }
+            AppMode::Normal => {
+                let cur_screen_y =
+                    text_area.y + pad_top as u16 + (vis_row.saturating_sub(app.scroll)) as u16;
+                let cur_screen_x = text_area.x + global_pad + vis_x;
+                if cur_screen_y < text_area.y + text_area.height {
+                    f.set_cursor_position((cur_screen_x, cur_screen_y));
+                }
+            }
+            _ => {}
         }
-        _ => {}
     }
 }

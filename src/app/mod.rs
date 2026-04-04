@@ -1,4 +1,4 @@
-use std::{collections::HashSet, fs, path::PathBuf};
+use std::{collections::HashSet, fs, io, path::PathBuf};
 
 use ratatui::{
     layout::Rect,
@@ -61,6 +61,7 @@ pub enum AppMode {
     FormatPane,
 
     PromptExportFilename,
+    Command,
 }
 
 #[derive(Clone, Default)]
@@ -168,6 +169,10 @@ pub struct App {
     pub settings_area: Rect,
 
     pub navigator_state: ListState,
+    
+    pub command_input: String,
+
+    pub command_error: bool,
 }
 
 impl Drop for App {
@@ -290,6 +295,8 @@ impl App {
             sidebar_area: Rect::default(),
             settings_area: Rect::default(),
             navigator_state: ListState::default(),
+            command_input: String::new(),
+            command_error: false,
         };
 
         let mut first_buf = std::mem::take(&mut app.buffers[0]);
@@ -962,34 +969,40 @@ impl App {
     /// triggered explicitly by the user). 
     /// Unlike `renumber_all_scenes`, this only touches one line.
     pub fn inject_current_scene_number(&mut self) {
+        self.inject_scene_number_tag(None);
+    }
+
+    /// Inject a specific scene number tag `#tag#` or auto-compute one.
+    pub fn inject_scene_number_tag(&mut self, tag: Option<&str>) {
         let y = self.cursor_y;
         if y >= self.types.len() || self.types[y] != LineType::SceneHeading {
             self.set_status("Not a scene heading");
             return;
         }
-        let num = self.compute_scene_number_for(y);
         let base = Self::strip_scene_number_from_line(&self.lines[y]).to_string();
-        // Preserve existing non-integer custom tag
-        let existing_custom: Option<String> = {
-            let t = self.lines[y].trim_end();
-            if t.ends_with('#') {
-                t[..t.len()-1].rfind('#').and_then(|o| {
-                    let inner = &t[o+1..t.len()-1];
-                    if !inner.is_empty() && !inner.contains(' ') && !inner.chars().all(|c| c.is_ascii_digit()) {
-                        Some(inner.to_string())
-                    } else { None }
-                })
-            } else { None }
-        };
-        let new_line = if let Some(custom) = existing_custom {
-            format!("{} #{}#", base, custom)
+        let label = if let Some(t) = tag {
+            t.to_string()
         } else {
-            format!("{} #{}#", base, num)
+            // Preserve existing non-integer custom tag
+            let existing_custom: Option<String> = {
+                let t = self.lines[y].trim_end();
+                if t.ends_with('#') {
+                    t[..t.len()-1].rfind('#').and_then(|o| {
+                        let inner = &t[o+1..t.len()-1];
+                        if !inner.is_empty() && !inner.contains(' ') && !inner.chars().all(|c| c.is_ascii_digit()) {
+                            Some(inner.to_string())
+                        } else { None }
+                    })
+                } else { None }
+            };
+            existing_custom.unwrap_or_else(|| self.compute_scene_number_for(y).to_string())
         };
+
+        let new_line = format!("{} #{}#", base, label);
         if self.lines[y] != new_line {
             self.lines[y] = new_line;
             self.parse_document();
-            self.set_status(&format!("Scene number #{} injected", num));
+            self.set_status(&format!("Scene #{} injected", label));
         } else {
             self.set_status("Scene already numbered");
         }
@@ -1021,6 +1034,211 @@ impl App {
         self.layout = build_layout(&self.lines, &self.types, self.cursor_y, &self.config);
     }
 
+    /// Helper to save the current buffer to a new path.
+    pub fn save_as(&mut self, path: PathBuf) -> io::Result<()> {
+        let content = self.lines.join("\n");
+        fs::write(&path, content)?;
+        self.file = Some(path);
+        self.dirty = false;
+        self.set_status(&format!("Saved as {}", self.file.as_ref().unwrap().display()));
+        Ok(())
+    }
+
+    /// Central dispatcher for the ":" command palette.
+    /// Returns Ok(true) if the command should trigger an application exit.
+    pub fn execute_command(
+        &mut self,
+        text_changed: &mut bool,
+        cursor_moved: &mut bool,
+        update_target_x: &mut bool,
+    ) -> io::Result<bool> {
+        let input = self.command_input.trim().to_string();
+        self.command_input.clear();
+        self.mode = AppMode::Normal;
+        self.command_error = false;
+
+        if input.is_empty() {
+            return Ok(false);
+        }
+
+        // 1. Numeric jump (e.g. :50)
+        if let Ok(line_num) = input.parse::<usize>() {
+            self.cursor_y = (line_num.saturating_sub(1)).min(self.lines.len().saturating_sub(1));
+            self.cursor_x = 0;
+            *update_target_x = true;
+            *cursor_moved = true;
+            return Ok(false);
+        }
+
+        let parts: Vec<&str> = input.split_whitespace().collect();
+        let cmd = parts[0];
+        let args = &parts[1..];
+
+        match cmd {
+            "w" => {
+                if let Some(path_str) = args.get(0) {
+                    self.save_as(PathBuf::from(path_str))?;
+                } else if self.file.is_some() {
+                    self.save()?;
+                } else {
+                    self.set_error("No filename. Use :w <file>");
+                }
+            }
+            "q" => {
+                if self.dirty {
+                    self.set_error("Unsaved changes. Use :q! or :wq");
+                } else if self.close_current_buffer() {
+                    return Ok(true);
+                }
+            }
+            "q!" => {
+                if self.close_current_buffer() {
+                    return Ok(true);
+                }
+            }
+            "wq" => {
+                if self.file.is_some() {
+                    self.save()?;
+                    if self.close_current_buffer() {
+                        return Ok(true);
+                    }
+                } else if let Some(path_str) = args.get(0) {
+                    self.save_as(PathBuf::from(path_str))?;
+                    if self.close_current_buffer() {
+                        return Ok(true);
+                    }
+                } else {
+                    self.set_error("No filename");
+                }
+            }
+            "renum" => {
+                self.renumber_all_scenes();
+                self.set_status("All scenes renumbered");
+                *text_changed = true;
+            }
+            "clearnum" => {
+                self.strip_all_scene_numbers();
+                *text_changed = true;
+            }
+            "locknum" => {
+                self.config.production_lock = true;
+                self.set_status("Production Lock ON");
+            }
+            "unlocknum" => {
+                self.config.production_lock = false;
+                self.set_status("Production Lock OFF");
+            }
+            "set" => {
+                if args.len() >= 2 {
+                    let opt = args[0];
+                    let val_str = args[1].to_lowercase();
+                    let val = val_str == "on" || val_str == "true";
+                    match opt {
+                        "markup" => self.config.hide_markup = !val, // hide_markup=true means markup is OFF
+                        "pagenums" => self.config.show_page_numbers = val,
+                        "scenenums" => self.config.show_scene_numbers = val,
+                        "contd" => self.config.auto_contd = val,
+                        _ => self.set_error(&format!("Unknown option: {}", opt)),
+                    }
+                    *text_changed = true;
+                } else {
+                    self.set_error("Usage: :set <option> <on/off>");
+                }
+            }
+            // Scene jump :s50 or :s14B
+            s if s.starts_with('s') && s.len() > 1 && !s[1..].chars().next().map(|c| c == 'e').unwrap_or(false) => {
+                let target = &s[1..];
+                let mut found = false;
+                for (line_idx, _, scene_num, _, _) in &self.scenes {
+                    if let Some(num) = scene_num {
+                        if num == target {
+                            self.cursor_y = *line_idx;
+                            self.cursor_x = 0;
+                            *update_target_x = true;
+                            *cursor_moved = true;
+                            found = true;
+                            break;
+                        }
+                    }
+                }
+                if !found {
+                    self.set_error(&format!("Scene #{} not found", target));
+                }
+            }
+            "u" | "undo" => {
+                if self.undo() {
+                    self.set_status("Undo applied");
+                    *update_target_x = true;
+                    *text_changed = true;
+                    *cursor_moved = true;
+                } else {
+                    self.set_error("Nothing to undo");
+                }
+            }
+            "redo" => {
+                if self.redo() {
+                    self.set_status("Redo applied");
+                    *update_target_x = true;
+                    *text_changed = true;
+                    *cursor_moved = true;
+                } else {
+                    self.set_error("Nothing to redo");
+                }
+            }
+            "cut" => {
+                self.cut_line();
+                self.set_status("Line cut");
+                *update_target_x = true;
+                *text_changed = true;
+                *cursor_moved = true;
+            }
+            "paste" => {
+                self.paste_line();
+                self.set_status("Line pasted");
+                *update_target_x = true;
+                *text_changed = true;
+                *cursor_moved = true;
+            }
+            "pos" => {
+                self.report_cursor_position();
+            }
+            // :injectnum  (auto) or  :injectnum14B  (custom tag)
+            s if s.starts_with("injectnum") => {
+                let tag_part = &s[9..];
+                if tag_part.is_empty() {
+                    self.inject_scene_number_tag(None);
+                } else {
+                    self.inject_scene_number_tag(Some(tag_part));
+                }
+                *text_changed = true;
+            }
+            "search" => {
+                if let Some(query) = args.get(0) {
+                    self.search_query = query.to_string();
+                    self.last_search = query.to_string();
+                    self.show_search_highlight = true;
+                    self.update_search_regex();
+                    self.mode = AppMode::Search;
+                    self.set_status(&format!("Searching: {}", query));
+                } else {
+                    self.search_query.clear();
+                    self.show_search_highlight = true;
+                    self.update_search_regex();
+                    self.mode = AppMode::Search;
+                }
+            }
+            _ => {
+                self.set_error(&format!("Unknown command: :{}", cmd));
+            }
+        }
+
+        Ok(false)
+    }
+
+    fn set_error(&mut self, msg: &str) {
+        self.status_msg = Some(msg.to_string());
+        self.command_error = true;
+    }
 }
 
 pub mod ui;

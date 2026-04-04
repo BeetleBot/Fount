@@ -471,18 +471,12 @@ impl App {
                     // nav idx -> action : 0=PageNums, 1=HideMarkup, 2=AutoContd,
                     //                     3=ProdLock, 4=Renumber, 5=ClearAll, 6=ShowSceneNums
                     const NAV_COUNT: usize = 7;
-                    // Header positions in the rendered list: render_idx 0 and 4
-                    // nav_idx maps to render_idx: +1 for idx>=0 (skip header at 0),
-                    //                             +1 again for idx>=3 (skip header at render 4)
                     fn next_nav(cur: usize, dir: isize) -> usize {
                         let next = (cur as isize + dir).clamp(0, (NAV_COUNT - 1) as isize) as usize;
                         next
                     }
                     match key.code {
-                        KeyCode::Esc => {
-                            self.mode = AppMode::Normal;
-                        }
-                        KeyCode::Char('f') if ctrl => {
+                        KeyCode::Esc | KeyCode::Char('f') if ctrl => {
                             self.mode = AppMode::Normal;
                         }
                         KeyCode::Char('p') if ctrl => {
@@ -532,6 +526,53 @@ impl App {
                                 _ => "",
                             };
                             if !desc.is_empty() { self.set_status(desc); }
+                        }
+                        _ => {}
+                    }
+                    return Ok(false);
+                }
+                AppMode::Command => {
+                    match key.code {
+                        KeyCode::Esc => {
+                            self.mode = AppMode::Normal;
+                            self.command_input.clear();
+                            self.command_error = false;
+                        }
+                        KeyCode::Tab => {
+                            let commands = vec![
+                                "w", "q", "q!", "wq",
+                                "renum", "clearnum", "locknum", "unlocknum",
+                                "set", "search",
+                                "u", "undo", "redo", "cut", "paste", "pos",
+                                "injectnum", "s",
+                            ];
+                            let matches: Vec<&&str> = commands.iter()
+                                .filter(|c| c.starts_with(&self.command_input))
+                                .collect();
+                            
+                            if !matches.is_empty() {
+                                // Basic cycling
+                                let current = self.command_input.as_str();
+                                if let Some(pos) = matches.iter().position(|m| **m == current) {
+                                    self.command_input = matches[(pos + 1) % matches.len()].to_string();
+                                } else {
+                                    self.command_input = matches[0].to_string();
+                                }
+                            }
+                        }
+                        KeyCode::Backspace => {
+                            self.command_input.pop();
+                            if self.command_input.is_empty() {
+                                self.mode = AppMode::Normal;
+                            }
+                            self.command_error = false;
+                        }
+                        KeyCode::Enter => {
+                            self.execute_command(text_changed, cursor_moved, update_target_x)?;
+                        }
+                        KeyCode::Char(c) => {
+                            self.command_input.push(c);
+                            self.command_error = false;
                         }
                         _ => {}
                     }
@@ -620,13 +661,7 @@ impl App {
                         }
 
                         KeyCode::Char('s') if ctrl => {
-                            if self.file.is_some() {
-                                self.save()?;
-                            } else {
-                                self.filename_input.clear();
-                                self.mode = AppMode::PromptFilename;
-                                self.exit_after_save = false;
-                            }
+                            // Use :w to save
                         }
                         KeyCode::Char('h') if ctrl => {
                             self.open_scene_navigator();
@@ -639,55 +674,22 @@ impl App {
                             self.mode = AppMode::FormatPane;
                             self.selected_format_option = 0;
                         }
-                        KeyCode::Char('z') if ctrl => {
-                            if self.undo() {
-                                self.set_status("Undo applied");
-                                *update_target_x = true;
-                                *text_changed = true;
-                                *cursor_moved = true;
-                            } else {
-                                self.set_status("Nothing to undo");
-                            }
+                        KeyCode::Char(':') => {
+                            self.mode = AppMode::Command;
+                            self.command_input.clear();
+                            self.command_error = false;
                         }
-                        KeyCode::Char('r') if ctrl => {
-                            if self.redo() {
-                                self.set_status("Redo applied");
-                                *update_target_x = true;
-                                *text_changed = true;
-                                *cursor_moved = true;
-                            } else {
-                                self.set_status("Nothing to redo");
-                            }
-                        }
+                        KeyCode::Char('z') if ctrl => {}
+                        KeyCode::Char('r') if ctrl => {}
                         KeyCode::Char('e') if ctrl => {
                             self.mode = AppMode::ExportPane;
                             self.selected_export_option = 0;
                         }
-                        KeyCode::Char('k') if ctrl => {
-                            self.cut_line();
-                            *update_target_x = true;
-                            *text_changed = true;
-                            *cursor_moved = true;
-                        }
-                        KeyCode::Char('u') if ctrl => {
-                            self.paste_line();
-                            *update_target_x = true;
-                            *text_changed = true;
-                            *cursor_moved = true;
-                        }
-                        KeyCode::Char('w') if ctrl => {
-                            self.mode = AppMode::Search;
-                            self.search_query.clear();
-                            self.show_search_highlight = true;
-                            self.update_search_regex();
-                        }
-                        KeyCode::Char('c') if ctrl => {
-                            self.report_cursor_position();
-                        }
-                        KeyCode::Char('i') if ctrl && shift => {
-                            self.inject_current_scene_number();
-                            *text_changed = true;
-                        }
+                        KeyCode::Char('k') if ctrl => {}
+                        KeyCode::Char('u') if ctrl => {}
+                        KeyCode::Char('w') if ctrl => {}
+                        KeyCode::Char('c') if ctrl => {}
+                        KeyCode::Char('i') if ctrl && shift => {}
 
                         KeyCode::F(1) => {
                             self.mode = AppMode::Shortcuts;
