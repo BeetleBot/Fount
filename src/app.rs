@@ -1697,6 +1697,50 @@ impl App {
         self.dirty = true;
     }
 
+    pub fn calculate_scene_height(&self, heading: &str, synopses: &[String]) -> usize {
+        let max_w = 40;
+        let mut height = 0;
+
+        // Heading wrapping
+        let mut current_line_len = 0;
+        let prefix_len = 3;
+        for word in heading.split_whitespace() {
+            if current_line_len + word.len() + prefix_len + 1 > max_w {
+                height += 1;
+                current_line_len = 0;
+            }
+            if current_line_len > 0 {
+                current_line_len += 1;
+            }
+            current_line_len += word.len();
+        }
+        if current_line_len > 0 || height == 0 {
+            height += 1;
+        }
+
+        for syn in synopses {
+            let mut current_line_len = 0;
+            let indent_len = 5;
+            let mut syn_lines = 0;
+            for word in syn.split_whitespace() {
+                if current_line_len + word.len() + indent_len + 1 > max_w {
+                    syn_lines += 1;
+                    current_line_len = 0;
+                }
+                if current_line_len > 0 {
+                    current_line_len += 1;
+                }
+                current_line_len += word.len();
+            }
+            if current_line_len > 0 {
+                syn_lines += 1;
+            }
+            height += syn_lines;
+        }
+        height += 1; // Empty separator line
+        height
+    }
+
     pub fn handle_event(
         &mut self,
         ev: Event,
@@ -1712,12 +1756,30 @@ impl App {
 
             match mouse_event.kind {
                 MouseEventKind::ScrollUp => {
-                    self.move_up();
-                    *cursor_moved = true;
+                    if self.mode == AppMode::SceneNavigator
+                        && mouse_event.column < self.sidebar_area.x + self.sidebar_area.width
+                    {
+                        if self.selected_scene > 0 {
+                            self.selected_scene -= 1;
+                            self.navigator_state.select(Some(self.selected_scene));
+                        }
+                    } else {
+                        self.move_up();
+                        *cursor_moved = true;
+                    }
                 }
                 MouseEventKind::ScrollDown => {
-                    self.move_down();
-                    *cursor_moved = true;
+                    if self.mode == AppMode::SceneNavigator
+                        && mouse_event.column < self.sidebar_area.x + self.sidebar_area.width
+                    {
+                        if self.selected_scene < self.scenes.len() - 1 {
+                            self.selected_scene += 1;
+                            self.navigator_state.select(Some(self.selected_scene));
+                        }
+                    } else {
+                        self.move_down();
+                        *cursor_moved = true;
+                    }
                 }
                 MouseEventKind::Down(MouseButton::Left) => {
                     if self.mode == AppMode::SettingsPane {
@@ -1783,11 +1845,31 @@ impl App {
                     } else if self.mode == AppMode::SceneNavigator {
                         let x = mouse_event.column;
                         let y = mouse_event.row;
-                        if x >= self.sidebar_area.x
-                            && x < self.sidebar_area.x + self.sidebar_area.width
+                        if x < self.sidebar_area.x + self.sidebar_area.width
                             && y >= self.sidebar_area.y
                             && y < self.sidebar_area.y + self.sidebar_area.height
                         {
+                            let mut current_y = self.sidebar_area.y as usize;
+                            let offset = self.navigator_state.offset();
+                            for i in offset..self.scenes.len() {
+                                let h = self.calculate_scene_height(&self.scenes[i].1, &self.scenes[i].3);
+                                if (y as usize) < current_y + h {
+                                    self.selected_scene = i;
+                                    self.navigator_state.select(Some(i));
+
+                                    let line_idx = self.scenes[i].0;
+                                    self.cursor_y = line_idx;
+                                    self.cursor_x = 0;
+                                    *cursor_moved = true;
+                                    *update_target_x = true;
+                                    break;
+                                }
+                                current_y += h;
+                                if current_y >= (self.sidebar_area.y + self.sidebar_area.height) as usize
+                                {
+                                    break;
+                                }
+                            }
                         }
                     }
                 }
@@ -2515,10 +2597,38 @@ pub fn draw(f: &mut Frame, app: &mut App) {
                 };
 
                 let prefix = if is_selected { " » " } else { "   " };
-                lines.push(Line::from(vec![
-                    Span::styled(prefix, base_style),
-                    Span::styled(heading_text, heading_style),
-                ]));
+                let max_w = 40;
+                let mut current_line = String::new();
+                let mut first_line = true;
+
+                for word in heading_text.split_whitespace() {
+                    if !current_line.is_empty()
+                        && prefix.len() + current_line.len() + word.len() + 1 > max_w
+                    {
+                        lines.push(Line::from(vec![
+                            Span::styled(if first_line { prefix } else { "   " }, base_style),
+                            Span::styled(current_line.clone(), heading_style),
+                        ]));
+                        current_line.clear();
+                        first_line = false;
+                    }
+                    if !current_line.is_empty() {
+                        current_line.push(' ');
+                    }
+                    current_line.push_str(word);
+                }
+                if !current_line.is_empty() {
+                    lines.push(Line::from(vec![
+                        Span::styled(if first_line { prefix } else { "   " }, base_style),
+                        Span::styled(current_line, heading_style),
+                    ]));
+                } else if first_line {
+                    // Always show at least one line for the heading
+                    lines.push(Line::from(vec![
+                        Span::styled(prefix, base_style),
+                        Span::styled("", heading_style),
+                    ]));
+                }
 
                 for syn in synopses {
                     let max_w = 40;
