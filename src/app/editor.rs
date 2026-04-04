@@ -1,11 +1,10 @@
 use std::{fs, io};
-use std::collections::HashSet;
-use std::path::PathBuf;
+
 use crate::app::{App, LastEdit};
 use crate::formatting::StringCaseExt;
-use crate::layout::{find_visual_cursor, strip_sigils};
+use crate::layout::find_visual_cursor;
 use crate::types::LineType;
-use crate::app::HistoryState;
+
 
 impl App {
 

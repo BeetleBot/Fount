@@ -1,7 +1,7 @@
 use super::*;
-use crate::app::{App, AppMode, BufferState, HistoryState, LastEdit};
-use crate::types::{LineType, PAGE_WIDTH, base_style};
-use crate::layout::{VisualRow, build_layout, find_visual_cursor, strip_sigils};
+use crate::app::{App, AppMode, BufferState};
+use crate::types::LineType;
+
 use ratatui::style::{Color, Modifier};
 use crossterm::event::{KeyCode, KeyModifiers};
 

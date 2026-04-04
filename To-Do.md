@@ -4,7 +4,6 @@
 - [ ] **Release Automation (GitHub Actions)**: Get `.msi`/`.exe` and `.dmg` installers ready for future releases. Tentative timing. 
 - [ ] **Home Page**: A simple landing area when opening without a file. (New, Open, Tutorial, Exit).
 - [ ] **PDF Export**: The big one—implementing a clean PDF generator.
-- [ ] **Refactoring app.rs**: It's getting huge (~197KB). Break it down into logic and UI modules for better maintenance.
 - [ ] **Structure & Navigation**: 
     - Way to implement structures into the screenplay.
     - Making those structures visible in the Scene Navigator.
@@ -12,6 +11,7 @@
 - [ ] **Settings Fix**: Ensure settings changed in the pane actually save back to the config file.
 
 ### Already Done
+- [x] **Refactoring app.rs**: Successfully split the monolithic 200KB file into a clean, modular structure (`ui.rs`, `editor.rs`, `input.rs`, `tests.rs`).
 - [x] **App Identity**: Completely renamed to **Fount**. Terminal command is now `fount`.
 - [x] **Scene Navigator (Alt+S)**:
     - Sidebar with scene numbers, headings, and synopses.

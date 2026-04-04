@@ -1,22 +1,18 @@
-use std::{collections::HashSet, fs, io, path::PathBuf};
+use std::{collections::HashSet, fs, path::PathBuf};
 
 use ratatui::{
-    Frame,
-    layout::{Constraint, Direction, Layout, Rect},
-    style::{Color, Modifier, Style},
-    text::{Line, Span},
-    widgets::{Block, Borders, List, ListItem, ListState, Paragraph},
+    layout::Rect,
+    style::Color,
+    widgets::ListState,
 };
-use unicode_width::UnicodeWidthStr;
 
-use crossterm::event::{Event, KeyCode, KeyEventKind, KeyModifiers, MouseButton, MouseEventKind};
 
 use crate::{
     config::{Cli, Config},
-    formatting::{RenderConfig, StringCaseExt, render_inline},
+    formatting::StringCaseExt,
     layout::{VisualRow, build_layout, find_visual_cursor, strip_sigils},
     parser::Parser,
-    types::{LineType, PAGE_WIDTH, base_style},
+    types::LineType,
 };
 
 #[derive(Clone)]
