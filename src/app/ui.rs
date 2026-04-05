@@ -615,19 +615,27 @@ pub fn draw(f: &mut Frame, app: &mut App) {
                 ("Shift+Arr ", "Select Text"),
             ]),
             (" COMMANDS (/) ", vec![
-                ("/w / /ww  ", "Save / Save As"),
-                ("/o [path] ", "Open script"),
-                ("/ud / /rd ", "Undo / Redo"),
-                ("/bn / /bp ", "Buffer Next / Prev"),
-                ("/q / /wq  ", "Close Buffer / Save"),
-                ("/ex        ", "Exit Fount"),
-                ("/search    ", "Global Search"),
-                ("/renum     ", "Renumber Scenes"),
-                ("/injectnum ", "Tag Scene (#)"),
-                ("/addtitle  ", "Insert Title Page"),
-                ("/[line]    ", "Jump to Line"),
-                ("/s[num]    ", "Jump to Scene"),
-                ("/pos       ", "Cursor Details"),
+                ("/w / /ww    ", "Save / Save As"),
+                ("/o [path]   ", "Open script"),
+                ("/new        ", "New script"),
+                ("/bn / /bp   ", "Buffer Next / Prev"),
+                ("/q / /q!    ", "Close / Force Close"),
+                ("/wq / /ex   ", "Save&Close / Exit"),
+                ("/ud / /rd   ", "Undo / Redo"),
+                ("/copy / /cut", "Copy / Cut"),
+                ("/paste      ", "Paste"),
+                ("/selectall  ", "Select All"),
+                ("/search     ", "Global Search"),
+                ("/renum      ", "Renumber Scenes"),
+                ("/clearnum   ", "Clear Numbers"),
+                ("/injectnum  ", "Tag Scene (#)"),
+                ("/locknum    ", "Lock Numbering"),
+                ("/unlocknum  ", "Unlock Numbering"),
+                ("/addtitle   ", "Insert Title Page"),
+                ("/export     ", "Export PDF"),
+                ("/[line]     ", "Jump to Line"),
+                ("/s[num]     ", "Jump to Scene"),
+                ("/pos / /home", "Cursor Info / Home"),
             ]),
             (" ZEN SETS (/set) ", vec![
                 ("focus     ", "Zen Mode (Clean UI)"),
@@ -641,19 +649,34 @@ pub fn draw(f: &mut Frame, app: &mut App) {
         ];
 
         let mut items = Vec::new();
-        for (cat, shortcuts) in categories {
+        for (idx, (cat, shortcuts)) in categories.iter().enumerate() {
+            if idx > 0 {
+                items.push(ListItem::new(""));
+            }
+            
+            let header_str = format!(" ━━━ {} ", cat.trim());
+            let header_line = header_str.clone() + &"━".repeat(40usize.saturating_sub(header_str.len()));
+            
+            items.push(ListItem::new(Line::from(vec![
+                Span::styled(header_line, Style::default().fg(mode_bg).add_modifier(Modifier::BOLD)),
+            ])));
+            
             items.push(ListItem::new(""));
-            items.push(ListItem::new(Span::styled(format!("  ──{}──", cat), Style::default().fg(mode_bg).add_modifier(Modifier::DIM))));
+
             for (key, desc) in shortcuts {
+                let key_clean = key.trim();
+                let key_padded = format!("  {:<16} ", key_clean);
+                
                 items.push(ListItem::new(Line::from(vec![
-                    Span::styled(format!("  {}  ", key), Style::default().fg(mode_bg).add_modifier(Modifier::BOLD)),
-                    Span::styled(desc, Style::default().fg(Color::DarkGray).add_modifier(Modifier::ITALIC)),
+                    Span::styled(key_padded, Style::default().fg(mode_bg).add_modifier(Modifier::BOLD)),
+                    Span::styled("│ ", Style::default().fg(Color::DarkGray)),
+                    Span::styled(*desc, Style::default().fg(Color::Gray)),
                 ])));
             }
         }
 
         let list = List::new(items);
-        f.render_widget(list, app.settings_area.inner(ratatui::layout::Margin { horizontal: 0, vertical: 1 }));
+        f.render_stateful_widget(list, app.settings_area.inner(ratatui::layout::Margin { horizontal: 0, vertical: 1 }), &mut app.shortcuts_state);
     }
 
     // ── Footer rendering ──────────────────────────────────────────────────

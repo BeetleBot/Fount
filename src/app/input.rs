@@ -725,12 +725,11 @@ impl App {
                         }
                         KeyCode::Tab => {
                             let commands = vec![
-                                "w", "q", "q!", "wq", "ex",
-                                "renum", "clearnum", "locknum", "unlocknum",
-                                "set", "search",
-                                "u", "undo", "redo", "copy", "cut", "paste", "pos",
-                                "injectnum", "selectall", "s",
-                                "home", "new", "addtitle",
+                                "w", "ww", "q", "q!", "wq", "ex",
+                                "renum", "clearnum", "locknum", "unlocknum", "injectnum",
+                                "set", "search", "export",
+                                "ud", "rd", "copy", "cut", "paste", "pos",
+                                "selectall", "home", "o", "bn", "bp", "new", "newfile", "addtitle",
                             ];
                             let matches: Vec<&&str> = commands.iter()
                                 .filter(|c| c.starts_with(&self.command_input))
@@ -770,6 +769,25 @@ impl App {
                     match key.code {
                         KeyCode::Esc | KeyCode::F(1) => {
                             self.mode = AppMode::Normal;
+                        }
+                        KeyCode::Up | KeyCode::Char('k') => {
+                            let i = self.shortcuts_state.selected().unwrap_or(0);
+                            self.shortcuts_state.select(Some(i.saturating_sub(1)));
+                        }
+                        KeyCode::Down | KeyCode::Char('j') => {
+                            let i = self.shortcuts_state.selected().unwrap_or(0);
+                            self.shortcuts_state.select(Some(i.saturating_add(1)));
+                        }
+                        KeyCode::PageUp => {
+                            let i = self.shortcuts_state.selected().unwrap_or(0);
+                            self.shortcuts_state.select(Some(i.saturating_sub(10)));
+                        }
+                        KeyCode::PageDown => {
+                            let i = self.shortcuts_state.selected().unwrap_or(0);
+                            self.shortcuts_state.select(Some(i.saturating_add(10)));
+                        }
+                        KeyCode::Home => {
+                            self.shortcuts_state.select(Some(0));
                         }
                         KeyCode::Char('h') if ctrl => {
                             self.open_scene_navigator();

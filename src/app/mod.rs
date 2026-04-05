@@ -229,6 +229,8 @@ pub struct App {
 
     pub navigator_state: ListState,
     
+    pub shortcuts_state: ListState,
+
     pub command_input: String,
 
     pub command_error: bool,
@@ -364,6 +366,7 @@ impl App {
             sidebar_area: Rect::default(),
             settings_area: Rect::default(),
             navigator_state: ListState::default(),
+            shortcuts_state: ListState::default(),
             command_input: String::new(),
             command_error: false,
             selection_anchor: None,
