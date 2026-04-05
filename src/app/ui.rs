@@ -624,6 +624,7 @@ pub fn draw(f: &mut Frame, app: &mut App) {
                 ("/search    ", "Global Search"),
                 ("/renum     ", "Renumber Scenes"),
                 ("/injectnum ", "Tag Scene (#)"),
+                ("/addtitle  ", "Insert Title Page"),
                 ("/[line]    ", "Jump to Line"),
                 ("/s[num]    ", "Jump to Scene"),
                 ("/pos       ", "Cursor Details"),

@@ -730,7 +730,7 @@ impl App {
                                 "set", "search",
                                 "u", "undo", "redo", "copy", "cut", "paste", "pos",
                                 "injectnum", "selectall", "s",
-                                "home", "new",
+                                "home", "new", "addtitle",
                             ];
                             let matches: Vec<&&str> = commands.iter()
                                 .filter(|c| c.starts_with(&self.command_input))

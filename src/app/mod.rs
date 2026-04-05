@@ -1273,6 +1273,57 @@ impl App {
         }
     }
 
+    /// Inserts a Fountain title page block at the very top of the buffer.
+    /// If a title page already exists (first non-empty line is metadata), warns
+    /// the user instead of duplicating it.
+    pub fn insert_title_page(&mut self) {
+        // Check if a title page already exists by looking at the first
+        // non-empty line's type after a fresh parse.
+        self.parse_document();
+        let first_content = self.types.iter().find(|t| **t != LineType::Empty);
+        if let Some(lt) = first_content {
+            if matches!(
+                lt,
+                LineType::MetadataTitle | LineType::MetadataKey | LineType::MetadataValue
+            ) {
+                self.set_error("Title page already exists");
+                return;
+            }
+        }
+
+        let title_lines = vec![
+            "Title: Untitled".to_string(),
+            "Credit: Written by".to_string(),
+            "Author: ".to_string(),
+            "Draft date: ".to_string(),
+            "Contact: ".to_string(),
+            "".to_string(),
+        ];
+        let count = title_lines.len();
+
+        // Splice the title block before line 0
+        for (i, line) in title_lines.into_iter().enumerate() {
+            self.lines.insert(i, line);
+        }
+
+        // Re-parse so the new metadata lines get their correct types
+        self.parse_document();
+
+        // Place cursor at the end of "Title: Untitled" so the user can
+        // immediately start editing the title value.
+        self.cursor_y = 0;
+        self.cursor_x = "Title: Untitled".chars().count();
+
+        // Adjust the selection anchor if one was active — it now points
+        // `count` lines further down.
+        if let Some((ay, ax)) = self.selection_anchor {
+            self.selection_anchor = Some((ay + count, ax));
+        }
+
+        self.dirty = true;
+        self.set_status("Title page inserted");
+    }
+
     pub fn update_layout(&mut self) {
         self.layout = build_layout(&self.lines, &self.types, self.cursor_y, &self.config);
     }
@@ -1607,6 +1658,12 @@ impl App {
                         self.set_error(&format!("Scene {} not found", num));
                     }
                 }
+            }
+            "addtitle" => {
+                self.insert_title_page();
+                *text_changed = true;
+                *cursor_moved = true;
+                *update_target_x = true;
             }
             "renum" => {
                 self.renumber_all_scenes();
