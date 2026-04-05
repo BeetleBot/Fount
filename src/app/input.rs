@@ -51,6 +51,7 @@ impl App {
                             self.navigator_state.select(Some(self.selected_scene));
                         }
                     } else {
+                        self.clear_selection();
                         self.move_up();
                         *cursor_moved = true;
                     }
@@ -64,6 +65,7 @@ impl App {
                             self.navigator_state.select(Some(self.selected_scene));
                         }
                     } else {
+                        self.clear_selection();
                         self.move_down();
                         *cursor_moved = true;
                     }

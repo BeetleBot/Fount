@@ -19,15 +19,16 @@ pub fn draw(f: &mut Frame, app: &mut App) {
 
     f.render_widget(ratatui::widgets::Clear, area);
 
-    let (mode_str, mode_bg) = match app.mode {
-        AppMode::Normal => (" NORMAL ", Color::LightBlue),
-        AppMode::Command => (" COMMAND ", Color::Yellow),
-        AppMode::SceneNavigator => (" NAVIGATOR ", Color::LightCyan),
-        AppMode::SettingsPane => (" SETTINGS ", Color::LightCyan),
-        AppMode::ExportPane => (" EXPORT ", Color::LightCyan),
-        AppMode::Search => (" SEARCH ", Color::LightMagenta),
-        _ => (" PROMPT ", Color::LightRed),
-    };
+        let (mode_str, mode_bg) = match app.mode {
+            AppMode::Normal => (" NORMAL ", Color::LightBlue),
+            AppMode::Command => (" COMMAND ", Color::Yellow),
+            AppMode::SceneNavigator => (" NAVIGATOR ", Color::LightCyan),
+            AppMode::SettingsPane => (" SETTINGS ", Color::LightCyan),
+            AppMode::ExportPane => (" EXPORT ", Color::LightCyan),
+            AppMode::Shortcuts => (" LEGEND ", Color::LightCyan),
+            AppMode::Search => (" SEARCH ", Color::LightMagenta),
+            _ => (" PROMPT ", Color::LightRed),
+        };
 
 
     let is_prompt = app.mode != AppMode::Normal;
