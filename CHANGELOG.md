@@ -11,13 +11,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Home Screen**: New aesthetic main menu for quick access to recent scripts and help.
 - **Production Reports**: Expanded Export UI with options for production-ready reports.
 - **Shortcuts Mode**: Dedicated shortcuts status indicator in the UI.
+- **Color-Coded Scene Navigator**: Scene headings now adopt the color of `[[color]]` markers placed anywhere in the scene.
 - **Proper Installation Channels**: Added Windows MSI installer support and automated release workflows.
 
 ### Changed
+- **Forced Physical Uppercase**: Scene headings, characters, and transitions are now permanently transformed to uppercase in the screenplay buffer for professional formatting.
 - **Responsive UI Refactor**: Redesigned UI panels with mode-aware coloring and refreshed list layouts for better clarity and focus.
 - **Improved Contrast**: Refined the theme detection and color mapping for a better experience across all terminals.
+- **Streamlined Release Workflow**: Optimized CI/CD to focus on Windows MSI installers and Crates.io publication for higher reliability.
 
 ### Fixed
+- **Robust Marker Detection**: Enhanced the scene parser to correctly identify marker colors even when separated by notes or empty lines.
+- **Heading Cleaning**: Stripped metadata markers from scene navigator headings for a cleaner display.
 - Resolved cursor misalignment in certain terminal environments.
 - Fixed navigation issue where selection wouldn't update correctly when switching panes.
 
