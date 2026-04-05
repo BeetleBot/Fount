@@ -1,6 +1,6 @@
 use std::{fs, io};
 
-use crate::app::{App, LastEdit};
+use crate::app::{App, LastEdit, NavigatorItem};
 use crate::formatting::StringCaseExt;
 use crate::layout::find_visual_cursor;
 use crate::types::LineType;
@@ -861,15 +861,19 @@ impl App {
         self.dirty = true;
     }
 
-    pub fn calculate_scene_height(&self, heading: &str, synopses: &[String]) -> usize {
-        let max_w = 40;
-        let mut height = 0;
+    pub fn calculate_scene_height(&self, item: &NavigatorItem) -> usize {
+        if item.is_section {
+            return 2; // Section name + spacer
+        }
+
+        let max_w: usize = 45; // Match the wider navigator sidebar
+        let mut height: usize = 0;
 
         // Heading wrapping
-        let mut current_line_len = 0;
-        let prefix_len = 3;
-        for word in heading.split_whitespace() {
-            if current_line_len + word.len() + prefix_len + 1 > max_w {
+        let mut current_line_len: usize = 0;
+        let heading_indent: usize = 5; // prefix(3) + connector(2)
+        for word in item.label.split_whitespace() {
+            if current_line_len + word.len() + heading_indent + 1 > max_w {
                 height += 1;
                 current_line_len = 0;
             }
@@ -882,12 +886,13 @@ impl App {
             height += 1;
         }
 
-        for syn in synopses {
-            let mut current_line_len = 0;
-            let indent_len = 5;
-            let mut syn_lines = 0;
+        // Synopsis wrapping
+        for syn in &item.synopses {
+            let mut current_line_len: usize = 0;
+            let syn_indent: usize = 6; // prefix(3) + connector(3)
+            let mut syn_lines: usize = 0;
             for word in syn.split_whitespace() {
-                if current_line_len + word.len() + indent_len + 1 > max_w {
+                if current_line_len + word.len() + syn_indent + 1 > max_w {
                     syn_lines += 1;
                     current_line_len = 0;
                 }
@@ -901,7 +906,12 @@ impl App {
             }
             height += syn_lines;
         }
-        height += 1; // Empty separator line
+
+        if item.synopses.is_empty() {
+            height += 1; // "no synopsis" placeholder height
+        }
+
+        height += 1; // Empty separator line or ending spacer
         height
     }
 

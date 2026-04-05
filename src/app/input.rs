@@ -150,12 +150,12 @@ impl App {
                             let mut current_y = self.sidebar_area.y as usize;
                             let offset = self.navigator_state.offset();
                             for i in offset..self.scenes.len() {
-                                let h = self.calculate_scene_height(&self.scenes[i].1, &self.scenes[i].3);
+                                let h = self.calculate_scene_height(&self.scenes[i]);
                                 if (y as usize) < current_y + h {
                                     self.selected_scene = i;
                                     self.navigator_state.select(Some(i));
 
-                                    let line_idx = self.scenes[i].0;
+                                    let line_idx = self.scenes[i].line_idx;
                                     self.cursor_y = line_idx;
                                     self.cursor_x = 0;
                                     *cursor_moved = true;
@@ -457,11 +457,12 @@ impl App {
                             }
                         }
                         KeyCode::Enter => {
-                            let line_idx = self.scenes[self.selected_scene].0;
+                            let line_idx = self.scenes[self.selected_scene].line_idx;
                             self.cursor_y = line_idx;
                             self.cursor_x = 0;
                             *cursor_moved = true;
                             *update_target_x = true;
+                            self.mode = AppMode::Normal;
                         }
                         _ => {}
                     }

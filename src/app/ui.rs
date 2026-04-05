@@ -54,7 +54,7 @@ pub fn draw(f: &mut Frame, app: &mut App) {
     if app.mode == AppMode::SceneNavigator {
         let side_chunks = Layout::default()
             .direction(Direction::Horizontal)
-            .constraints([Constraint::Length(45), Constraint::Min(0)])
+            .constraints([Constraint::Length(55), Constraint::Min(0)])
             .split(text_area);
         app.sidebar_area = side_chunks[0];
         text_area = side_chunks[1];
@@ -298,57 +298,134 @@ pub fn draw(f: &mut Frame, app: &mut App) {
             .scenes
             .iter()
             .enumerate()
-            .map(|(i, (_, heading, snum, synopses, color))| {
+            .map(|(i, item)| {
                 let is_selected = i == app.selected_scene;
                 let mut lines = Vec::new();
                 
-                // Base style for the heading
-                let mut base_style = if is_selected {
-                    Style::default().add_modifier(Modifier::REVERSED).add_modifier(Modifier::BOLD)
-                } else {
-                    Style::default()
-                };
-
-                // Apply custom marker color if present
-                if let Some(c) = color {
-                    base_style.fg = Some(*c);
+                // Determine if we're "inside" a section by looking back
+                // (In this flat list, everything after a section is child until the next section)
+                let mut has_parent_section = false;
+                for prev in (0..i).rev() {
+                    if app.scenes[prev].is_section {
+                        has_parent_section = true;
+                        break;
+                    }
                 }
-                
-                let dim_style = if is_selected {
-                    base_style
-                } else {
-                    Style::default().add_modifier(Modifier::DIM)
-                };
 
-                let prefix = if is_selected { " ⟫ " } else { "   " };
-                let s_tag = if let Some(s) = snum {
-                    format!("{} ", s)
-                } else {
-                    String::new()
-                };
+                let line_style = Style::default().fg(Color::DarkGray).add_modifier(Modifier::DIM);
+                let line_char = if has_parent_section { "│ " } else { "  " };
 
-                // Line 1: Heading
-                lines.push(Line::from(vec![
-                    Span::styled(prefix, base_style),
-                    Span::styled(s_tag, base_style),
-                    Span::styled(heading.to_uppercase_1to1(), base_style),
-                ]));
-
-                // Line 2: Synopsis or placeholder
-                if let Some(syn) = synopses.first() {
+                if item.is_section {
+                    // Section Header (ACT I, etc.)
+                    let style = if is_selected {
+                        Style::default().fg(Color::Black).bg(Color::LightCyan).add_modifier(Modifier::BOLD)
+                    } else {
+                        Style::default().fg(Color::LightCyan).add_modifier(Modifier::BOLD)
+                    };
+                    
+                    let prefix = if is_selected { " ⟫ " } else { "   " };
                     lines.push(Line::from(vec![
-                        Span::styled("     ", dim_style),
-                        Span::styled(syn, dim_style.add_modifier(Modifier::ITALIC)),
+                        Span::styled(prefix, style),
+                        Span::styled(item.label.to_uppercase(), style),
                     ]));
+                    
+                    // Add a connecting line start below the section if the next item is a scene
+                    if i + 1 < app.scenes.len() && !app.scenes[i+1].is_section {
+                        lines.push(Line::from(vec![
+                            Span::styled("   ", Style::default()),
+                            Span::styled("│", line_style),
+                        ]));
+                    } else {
+                        lines.push(Line::from(""));
+                    }
                 } else {
+                    // Scene Item
+                    let mut base_style = if is_selected {
+                        Style::default().add_modifier(Modifier::REVERSED)
+                    } else {
+                        Style::default()
+                    };
+
+                    if let Some(c) = item.color {
+                        base_style.fg = Some(c);
+                    }
+                    
+                    let dim_style = if is_selected {
+                        base_style
+                    } else {
+                        Style::default().add_modifier(Modifier::DIM)
+                    };
+
+                    let prefix = if is_selected { " ⟫ " } else { "   " };
+                    
+                    // Determine if this is the last scene in the section
+                    let is_last_in_section = i + 1 == app.scenes.len() || app.scenes[i+1].is_section;
+                    let connector = if is_last_in_section { "└─ " } else { "├─ " };
+
+                    let s_tag = if let Some(ref s) = item.scene_num {
+                        format!("{}. ", s)
+                    } else {
+                        String::new()
+                    };
+
+                    // Line 1: Scene Heading
                     lines.push(Line::from(vec![
-                        Span::styled("     ", dim_style),
-                        Span::styled("no synopsis", dim_style.add_modifier(Modifier::ITALIC)),
+                        Span::styled(prefix, base_style),
+                        Span::styled(connector, line_style),
+                        Span::styled(s_tag, base_style.add_modifier(Modifier::BOLD)),
+                        Span::styled(item.label.clone(), base_style),
                     ]));
+
+                    // Line 2+: Wrapped Synopses or placeholder
+                    let syn_line_char = if is_last_in_section { "   " } else { "│  " };
+                    if !item.synopses.is_empty() {
+                        // Wrapping logic for each synopsis
+                        for syn in &item.synopses {
+                            let mut current_line = String::new();
+                            let max_syn_w = 38; // Fits within the wider navigator width
+                            
+                            for word in syn.split_whitespace() {
+                                if current_line.len() + word.len() + 1 > max_syn_w {
+                                    lines.push(Line::from(vec![
+                                        Span::styled("   ", Style::default()),
+                                        Span::styled(syn_line_char, line_style),
+                                        Span::styled(current_line.clone(), dim_style.add_modifier(Modifier::ITALIC)),
+                                    ]));
+                                    current_line = word.to_string();
+                                } else {
+                                    if !current_line.is_empty() {
+                                        current_line.push(' ');
+                                    }
+                                    current_line.push_str(word);
+                                }
+                            }
+                            if !current_line.is_empty() {
+                                lines.push(Line::from(vec![
+                                    Span::styled("   ", Style::default()),
+                                    Span::styled(syn_line_char, line_style),
+                                    Span::styled(current_line, dim_style.add_modifier(Modifier::ITALIC)),
+                                ]));
+                            }
+                        }
+                    } else {
+                        lines.push(Line::from(vec![
+                            Span::styled("   ", Style::default()),
+                            Span::styled(syn_line_char, line_style),
+                            Span::styled("no synopsis", dim_style.add_modifier(Modifier::ITALIC)),
+                        ]));
+                    }
+                    
+                    // Spacer/Separator
+                    if !is_last_in_section {
+                        lines.push(Line::from(vec![
+                            Span::styled("   ", Style::default()),
+                            Span::styled("│  ", line_style),
+                            Span::styled("─".repeat(36), Style::default().fg(Color::DarkGray).add_modifier(Modifier::DIM)),
+                        ]));
+                    } else {
+                        lines.push(Line::from(""));
+                    }
                 }
-                
-                // Line 3: Always a spacer line for equal spacing
-                lines.push(Line::from(""));
                 
                 ListItem::new(lines)
             })

@@ -15,6 +15,16 @@ use crate::{
     types::LineType,
 };
 
+#[derive(Clone, Debug, Default)]
+pub struct NavigatorItem {
+    pub line_idx: usize,
+    pub label: String,
+    pub is_section: bool,
+    pub scene_num: Option<String>,
+    pub synopses: Vec<String>,
+    pub color: Option<Color>,
+}
+
 #[derive(Clone)]
 
 pub struct HistoryState {
@@ -157,7 +167,7 @@ pub struct App {
 
     pub compiled_search_regex: Option<regex::Regex>,
 
-    pub scenes: Vec<(usize, String, Option<String>, Vec<String>, Option<Color>)>,
+    pub scenes: Vec<NavigatorItem>,
 
     pub selected_scene: usize,
 
@@ -569,8 +579,7 @@ impl App {
 
     pub fn open_scene_navigator(&mut self) {
         self.scenes.clear();
-        let mut current_scene: Option<(usize, String, Option<String>, Vec<String>, Option<Color>)> =
-            None;
+        let mut current_scene: Option<NavigatorItem> = None;
         let mut last_color: Option<Color> = None;
 
         for row in &self.layout {
@@ -578,7 +587,19 @@ impl App {
                 last_color = row.override_color;
             }
 
-            if row.line_type == LineType::SceneHeading {
+            if row.line_type == LineType::Section {
+                if let Some(s) = current_scene.take() {
+                    self.scenes.push(s);
+                }
+                let label = strip_sigils(&row.raw_text, row.line_type).trim().to_string();
+                self.scenes.push(NavigatorItem {
+                    line_idx: row.line_idx,
+                    label,
+                    is_section: true,
+                    ..Default::default()
+                });
+                last_color = None;
+            } else if row.line_type == LineType::SceneHeading {
                 if let Some(s) = current_scene.take() {
                     self.scenes.push(s);
                 }
@@ -590,21 +611,22 @@ impl App {
                         break;
                     }
                 }
-                let heading = raw_heading.trim().to_uppercase_1to1();
+                let label = raw_heading.trim().to_uppercase_1to1();
                 let color = row.override_color.or(last_color);
-                current_scene = Some((
-                    row.line_idx,
-                    heading,
-                    row.scene_num.clone(),
-                    Vec::new(),
+                current_scene = Some(NavigatorItem {
+                    line_idx: row.line_idx,
+                    label,
+                    is_section: false,
+                    scene_num: row.scene_num.clone(),
+                    synopses: Vec::new(),
                     color,
-                ));
+                });
                 last_color = None;
             } else if row.line_type == LineType::Synopsis {
                 if let Some(ref mut s) = current_scene {
                     let note_text = strip_sigils(&row.raw_text, row.line_type).to_string();
                     if !note_text.is_empty() {
-                        s.3.push(note_text);
+                        s.synopses.push(note_text);
                     }
                 }
                 last_color = None;
@@ -613,11 +635,11 @@ impl App {
             }
 
             if let Some(ref mut s) = current_scene {
-                if s.4.is_none() {
+                if s.color.is_none() {
                     if let Some(c) = row.override_color {
-                        s.4 = Some(c);
+                        s.color = Some(c);
                     } else if let Some(c) = row.fmt.note_color.values().next() {
-                        s.4 = Some(*c);
+                        s.color = Some(*c);
                     }
                 }
             }
@@ -631,8 +653,8 @@ impl App {
         } else {
             self.mode = AppMode::SceneNavigator;
             self.selected_scene = 0;
-            for (idx, (line_idx, _, _, _, _)) in self.scenes.iter().enumerate() {
-                if *line_idx <= self.cursor_y {
+            for (idx, item) in self.scenes.iter().enumerate() {
+                if item.line_idx <= self.cursor_y {
                     self.selected_scene = idx;
                 } else {
                     break;
@@ -1385,10 +1407,10 @@ impl App {
             s if s.starts_with('s') && s[1..].chars().all(|c| c.is_ascii_digit()) => {
                 let scene_num_str = &s[1..];
                 if let Ok(num) = scene_num_str.parse::<usize>() {
-                    if let Some(pos) = self.scenes.iter().position(|(_, _, s_num, _, _)| {
-                        s_num.as_ref().map(|n: &String| n.trim_matches('#').parse::<usize>().unwrap_or(0)) == Some(num)
+                    if let Some(pos) = self.scenes.iter().position(|item| {
+                        item.scene_num.as_ref().map(|n: &String| n.trim_matches('#').parse::<usize>().unwrap_or(0)) == Some(num)
                     }) {
-                        let line_idx = self.scenes[pos].0;
+                        let line_idx = self.scenes[pos].line_idx;
                         self.cursor_y = line_idx;
                         self.cursor_x = 0;
                         *cursor_moved = true;

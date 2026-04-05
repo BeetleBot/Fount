@@ -3024,10 +3024,10 @@ And Beat itself, of course: https://www.beat-app.fi/
         app.open_scene_navigator();
 
         assert_eq!(app.scenes.len(), 2);
-        assert_eq!(app.scenes[0].1, "EXT. WOODS - DAY");
-        assert_eq!(app.scenes[0].4, Some(Color::Red));
-        assert_eq!(app.scenes[1].1, "INT. CABIN - NIGHT");
-        assert_eq!(app.scenes[1].4, Some(Color::Blue));
+        assert_eq!(app.scenes[0].label, "EXT. WOODS - DAY");
+        assert_eq!(app.scenes[0].color, Some(Color::Red));
+        assert_eq!(app.scenes[1].label, "INT. CABIN - NIGHT");
+        assert_eq!(app.scenes[1].color, Some(Color::Blue));
         
         app.lines = vec![
             "INT. CABIN - NIGHT".to_string(),
@@ -3037,7 +3037,7 @@ And Beat itself, of course: https://www.beat-app.fi/
         app.parse_document();
         app.update_layout();
         app.open_scene_navigator();
-        assert_eq!(app.scenes[0].4, Some(Color::Magenta));
+        assert_eq!(app.scenes[0].color, Some(Color::Magenta));
     }
 
     #[test]
