@@ -55,7 +55,7 @@ jobs:
         run: cargo install cargo-wix
 
       - name: Build MSI
-        run: cargo wix --release --target ${{ matrix.target }} -o target/wix/fount-windows-x86_64.msi
+        run: cargo wix --target ${{ matrix.target }} -o target/wix/fount-windows-x86_64.msi
 
 
       # Upload to Release
