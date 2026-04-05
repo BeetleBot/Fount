@@ -3,7 +3,7 @@ use ratatui::{
     layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
     text::{Line, Span},
-    widgets::{Block, Borders, List, ListItem, Paragraph},
+    widgets::{Block, Borders, List, ListItem, Paragraph, Clear},
 };
 use std::collections::HashSet;
 use unicode_width::UnicodeWidthStr;
@@ -28,6 +28,7 @@ pub fn draw(f: &mut Frame, app: &mut App) {
             AppMode::Shortcuts => (" LEGEND ", Color::LightCyan),
             AppMode::Search => (" SEARCH ", Color::LightMagenta),
             AppMode::Home => (" HOME ", Color::LightGreen),
+            AppMode::FilePicker => (" FILE ", Color::LightMagenta),
             _ => (" PROMPT ", Color::LightRed),
         };
 
@@ -853,5 +854,119 @@ pub fn draw(f: &mut Frame, app: &mut App) {
         home_lines.push(Line::from(Span::styled(center("github.com/BeetleBot/Fount"), Style::default().fg(dim).add_modifier(Modifier::DIM))));
 
         f.render_widget(Paragraph::new(home_lines), inner);
+    }
+
+    if app.mode == AppMode::FilePicker {
+        draw_file_picker(f, app, area);
+    }
+}
+
+fn draw_file_picker(f: &mut Frame, app: &mut App, area: Rect) {
+    let state = if let Some(ref mut s) = app.file_picker { s } else { return; };
+    
+    let block_w = 70u16.min(area.width);
+    let block_h = 24u16.min(area.height);
+    let x = area.x + (area.width - block_w) / 2;
+    let y = area.y + (area.height - block_h) / 2;
+    let block_area = Rect::new(x, y, block_w, block_h);
+
+    f.render_widget(Clear, block_area);
+    
+    let title = match state.action {
+        crate::app::FilePickerAction::Open => " Open File ",
+        crate::app::FilePickerAction::Save => " Save As ",
+        crate::app::FilePickerAction::ExportReport => " Export Report ",
+        crate::app::FilePickerAction::ExportScript => " Export Script ",
+    };
+
+    let block = Block::default()
+        .title(Span::styled(title, Style::default().fg(Color::LightMagenta).add_modifier(Modifier::BOLD)))
+        .borders(Borders::ALL)
+        .border_style(Style::default().fg(Color::DarkGray));
+    f.render_widget(block, block_area);
+
+    let inner_area = block_area.inner(ratatui::layout::Margin { horizontal: 2, vertical: 1 });
+    
+    let layout = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([
+            Constraint::Length(1), // Current Dir
+            Constraint::Min(0),    // List
+            Constraint::Length(1), // Input Label
+            Constraint::Length(1), // Filename Input
+        ])
+        .split(inner_area);
+
+    // 1. Current Dir
+    let dir_str = format!(" Dir: {}", state.current_dir.display());
+    f.render_widget(Paragraph::new(Line::from(vec![
+        Span::styled(dir_str, Style::default().fg(Color::DarkGray).add_modifier(Modifier::ITALIC))
+    ])), layout[0]);
+
+    // 2. List of items
+    let items_len = state.items.len();
+    let selected_idx = state.list_state.selected().unwrap_or(0);
+    let mut display_items: Vec<ListItem> = state.items.iter().enumerate().map(|(i, path)| {
+        let is_selected = i == selected_idx;
+        let is_dir = path.is_dir();
+        
+        let name = if let Some(parent) = state.current_dir.parent() {
+            if path == parent {
+                ".. (Parent Directory)".to_string()
+            } else {
+                path.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_else(|| "/".to_string())
+            }
+        } else {
+            path.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_else(|| "/".to_string())
+        };
+
+        let (icon, color) = if is_dir { (" ", Color::LightBlue) } else { ("󰈙 ", Color::White) };
+        
+        let style = if is_selected {
+            Style::default().bg(Color::LightMagenta).fg(Color::Black)
+        } else {
+            Style::default().fg(color)
+        };
+
+        ListItem::new(Line::from(vec![
+            Span::styled(if is_selected { " ⟫ " } else { "   " }, style),
+            Span::styled(icon, style),
+            Span::styled(name, style),
+        ]))
+    }).collect();
+
+    // Add virtual item for custom filename if in Save mode
+    if state.action != crate::app::FilePickerAction::Open && !state.filename_input.is_empty() {
+        let is_selected = selected_idx == items_len;
+        let style = if is_selected {
+            Style::default().bg(Color::LightGreen).fg(Color::Black)
+        } else {
+            Style::default().fg(Color::LightGreen)
+        };
+        display_items.push(ListItem::new(Line::from(vec![
+            Span::styled(if is_selected { " ⟫ " } else { "   " }, style),
+            Span::styled("󰒓 ", style),
+            Span::styled(format!("Confirm: {}", state.filename_input), style.add_modifier(Modifier::BOLD)),
+        ])));
+    }
+
+    let list = List::new(display_items).highlight_style(Style::default());
+    f.render_stateful_widget(list, layout[1], &mut state.list_state);
+
+    // 3. Input Label
+    if state.action != crate::app::FilePickerAction::Open {
+        f.render_widget(Paragraph::new(Line::from(vec![
+            Span::styled(" Filename: ", Style::default().fg(Color::DarkGray))
+        ])), layout[2]);
+
+        // 4. Filename Input
+        let input_style = Style::default().fg(Color::White).bg(Color::Rgb(30, 30, 30));
+        f.render_widget(Paragraph::new(Line::from(vec![
+            Span::styled(format!("  {}", state.filename_input), input_style)
+        ])).block(Block::default().borders(Borders::NONE)), layout[3]);
+        
+        // Cursor for input
+        let cursor_pos = layout[3].x + 2 + UnicodeWidthStr::width(state.filename_input.as_str()) as u16;
+        f.set_cursor_position((cursor_pos, layout[3].y));
     }
 }

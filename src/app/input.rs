@@ -1,7 +1,7 @@
 use std::io;
 use std::path::PathBuf;
 use crossterm::event::{Event, KeyCode, KeyEventKind, KeyModifiers, MouseButton, MouseEventKind};
-use crate::app::{App, AppMode, EnsembleItem};
+use crate::app::{App, AppMode, EnsembleItem, FilePickerAction};
 
 impl App {
 
@@ -390,32 +390,7 @@ impl App {
                                         _ => ("pdf", "screenplay.pdf"),
                                     };
 
-                                    if let Some(path) = rfd::FileDialog::new()
-                                        .set_file_name(default_name)
-                                        .add_filter(ext, &[ext][..])
-                                        .save_file()
-                                    {
-                                        let fountain_text = self.lines.join("\n");
-                                        let result = match self.config.export_format.as_str() {
-                                            "fountain" => self.export_fountain(&path),
-                                            _ => {
-                                                let paper_size = if self.config.paper_size.to_lowercase() == "letter" {
-                                                    crate::pdf::LETTER
-                                                } else {
-                                                    crate::pdf::A4
-                                                };
-                                                crate::pdf::export_to_pdf(&fountain_text, &path, paper_size, self.config.export_bold_scene_headings)
-                                            }
-                                        };
-
-                                        match result {
-                                            Ok(_) => self.set_status(&format!("Exported to {}", path.display())),
-                                            Err(e) => self.set_status(&format!("Error exporting: {}", e)),
-                                        }
-                                        self.mode = AppMode::Normal;
-                                    } else {
-                                        self.set_status("Export cancelled.");
-                                    }
+                                    self.open_file_picker(FilePickerAction::ExportScript, vec![ext.to_string()], Some(default_name.to_string()));
                                 }
                                 4 => {
                                     let formats = ["csv_scene", "csv_char"];
@@ -432,23 +407,7 @@ impl App {
                                         _ => ("csv", "report.csv"),
                                     };
 
-                                    if let Some(path) = rfd::FileDialog::new()
-                                        .set_file_name(default_name)
-                                        .add_filter(ext, &[ext][..])
-                                        .save_file()
-                                    {
-                                        let result = match self.config.report_format.as_str() {
-                                            "csv_char" => self.export_character_csv(&path),
-                                            _ => self.export_scene_csv(&path),
-                                        };
-                                        match result {
-                                            Ok(_) => self.set_status(&format!("Exported to {}", path.display())),
-                                            Err(e) => self.set_status(&format!("Error exporting: {}", e)),
-                                        }
-                                        self.mode = AppMode::Normal;
-                                    } else {
-                                        self.set_status("Export cancelled.");
-                                    }
+                                    self.open_file_picker(FilePickerAction::ExportReport, vec![ext.to_string()], Some(default_name.to_string()));
                                 }
                                 _ => {}
                             }
@@ -668,37 +627,8 @@ impl App {
                                     *cursor_moved = true;
                                 }
                                 1 => {
-                                    // Open File via native picker
-                                    if let Some(path) = rfd::FileDialog::new()
-                                        .add_filter("Fountain scripts", &["fountain"][..])
-                                        .pick_file()
-                                    {
-                                        let content = std::fs::read_to_string(&path)
-                                            .unwrap_or_default()
-                                            .replace('\t', "    ");
-                                        let lines: Vec<String> = if content.trim().is_empty() {
-                                            vec![String::new()]
-                                        } else {
-                                            content.lines().map(str::to_string).collect()
-                                        };
-                                        let new_buf = crate::app::BufferState {
-                                            lines,
-                                            file: Some(path.clone()),
-                                            ..Default::default()
-                                        };
-                                        self.buffers.push(new_buf);
-                                        let new_idx = self.buffers.len() - 1;
-                                        self.has_multiple_buffers = self.buffers.len() > 1;
-                                        self.switch_buffer(new_idx);
-                                        self.parse_document();
-                                        self.update_autocomplete();
-                                        self.update_layout();
-                                        self.mode = AppMode::Normal;
-                                        let name = path.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
-                                        self.set_status(&format!("Opened: {}", name));
-                                        *text_changed = true;
-                                        *cursor_moved = true;
-                                    }
+                                    // Open File via TUI picker
+                                    self.open_file_picker(FilePickerAction::Open, vec!["fountain".to_string()], None);
                                 }
                                 2 => {
                                     // Tutorial
@@ -727,6 +657,59 @@ impl App {
                                     return Ok(true);
                                 }
                                 _ => {}
+                            }
+                        }
+                        _ => {}
+                    }
+                    return Ok(false);
+                }
+                AppMode::FilePicker => {
+                    match key.code {
+                        KeyCode::Esc => {
+                            self.mode = AppMode::Normal;
+                            self.file_picker = None;
+                        }
+                        KeyCode::Up | KeyCode::Char('k') => {
+                            if let Some(ref mut state) = self.file_picker {
+                                let current = state.list_state.selected().unwrap_or(0);
+                                if current > 0 {
+                                    state.list_state.select(Some(current - 1));
+                                }
+                            }
+                        }
+                        KeyCode::Down | KeyCode::Char('j') => {
+                            if let Some(ref mut state) = self.file_picker {
+                                let current = state.list_state.selected().unwrap_or(0);
+                                let max = state.items.len() + (if state.action != FilePickerAction::Open && !state.filename_input.is_empty() { 1 } else { 0 });
+                                if current + 1 < max {
+                                    state.list_state.select(Some(current + 1));
+                                }
+                            }
+                        }
+                        KeyCode::Enter => {
+                            if self.file_picker_enter().map_err(|e| io::Error::new(io::ErrorKind::Other, e.to_string()))? {
+                                return Ok(true);
+                            }
+                        }
+                        KeyCode::Backspace => {
+                            if let Some(ref mut state) = self.file_picker {
+                                if state.action != FilePickerAction::Open {
+                                    state.filename_input.pop();
+                                } else {
+                                    // Navigate up directory
+                                    if let Some(parent) = state.current_dir.parent().map(|p| p.to_path_buf()) {
+                                        state.current_dir = parent;
+                                        state.items = crate::app::file_picker::get_dir_items(&state.current_dir);
+                                        state.list_state.select(Some(0));
+                                    }
+                                }
+                            }
+                        }
+                        KeyCode::Char(c) => {
+                            if let Some(ref mut state) = self.file_picker {
+                                if state.action != FilePickerAction::Open {
+                                    state.filename_input.push(c);
+                                }
                             }
                         }
                         _ => {}

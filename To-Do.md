@@ -9,6 +9,9 @@
     - **Goal**: Implement customizable theme files (e.g., `.toml` or `.json` for colors like "Solarized" or "Paper") and soft UI popups with drop-shadows (using Ratatui's `Clear` widget and block borders) for the command palette (`/`) and settings (`Ctrl+P`).
 - [ ] **Release Automation (GitHub Actions)**: Get `.msi`/`.exe` and `.dmg` installers ready for future releases. Tentative timing. 
 - [ ] **Home Page**: A simple landing area when opening without a file. (New, Open, Tutorial, Exit).
+- [ ] Investigate `krilla` sub-dependencies and configuration for build-time optimization.
+- [ ] Explore potential alternatives to `krilla` that maintain high PDF quality but have a smaller footprint.
+- [ ] Further optimize `Cargo.toml` (regex features, lto, etc.).
 - [ ] **PDF Export**: The big one—implementing a clean PDF generator.
 - [ ] **Structure & Navigation**: 
     - Way to implement structures into the screenplay.

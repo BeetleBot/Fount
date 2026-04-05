@@ -28,15 +28,15 @@ arboard = { version = "3", features = ["wayland-data-control"] }
 ratatui = "0.29.0"
 crossterm = { version = "0.28.1", features = ["event-stream"] }
 unicode-width = "0.2.0"
-regex = "1.11.1"
-clap = { version = "4.5.23", features = ["derive"] }
+regex = "1.12"
+clap = { version = "4.5", features = ["derive"] }
 directories = "6.0.0"
 supports-unicode = "3.0.0"
 supports-color = "3.0.2"
 krilla = "0.7.0"
 bitflags = "2"
-unicode-properties = "0.1.4"
-rfd = "0.17.2"
+unicode-properties = "0.1"
+# rfd is removed for build performance
 
 [dev-dependencies]
 criterion = "0.5.1"
@@ -45,3 +45,10 @@ proptest = "1.5.0"
 [[bench]]
 name = "engine_bench"
 harness = false
+
+[profile.release]
+opt-level = "s"              # Optimize for size
+lto = "thin"                 # Enable thin Link Time Optimization
+codegen-units = 1            # Reduce parallel codegen units for better optimization
+panic = "abort"              # Reduce binary size by avoiding stack unwinding
+strip = true                 # Automatically strip symbols from the binary

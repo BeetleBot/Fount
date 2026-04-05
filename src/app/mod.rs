@@ -1,4 +1,4 @@
-use std::{collections::HashSet, fs, io, path::PathBuf};
+use std::{collections::HashSet, fs, io, path::{Path, PathBuf}};
 
 use ratatui::{
     layout::Rect,
@@ -91,6 +91,24 @@ pub enum AppMode {
     Command,
 
     Home,
+    FilePicker,
+}
+
+#[derive(PartialEq, Debug, Clone)]
+pub enum FilePickerAction {
+    Open,
+    Save,
+    ExportReport,
+    ExportScript,
+}
+
+pub struct FilePickerState {
+    pub current_dir: PathBuf,
+    pub items: Vec<PathBuf>,
+    pub list_state: ListState,
+    pub action: FilePickerAction,
+    pub filename_input: String,
+    pub extension_filter: Vec<String>,
 }
 
 #[derive(Clone, Default)]
@@ -218,6 +236,7 @@ pub struct App {
     pub selection_anchor: Option<(usize, usize)>,
 
     pub home_selected: usize,
+    pub file_picker: Option<FilePickerState>,
 }
 
 impl Drop for App {
@@ -349,6 +368,7 @@ impl App {
             command_error: false,
             selection_anchor: None,
             home_selected: 0,
+            file_picker: None,
         };
 
         if !app.buffers.is_empty() {
@@ -520,7 +540,7 @@ impl App {
                 .filter(|p| !p.as_os_str().is_empty())
                 .map(|p| p.to_path_buf())
                 .unwrap_or_else(|| {
-                    std::env::current_dir().unwrap_or_else(|_| std::path::PathBuf::from("."))
+                    std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."))
                 });
 
             let base_name = file
@@ -1459,13 +1479,7 @@ impl App {
                     .map(|n| n.to_string_lossy().into_owned())
                     .unwrap_or_else(|| "unnamed.fountain".to_string());
                 
-                if let Some(path) = rfd::FileDialog::new()
-                    .set_file_name(&default_name)
-                    .add_filter("Fountain scripts", &["fountain"][..])
-                    .save_file()
-                {
-                    self.save_as(path)?;
-                }
+                self.open_file_picker(FilePickerAction::Save, vec!["fountain".to_string()], Some(default_name));
             }
             "q" => {
                 if self.dirty && !self.is_tutorial {
@@ -1656,20 +1670,15 @@ impl App {
                 self.home_selected = 0;
             }
             "o" => {
-                let path_opt = if let Some(p) = args.get(0) {
-                    Some(PathBuf::from(p))
-                } else {
-                    rfd::FileDialog::new()
-                        .add_filter("Fountain scripts", &["fountain"][..])
-                        .pick_file()
-                };
-
-                if let Some(path) = path_opt {
-                    match std::fs::read_to_string(&path) {
+                let path_arg = args.get(0).map(|p| PathBuf::from(*p));
+                if let Some(path) = path_arg {
+                    // Direct open if path provided
+                    let path_ref: &Path = path.as_ref();
+                    match std::fs::read_to_string::<&Path>(path_ref) {
                         Ok(content) => {
                             let lines: Vec<String> = content.replace('\t', "    ").lines().map(str::to_string).collect();
                             let new_buf = crate::app::BufferState {
-                                lines,
+                                lines: if lines.is_empty() { vec![String::new()] } else { lines },
                                 file: Some(path.clone()),
                                 ..Default::default()
                             };
@@ -1687,6 +1696,9 @@ impl App {
                         }
                         Err(e) => self.set_error(&format!("Error opening file: {}", e)),
                     }
+                } else {
+                    // Open picker if no path provided
+                    self.open_file_picker(FilePickerAction::Open, vec!["fountain".to_string()], None);
                 }
             }
             "bn" => {
@@ -1865,6 +1877,7 @@ impl App {
 pub mod ui;
 pub mod editor;
 pub mod input;
+pub mod file_picker;
 
 #[cfg(test)]
 mod tests;
