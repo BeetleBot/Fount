@@ -87,12 +87,9 @@ pub fn draw(f: &mut Frame, app: &mut App) {
     let global_pad = text_area.width.saturating_sub(page_w) / 2;
 
     let mut pad_top = 0;
-    let (mut vis_row, mut _vis_x) = (0, 0);
 
     if app.mode != AppMode::Home {
-        let (v_r, v_x) = find_visual_cursor(&app.layout, app.cursor_y, app.cursor_x);
-        vis_row = v_r;
-        _vis_x = v_x;
+        let (vis_row, _vis_x) = find_visual_cursor(&app.layout, app.cursor_y, app.cursor_x);
 
         if app.config.strict_typewriter_mode {
             let absolute_center = area.height / 2;
@@ -684,14 +681,7 @@ pub fn draw(f: &mut Frame, app: &mut App) {
             if app.command_input.is_empty() && !app.command_error {
                 spans.push(Span::styled(" type a command...", Style::default().fg(Color::DarkGray)));
             }
-        } else if let Some(msg) = &app.status_msg {
-            let style = if app.command_error {
-                Style::default().fg(Color::Red)
-            } else {
-                Style::default().fg(Color::DarkGray).add_modifier(Modifier::ITALIC)
-            };
-            spans.push(Span::styled(msg, style));
-        } else {
+        } else if matches!(app.mode, AppMode::Search | AppMode::PromptSave | AppMode::PromptFilename) {
             match app.mode {
                 AppMode::Search => {
                     let prompt_base = if app.last_search.is_empty() {
@@ -703,8 +693,17 @@ pub fn draw(f: &mut Frame, app: &mut App) {
                 }
                 AppMode::PromptSave => spans.push(Span::raw("SAVE MODIFIED SCRIPT? (Y/N/C) ")),
                 AppMode::PromptFilename => spans.push(Span::raw(format!("FILENAME: {} ", app.filename_input))),
-                _ => spans.push(Span::styled("COMMANDS [F1]", Style::default().fg(Color::DarkGray))),
+                _ => {}
             }
+        } else if let Some(msg) = &app.status_msg {
+            let style = if app.command_error {
+                Style::default().fg(Color::Red)
+            } else {
+                Style::default().fg(Color::DarkGray).add_modifier(Modifier::ITALIC)
+            };
+            spans.push(Span::styled(msg, style));
+        } else {
+            spans.push(Span::styled("COMMANDS [F1]", Style::default().fg(Color::DarkGray)));
         }
 
         let word_count = app.total_word_count();

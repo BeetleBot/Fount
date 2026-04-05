@@ -268,7 +268,8 @@ impl App {
                     match key.code {
                         KeyCode::Char('y') | KeyCode::Char('Y') if !ctrl => {
                             if self.file.is_some() && self.save().is_ok() {
-                                if self.exit_after_save && self.close_current_buffer() {
+                                if self.exit_after_save {
+                                    self.close_current_buffer();
                                     return Ok(true);
                                 }
                                 self.mode = AppMode::Normal;
@@ -282,7 +283,8 @@ impl App {
                             self.mode = AppMode::PromptFilename;
                         }
                         KeyCode::Char('n') | KeyCode::Char('N') if !ctrl => {
-                            if self.exit_after_save && self.close_current_buffer() {
+                            if self.exit_after_save {
+                                self.close_current_buffer();
                                 return Ok(true);
                             }
                             self.mode = AppMode::Normal;
@@ -314,7 +316,8 @@ impl App {
                                 self.file = Some(PathBuf::from(self.filename_input.trim()));
                                 match self.save() {
                                     Ok(_) => {
-                                        if self.exit_after_save && self.close_current_buffer() {
+                                        if self.exit_after_save {
+                                            self.close_current_buffer();
                                             return Ok(true);
                                         }
                                         self.mode = AppMode::Normal;
@@ -636,7 +639,18 @@ impl App {
                         KeyCode::Down | KeyCode::Char('j') => {
                             self.home_selected = (self.home_selected + 1).min(HOME_ITEMS - 1);
                         }
-                        KeyCode::Enter | KeyCode::Char(' ') => {
+                        KeyCode::Enter | KeyCode::Char(' ') | KeyCode::Char('\n') |
+                        KeyCode::Char('n') | KeyCode::Char('N') |
+                        KeyCode::Char('o') | KeyCode::Char('O') |
+                        KeyCode::Char('t') | KeyCode::Char('T') |
+                        KeyCode::Char('q') | KeyCode::Char('Q') => {
+                            match key.code {
+                                KeyCode::Char('n') | KeyCode::Char('N') => self.home_selected = 0,
+                                KeyCode::Char('o') | KeyCode::Char('O') => self.home_selected = 1,
+                                KeyCode::Char('t') | KeyCode::Char('T') => self.home_selected = 2,
+                                KeyCode::Char('q') | KeyCode::Char('Q') => self.home_selected = 3,
+                                _ => {},
+                            }
                             match self.home_selected {
                                 0 => {
                                     // New File
@@ -709,7 +723,7 @@ impl App {
                                     *cursor_moved = true;
                                 }
                                 3 => {
-                                    // Exit
+                                    // Exit App
                                     return Ok(true);
                                 }
                                 _ => {}
@@ -728,7 +742,7 @@ impl App {
                         }
                         KeyCode::Tab => {
                             let commands = vec![
-                                "w", "q", "q!", "wq",
+                                "w", "q", "q!", "wq", "ex",
                                 "renum", "clearnum", "locknum", "unlocknum",
                                 "set", "search",
                                 "u", "undo", "redo", "copy", "cut", "paste", "pos",
@@ -757,7 +771,9 @@ impl App {
                             self.command_error = false;
                         }
                         KeyCode::Enter => {
-                            self.execute_command(text_changed, cursor_moved, update_target_x)?;
+                            if self.execute_command(text_changed, cursor_moved, update_target_x)? {
+                                return Ok(true);
+                            }
                         }
                         KeyCode::Char(c) => {
                             self.command_input.push(c);

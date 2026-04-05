@@ -297,6 +297,8 @@ impl App {
 
         let has_multiple_buffers = buffers.len() > 1;
 
+        let initial_mode = if buffers.is_empty() { AppMode::Home } else { AppMode::Normal };
+
         let mut app = Self {
             config,
             buffers,
@@ -321,7 +323,7 @@ impl App {
             redo_stack: Vec::new(),
             last_edit: LastEdit::None,
 
-            mode: if buffers.is_empty() { AppMode::Home } else { AppMode::Normal },
+            mode: initial_mode,
             exit_after_save: false,
             filename_input: String::new(),
 
@@ -349,17 +351,14 @@ impl App {
             home_selected: 0,
         };
 
-        let mut first_buf = std::mem::take(&mut app.buffers[0]);
-        app.swap_buffer(&mut first_buf);
+        if !app.buffers.is_empty() {
+            let mut first_buf = std::mem::take(&mut app.buffers[0]);
+            app.swap_buffer(&mut first_buf);
 
-        app.parse_document();
-        app.update_autocomplete();
-        app.update_layout();
-        app.target_visual_x = app.current_visual_x();
-
-        // Show home screen if opened without a file argument
-        if cli.files.is_empty() {
-            app.mode = AppMode::Home;
+            app.parse_document();
+            app.update_autocomplete();
+            app.update_layout();
+            app.target_visual_x = app.current_visual_x();
         }
 
         app
@@ -394,10 +393,13 @@ impl App {
             return;
         }
 
-        let mut current_state = BufferState::default();
+        // Only save current state if it contains actual buffer data
+        if !self.lines.is_empty() {
+            let mut current_state = BufferState::default();
+            self.swap_buffer(&mut current_state);
+            self.buffers[self.current_buf_idx] = current_state;
+        }
 
-        self.swap_buffer(&mut current_state);
-        self.buffers[self.current_buf_idx] = current_state;
         self.current_buf_idx = next_idx;
 
         let mut next_state = std::mem::take(&mut self.buffers[self.current_buf_idx]);
