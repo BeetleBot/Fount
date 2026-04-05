@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2026-04-06
+
+### Added
+- **TUI File Picker**: Native, high-performance file selection with zero GUI dependencies, featuring scrolling support and home directory defaults.
+- **Structural Thread Navigation**: Completely refined scene navigator with new **Structural Thread** support, integrating Sections, Scenes, and Synopses for advanced script organization.
+- **Character Reports Pane**: Dedicated new pane for comprehensive character analysis and reporting.
+- **Interactive Tutorial**: Dedicated tutorial mode with rewritten documentation using the new engine features.
+
+### Changed
+- **Command-First UI**: Transitioned the interface to be primarily command-based. Basic functions and pane-opening shortcuts are preserved, while most secondary actions have migrated to the command bar.
+- **Robust Error Handling**: Significantly improved application stability by replacing unsafe `.unwrap()` calls with proper error propagation and recovery logic.
+- **Home Screen Refinement**: Refined navigation, buffer management, and active UI prompt handling.
+- **Build Optimization**: Smaller binary size and faster compilation through `rfd` removal and refined release profiles.
+
+### Fixed
+- **Buffer Protection**: Enhanced protection mechanisms to prevent accidental document loss during complex edits.
+- Removed unused `NavigatorItem` and other redundant imports.
+- Fixed all unit and doc-tests for the updated engine.
+
 ## [0.4.3] - 2026-04-05
 
 ### Fixed

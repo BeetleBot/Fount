@@ -1,24 +1,22 @@
 # Fount: To-Do
 
 ### In the Works
-- [ ] **Stability**: Eradicate the "Panics" (The `unwrap()` Problem).
-    - **Context**: The codebase currently relies heavily on `.unwrap()` in application logic (parsing, PDF export, layout). If a regex fails or a weird character is encountered, the app hard crashes.
-    - **Goal**: Refactor `.unwrap()` calls into proper error handling (e.g., `Result`, `Option`, or graceful fallbacks) so the editor degrades gracefully and shows error popups instead of kicking the user to the bash prompt.
 - [ ] **Aesthetics**: Cinematic Transitions & Themes.
     - **Context**: The current TUI is functional and clean, but can be pushed further to feel like a premium, native application.
     - **Goal**: Implement customizable theme files (e.g., `.toml` or `.json` for colors like "Solarized" or "Paper") and soft UI popups with drop-shadows (using Ratatui's `Clear` widget and block borders) for the command palette (`/`) and settings (`Ctrl+P`).
 - [ ] **Release Automation (GitHub Actions)**: Get `.msi`/`.exe` and `.dmg` installers ready for future releases. Tentative timing. 
-- [ ] **Home Page**: A simple landing area when opening without a file. (New, Open, Tutorial, Exit).
-- [ ] Investigate `krilla` sub-dependencies and configuration for build-time optimization.
-- [ ] Explore potential alternatives to `krilla` that maintain high PDF quality but have a smaller footprint.
-- [ ] Further optimize `Cargo.toml` (regex features, lto, etc.).
-- [ ] **PDF Export**: The big one—implementing a clean PDF generator.
-- [ ] **Structure & Navigation**: 
-    - Way to implement structures into the screenplay.
-    - Making those structures visible in the Scene Navigator.
 - [ ] **Settings Fix**: Ensure settings changed in the pane actually save back to the config file.
 
 ### Already Done
+- [x] **v0.5.0: The Structural Release**:
+    - **Structural Thread**: Completely refined scene navigator integrating Sections, Scenes, and Synopses.
+    - **Command-First UI**: Migrated secondary hotkeys to the command bar for a cleaner writing experience.
+    - **TUI File Picker**: Native, high-performance file selection without GUI dependencies.
+    - **Robust Error Handling**: Eradicated the `unwrap()` problem in core logic for rock-solid stability.
+    - **Interactive Tutorial**: Dedicated tutorial mode with real-time feedback and buffer protection.
+    - **Home Page**: Aesthetic landing area for quick script access.
+    - **PDF Export**: Robust, integrated PDF screenplay generation.
+    - **Build Optimization**: Refined release profiles, LTO, and dependency slimming.
 - [x] **Refactoring app.rs**: Successfully split the monolithic 200KB file into a clean, modular structure (`ui.rs`, `editor.rs`, `input.rs`, `tests.rs`).
 - [x] **App Identity**: Completely renamed to **Fount**. Terminal command is now `fount`.
 - [x] **Scene Navigator (Alt+S)**:
