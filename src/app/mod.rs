@@ -807,6 +807,27 @@ impl App {
 
     pub fn parse_document(&mut self) {
         self.types = Parser::parse(&self.lines);
+
+        // Forced Uppercase Transformation for key elements
+        for i in 0..self.lines.len() {
+            let lt = self.types[i];
+            if matches!(
+                lt,
+                LineType::SceneHeading
+                    | LineType::Character
+                    | LineType::DualDialogueCharacter
+                    | LineType::Transition
+            ) {
+                // Determine the clean upper version to avoid unnecessary updates
+                let current = &self.lines[i];
+                let upper = current.to_uppercase_1to1();
+                if *current != upper {
+                    self.lines[i] = upper;
+                    self.dirty = true;
+                }
+            }
+        }
+
         self.characters.clear();
         self.locations.clear();
 

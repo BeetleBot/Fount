@@ -3071,3 +3071,23 @@ And Beat itself, of course: https://www.beat-app.fi/
         app.open_scene_navigator();
         assert_eq!(app.scenes[0].4, Some(Color::Magenta));
     }
+
+    #[test]
+    fn test_forced_uppercase_transformation() {
+        let mut app = create_empty_app();
+        app.lines = vec![
+            "ext. woods - day".to_string(), // Scene Heading
+            "Action line.".to_string(),
+            "".to_string(),
+            "@john".to_string(),            // Character
+            "He waits.".to_string(),
+            "".to_string(),
+            "cut to:".to_string(),          // Transition
+        ];
+        app.parse_document();
+
+        assert_eq!(app.lines[0], "EXT. WOODS - DAY");
+        assert_eq!(app.lines[3], "@JOHN");
+        assert_eq!(app.lines[6], "CUT TO:");
+        assert_eq!(app.lines[1], "Action line."); // Should stay original
+    }

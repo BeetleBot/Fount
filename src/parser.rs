@@ -248,10 +248,10 @@ impl Parser {
     
     
     pub fn is_transition_format(s: &str) -> bool {
-        (s.ends_with(':') && Self::is_uppercase_content(s))
-            || s == "FADE TO BLACK."
-            || s == "FADE OUT."
-            || s == "CUT TO BLACK."
+        s.ends_with(':')
+            || s.eq_ignore_ascii_case("FADE TO BLACK.")
+            || s.eq_ignore_ascii_case("FADE OUT.")
+            || s.eq_ignore_ascii_case("CUT TO BLACK.")
     }
 
     fn forced_type(trim: &str, prev_empty: bool) -> Option<LineType> {
