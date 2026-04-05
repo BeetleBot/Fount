@@ -581,8 +581,6 @@ pub fn draw(f: &mut Frame, app: &mut App) {
     // -- Cursor Handling --
     if app.mode != AppMode::Command && app.mode != AppMode::Home {
         let (vis_row, vis_x) = find_visual_cursor(&app.layout, app.cursor_y, app.cursor_x);
-        let global_pad = if app.config.show_scene_numbers { 4 } else { 0 };
-        let pad_top = if !app.config.focus_mode { 1 } else { 0 };
 
         match app.mode {
             AppMode::Normal => {
