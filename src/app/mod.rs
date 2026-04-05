@@ -576,7 +576,15 @@ impl App {
                 if let Some(s) = current_scene.take() {
                     self.scenes.push(s);
                 }
-                let heading = strip_sigils(&row.raw_text, row.line_type).to_uppercase_1to1();
+                let mut raw_heading = strip_sigils(&row.raw_text, row.line_type).to_string();
+                while let Some(start) = raw_heading.find("[[") {
+                    if let Some(end_offset) = raw_heading[start..].find("]]") {
+                        raw_heading.replace_range(start..start + end_offset + 2, "");
+                    } else {
+                        break;
+                    }
+                }
+                let heading = raw_heading.trim().to_uppercase_1to1();
                 let color = row.override_color.or(last_color);
                 current_scene = Some((
                     row.line_idx,
@@ -594,7 +602,7 @@ impl App {
                     }
                 }
                 last_color = None;
-            } else if row.line_type != LineType::Empty {
+            } else if !matches!(row.line_type, LineType::Empty | LineType::Note | LineType::Synopsis) {
                 last_color = None;
             }
 

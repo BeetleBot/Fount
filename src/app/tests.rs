@@ -3038,3 +3038,36 @@ And Beat itself, of course: https://www.beat-app.fi/
             "Reference render does not match expected output."
         );
     }
+
+    #[test]
+    fn test_open_scene_navigator_colors() {
+        let mut app = create_empty_app();
+        app.lines = vec![
+            "EXT. WOODS - DAY [[red]]".to_string(),
+            "Action line.".to_string(),
+            "".to_string(),
+            "[[blue]]".to_string(),
+            "".to_string(),
+            "INT. CABIN - NIGHT".to_string(),
+            "[[marker green]]".to_string(),
+        ];
+        app.parse_document();
+        app.update_layout();
+        app.open_scene_navigator();
+
+        assert_eq!(app.scenes.len(), 2);
+        assert_eq!(app.scenes[0].1, "EXT. WOODS - DAY");
+        assert_eq!(app.scenes[0].4, Some(Color::Red));
+        assert_eq!(app.scenes[1].1, "INT. CABIN - NIGHT");
+        assert_eq!(app.scenes[1].4, Some(Color::Blue));
+        
+        app.lines = vec![
+            "INT. CABIN - NIGHT".to_string(),
+            "Action here.".to_string(),
+            "[[marker magenta]]".to_string(),
+        ];
+        app.parse_document();
+        app.update_layout();
+        app.open_scene_navigator();
+        assert_eq!(app.scenes[0].4, Some(Color::Magenta));
+    }

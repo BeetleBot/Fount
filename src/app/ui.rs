@@ -298,16 +298,21 @@ pub fn draw(f: &mut Frame, app: &mut App) {
             .scenes
             .iter()
             .enumerate()
-            .map(|(i, (_, heading, snum, synopses, _))| {
+            .map(|(i, (_, heading, snum, synopses, color))| {
                 let is_selected = i == app.selected_scene;
                 let mut lines = Vec::new();
                 
-                // Navigator is monochrome per request
-                let base_style = if is_selected {
+                // Base style for the heading
+                let mut base_style = if is_selected {
                     Style::default().add_modifier(Modifier::REVERSED).add_modifier(Modifier::BOLD)
                 } else {
                     Style::default()
                 };
+
+                // Apply custom marker color if present
+                if let Some(c) = color {
+                    base_style.fg = Some(*c);
+                }
                 
                 let dim_style = if is_selected {
                     base_style
