@@ -18,7 +18,16 @@ pub fn draw(f: &mut Frame, app: &mut App) {
     let area = f.area();
 
     f.render_widget(ratatui::widgets::Clear, area);
-    let panel_style = Style::default().add_modifier(Modifier::REVERSED);
+
+    let (mode_str, mode_bg) = match app.mode {
+        AppMode::Normal => (" NORMAL ", Color::LightBlue),
+        AppMode::Command => (" COMMAND ", Color::Yellow),
+        AppMode::SceneNavigator => (" NAVIGATOR ", Color::LightCyan),
+        AppMode::SettingsPane => (" SETTINGS ", Color::LightCyan),
+        AppMode::ExportPane => (" EXPORT ", Color::LightCyan),
+        AppMode::Search => (" SEARCH ", Color::LightMagenta),
+        _ => (" PROMPT ", Color::LightRed),
+    };
 
 
     let is_prompt = app.mode != AppMode::Normal;
@@ -27,11 +36,7 @@ pub fn draw(f: &mut Frame, app: &mut App) {
     let show_bottom = !app.config.focus_mode || is_prompt || has_status;
 
     let in_command_mode = app.mode == AppMode::Command;
-    let footer_height = if in_command_mode {
-        if show_bottom { 2 } else { 1 }
-    } else {
-        if show_bottom { 1 } else { 0 }
-    };
+    let footer_height = if show_bottom { 1 } else { 0 };
 
     let chunks = Layout::default()
         .direction(Direction::Vertical)
@@ -54,7 +59,7 @@ pub fn draw(f: &mut Frame, app: &mut App) {
 
         let sidebar_block = Block::default()
             .borders(Borders::RIGHT)
-            .border_style(panel_style);
+            .border_style(Style::default().fg(Color::DarkGray).add_modifier(Modifier::DIM));
         f.render_widget(sidebar_block, app.sidebar_area);
     }
 
@@ -69,7 +74,7 @@ pub fn draw(f: &mut Frame, app: &mut App) {
 
         let settings_block = Block::default()
             .borders(Borders::LEFT)
-            .border_style(panel_style);
+            .border_style(Style::default().fg(mode_bg).add_modifier(Modifier::DIM));
         f.render_widget(settings_block, app.settings_area);
     }
 
@@ -291,91 +296,59 @@ pub fn draw(f: &mut Frame, app: &mut App) {
             .scenes
             .iter()
             .enumerate()
-            .map(|(i, (_, heading, snum, synopses, color))| {
+            .map(|(i, (_, heading, snum, synopses, _))| {
                 let is_selected = i == app.selected_scene;
+                let mut lines = Vec::new();
+                
+                // Navigator is monochrome per request
                 let base_style = if is_selected {
-                    Style::default().add_modifier(Modifier::REVERSED)
+                    Style::default().add_modifier(Modifier::REVERSED).add_modifier(Modifier::BOLD)
                 } else {
                     Style::default()
                 };
-
-                let heading_style = if let Some(c) = color {
-                    base_style.fg(*c)
-                } else {
+                
+                let dim_style = if is_selected {
                     base_style
-                };
-
-                let mut lines = Vec::new();
-                let heading_text = if let Some(s) = snum {
-                    format!("{} - {}", s, heading)
                 } else {
-                    heading.clone()
+                    Style::default().add_modifier(Modifier::DIM)
                 };
 
-                let prefix = if is_selected { " » " } else { "   " };
-                let max_w = 40;
-                let mut current_line = String::new();
-                let mut first_line = true;
+                let prefix = if is_selected { " ⟫ " } else { "   " };
+                let s_tag = if let Some(s) = snum {
+                    format!("{} ", s)
+                } else {
+                    String::new()
+                };
 
-                for word in heading_text.split_whitespace() {
-                    if !current_line.is_empty()
-                        && prefix.len() + current_line.len() + word.len() + 1 > max_w
-                    {
-                        lines.push(Line::from(vec![
-                            Span::styled(if first_line { prefix } else { "   " }, base_style),
-                            Span::styled(current_line.clone(), heading_style),
-                        ]));
-                        current_line.clear();
-                        first_line = false;
-                    }
-                    if !current_line.is_empty() {
-                        current_line.push(' ');
-                    }
-                    current_line.push_str(word);
-                }
-                if !current_line.is_empty() {
+                // Line 1: Heading
+                lines.push(Line::from(vec![
+                    Span::styled(prefix, base_style),
+                    Span::styled(s_tag, base_style),
+                    Span::styled(heading.to_uppercase_1to1(), base_style),
+                ]));
+
+                // Line 2: Synopsis or placeholder
+                if let Some(syn) = synopses.first() {
                     lines.push(Line::from(vec![
-                        Span::styled(if first_line { prefix } else { "   " }, base_style),
-                        Span::styled(current_line, heading_style),
+                        Span::styled("     ", dim_style),
+                        Span::styled(syn, dim_style.add_modifier(Modifier::ITALIC)),
                     ]));
-                } else if first_line {
-                    // Always show at least one line for the heading
+                } else {
                     lines.push(Line::from(vec![
-                        Span::styled(prefix, base_style),
-                        Span::styled("", heading_style),
+                        Span::styled("     ", dim_style),
+                        Span::styled("no synopsis", dim_style.add_modifier(Modifier::ITALIC)),
                     ]));
                 }
-
-                for syn in synopses {
-                    let max_w = 40;
-                    let mut current_line = String::new();
-                    for word in syn.split_whitespace() {
-                        if current_line.len() + word.len() + 1 > max_w {
-                            lines.push(Line::from(vec![
-                                Span::styled("     ", base_style),
-                                Span::styled(current_line.clone(), base_style),
-                            ]));
-                            current_line.clear();
-                        }
-                        if !current_line.is_empty() {
-                            current_line.push(' ');
-                        }
-                        current_line.push_str(word);
-                    }
-                    if !current_line.is_empty() {
-                        lines.push(Line::from(vec![
-                            Span::styled("     ", base_style),
-                            Span::styled(current_line, base_style),
-                        ]));
-                    }
-                }
+                
+                // Line 3: Always a spacer line for equal spacing
                 lines.push(Line::from(""));
+                
                 ListItem::new(lines)
             })
             .collect();
 
-        let list = List::new(items);
-        f.render_stateful_widget(list, app.sidebar_area, &mut app.navigator_state);
+        let list = List::new(items).highlight_style(Style::default());
+        f.render_stateful_widget(list, app.sidebar_area.inner(ratatui::layout::Margin { horizontal: 0, vertical: 1 }), &mut app.navigator_state);
     }
 
 
@@ -393,22 +366,29 @@ pub fn draw(f: &mut Frame, app: &mut App) {
             .into_iter()
             .enumerate()
             .map(|(i, (label, value))| {
-                let style = if i == app.selected_setting {
-                    Style::default().add_modifier(Modifier::REVERSED)
+                let is_selected = i == app.selected_setting;
+                let style = if is_selected {
+                    Style::default().fg(Color::Black).bg(mode_bg).add_modifier(Modifier::BOLD)
                 } else {
                     Style::default()
                 };
-                let status = if *value { "[X]" } else { "[ ]" };
-                ListItem::new(format!(" {} {} [?]", status, label)).style(style)
+                
+                let (icon, icon_style) = if *value { 
+                    ("󰄬 ", Style::default().fg(Color::Green)) 
+                } else { 
+                    ("󰄱 ", Style::default().fg(Color::DarkGray)) 
+                };
+
+                ListItem::new(Line::from(vec![
+                    Span::styled(if is_selected { " ⟫ " } else { "   " }, style),
+                    Span::styled(icon, if is_selected { style } else { icon_style }),
+                    Span::styled(label, style),
+                ]))
             })
             .collect();
 
-        let list = List::new(items).block(
-            Block::default()
-                .title(" Settings  [?] ")
-                .border_style(panel_style),
-        );
-        f.render_widget(list, app.settings_area);
+        let list = List::new(items);
+        f.render_widget(list, app.settings_area.inner(ratatui::layout::Margin { horizontal: 0, vertical: 1 }));
     }
 
     if app.mode == AppMode::ExportPane {
@@ -423,93 +403,115 @@ pub fn draw(f: &mut Frame, app: &mut App) {
             .into_iter()
             .enumerate()
             .map(|(i, label)| {
-                let style = if i == app.selected_export_option {
-                    Style::default().add_modifier(Modifier::REVERSED)
+                let is_selected = i == app.selected_export_option;
+                let style = if is_selected {
+                    Style::default().fg(Color::Black).bg(mode_bg).add_modifier(Modifier::BOLD)
                 } else {
                     Style::default()
                 };
-                ListItem::new(label).style(style)
+                ListItem::new(Line::from(vec![
+                    Span::styled(if is_selected { " ⟫ " } else { "   " }, style),
+                    Span::styled(label, style),
+                ]))
             })
             .collect();
 
-        let list = List::new(items).block(
-            Block::default()
-                .title(" Export  [?] ")
-                .border_style(panel_style),
-        );
-        f.render_widget(list, app.settings_area);
+        let list = List::new(items);
+        f.render_widget(list, app.settings_area.inner(ratatui::layout::Margin { horizontal: 0, vertical: 1 }));
     }
 
     if app.mode == AppMode::Shortcuts {
-        let items = vec![
-            ListItem::new("  ── COMMANDS ──").style(Style::default().add_modifier(Modifier::DIM)),
-            ListItem::new("  /w            Save Buffer"),
-            ListItem::new("  /q            Quit Application"),
-            ListItem::new("  /renum        Renumber Scenes"),
-            ListItem::new("  /set [opt]    Change Settings"),
-            ListItem::new("  /search [q]   Global Search"),
-            ListItem::new("  /s[num]       Jump to Scene"),
-            ListItem::new(""),
-            ListItem::new("  ── EDITING ──").style(Style::default().add_modifier(Modifier::DIM)),
-            ListItem::new("  ^A            Select All"),
-            ListItem::new("  ^C            Copy Selection"),
-            ListItem::new("  ^X            Cut Selection"),
-            ListItem::new("  ^V            Paste Clipboard"),
-            ListItem::new("  Shift+Arrows  Manual Selection"),
-            ListItem::new(""),
-            ListItem::new("  ── PANES ──").style(Style::default().add_modifier(Modifier::DIM)),
-            ListItem::new("  ^H            Scene Navigator"),
-            ListItem::new("  ^P            Settings Pane"),
-            ListItem::new("  ^E            Export Options"),
-            ListItem::new("  F1            Command Legend"),
+        let categories = vec![
+            (" NAVIGATION ", vec![
+                ("^H        ", "Scene Navigator"),
+                ("^P        ", "Settings Pane"),
+                ("^E        ", "Export Options"),
+                ("^. / ^>   ", "Next Buffer"),
+                ("^, / ^<   ", "Prev Buffer"),
+                ("Arrows    ", "Move Cursor"),
+                ("^+Arrows  ", "Jump Words"),
+                ("Home/End  ", "Quick Jump"),
+            ]),
+            (" EDITING ", vec![
+                ("^A        ", "Select All"),
+                ("^C        ", "Copy selection"),
+                ("^X        ", "Cut selected/line"),
+                ("^V        ", "Paste clipboard"),
+                ("Shift+Arr ", "Select Text"),
+                ("^Backspace", "Delete word back"),
+                ("^Delete   ", "Delete word ahead"),
+                ("Enter     ", "Add Line"),
+                ("Shift+Ent ", "Hard Break"),
+            ]),
+            (" COMMANDS ", vec![
+                ("/w [path] ", "Save Buffer"),
+                ("/q / /wq  ", "Exit App"),
+                ("/renum    ", "Renumber Scenes"),
+                ("/clearnum ", "Clear numbers"),
+                ("/injectnum", "Tag Scene"),
+                ("/[line]   ", "Jump to Line"),
+                ("/s[num]   ", "Jump to Scene"),
+                ("/search   ", "Global Search"),
+                ("/u / /redo", "Undo / Redo"),
+                ("/set [opt]", "Change Settings"),
+                ("/pos      ", "Cursor Position"),
+            ]),
         ];
 
-        let list = List::new(items).block(
-            Block::default()
-                .title(" Command Legend ")
-                .border_style(panel_style),
-        );
-        f.render_widget(list, app.settings_area);
+        let mut items = Vec::new();
+        for (cat, shortcuts) in categories {
+            items.push(ListItem::new(""));
+            items.push(ListItem::new(Span::styled(format!("  ──{}──", cat), Style::default().fg(mode_bg).add_modifier(Modifier::DIM))));
+            for (key, desc) in shortcuts {
+                items.push(ListItem::new(Line::from(vec![
+                    Span::styled(format!("  {}  ", key), Style::default().fg(mode_bg).add_modifier(Modifier::BOLD)),
+                    Span::styled(desc, Style::default().fg(Color::DarkGray).add_modifier(Modifier::ITALIC)),
+                ])));
+            }
+        }
+
+        let list = List::new(items);
+        f.render_widget(list, app.settings_area.inner(ratatui::layout::Margin { horizontal: 0, vertical: 1 }));
     }
 
     // ── Footer rendering ──────────────────────────────────────────────────
     if footer_area.height > 0 {
-        // When in command mode, split the footer into status bar (top) + command bar (bottom)
-        let (status_area, cmd_area) = if in_command_mode && footer_area.height >= 2 {
-            let rows = Layout::default()
-                .direction(Direction::Vertical)
-                .constraints([Constraint::Length(1), Constraint::Length(1)])
-                .split(footer_area);
-            (rows[0], Some(rows[1]))
-        } else {
-            (footer_area, None)
-        };
-
-        // ── Status bar ────────────────────────────────────────────────────
-        let (mode_str, mode_bg) = match app.mode {
-            AppMode::Normal => (" NORMAL ".to_string(), Color::LightBlue),
-            AppMode::Command => (" COMMAND ".to_string(), Color::Yellow),
-            AppMode::SceneNavigator => (" NAVIGATOR ".to_string(), Color::LightCyan),
-            AppMode::SettingsPane => (" SETTINGS ".to_string(), Color::LightCyan),
-            AppMode::ExportPane => (" EXPORT ".to_string(), Color::LightCyan),
-            AppMode::Search => (" SEARCH ".to_string(), Color::LightMagenta),
-            _ => (" PROMPT ".to_string(), Color::LightRed),
-        };
-
-        let mode_fg = Color::Black;
-
+        // ── Single-line "Pure" Status Bar ─────────────────────────────────
         let mut spans = Vec::new();
 
-        // 1. Mode Block (Colored)
-        spans.push(Span::styled(mode_str, Style::default().bg(mode_bg).fg(mode_fg).add_modifier(Modifier::BOLD)));
-        spans.push(Span::styled(" ", Style::default().fg(mode_bg).bg(Color::Reset)));
+        // 1. Mode (Accented)
+        spans.push(Span::styled(mode_str, Style::default().fg(mode_bg).add_modifier(Modifier::BOLD)));
+        spans.push(Span::raw(" │ "));
 
-        // 2. Commands info (Transparent)
-        spans.push(Span::raw("COMMANDS [F1]  "));
+        // 2. Filename (Accented)
+        let fname = app.file.as_ref()
+            .and_then(|p| p.file_name())
+            .map(|n| n.to_string_lossy().into_owned())
+            .unwrap_or_else(|| "[No Name]".to_string());
+        let dirty_str = if app.dirty { " [+]" } else { "" };
+        spans.push(Span::styled(format!("{}{}", fname, dirty_str), Style::default().fg(mode_bg)));
+        spans.push(Span::raw(" │ "));
 
-        // 3. Center Text (Filename or Prompt) - Transparent
-        let center_text = if let Some(msg) = &app.status_msg {
-            format!("{} ", msg)
+        // 3. Center Section: Command Input OR Status Message OR Hints
+        if app.mode == AppMode::Command {
+            let cmd_style = if app.command_error {
+                Style::default().fg(Color::Red).add_modifier(Modifier::BOLD)
+            } else {
+                Style::default().add_modifier(Modifier::BOLD)
+            };
+            spans.push(Span::styled("/", cmd_style));
+            spans.push(Span::styled(&app.command_input, cmd_style));
+            
+            if app.command_input.is_empty() && !app.command_error {
+                spans.push(Span::styled(" type a command...", Style::default().fg(Color::DarkGray)));
+            }
+        } else if let Some(msg) = &app.status_msg {
+            let style = if app.command_error {
+                Style::default().fg(Color::Red)
+            } else {
+                Style::default().fg(Color::DarkGray).add_modifier(Modifier::ITALIC)
+            };
+            spans.push(Span::styled(msg, style));
         } else {
             match app.mode {
                 AppMode::Search => {
@@ -518,86 +520,44 @@ pub fn draw(f: &mut Frame, app: &mut App) {
                     } else {
                         format!("SEARCH [{}]: ", app.last_search)
                     };
-                    format!("{}{}", prompt_base, app.search_query)
+                    spans.push(Span::raw(format!("{}{}", prompt_base, app.search_query)));
                 }
-                AppMode::PromptSave => "SAVE MODIFIED SCRIPT? (Y/N/C) ".to_string(),
-                AppMode::PromptFilename => format!("FILENAME: {} ", app.filename_input),
-                AppMode::PromptExportFilename => format!("EXPORT {}: {} ", app.config.export_format.to_uppercase(), app.filename_input),
-                _ => {
-                    let fname = app.file.as_ref()
-                        .and_then(|p| p.file_name())
-                        .map(|n| n.to_string_lossy().into_owned())
-                        .unwrap_or_else(|| "[No Name]".to_string());
-                    let dirty_str = if app.dirty { " [+] " } else { "" };
-                    format!("{}{}", fname, dirty_str)
-                }
+                AppMode::PromptSave => spans.push(Span::raw("SAVE MODIFIED SCRIPT? (Y/N/C) ")),
+                AppMode::PromptFilename => spans.push(Span::raw(format!("FILENAME: {} ", app.filename_input))),
+                AppMode::PromptExportFilename => spans.push(Span::raw(format!("EXPORT {}: {} ", app.config.export_format.to_uppercase(), app.filename_input))),
+                _ => spans.push(Span::styled("COMMANDS [F1]", Style::default().fg(Color::DarkGray))),
             }
-        };
-        
-        spans.push(Span::raw(center_text));
+        }
 
-        // 4. Right Side (Counts & Cursor) - Transparent transitioning to Colored
+        // 4. Right Side: Counts & Cursor (Plain text)
         let word_count = app.total_word_count();
         let line_count = app.lines.len();
-        let pos_str = format!(" {}:{} ", app.cursor_y + 1, app.cursor_x + 1);
+        let pos_str = format!("{}:{}", app.cursor_y + 1, app.cursor_x + 1);
 
         let mut right_spans = Vec::new();
-        
-        // Counts block (Transparent)
-        let right_text1 = format!("{} WORDS  {} LINES ", word_count, line_count);
-        right_spans.push(Span::raw(right_text1));
-        
-        // Transition into Cursor block (Colored)
-        right_spans.push(Span::styled("", Style::default().fg(mode_bg).bg(Color::Reset)));
-        right_spans.push(Span::styled(pos_str, Style::default().bg(mode_bg).fg(mode_fg).add_modifier(Modifier::BOLD)));
+        right_spans.push(Span::raw(" │ "));
+        right_spans.push(Span::styled(format!("{}W {}L", word_count, line_count), Style::default().fg(Color::DarkGray)));
+        right_spans.push(Span::raw(" │ "));
+        right_spans.push(Span::styled(pos_str, Style::default().add_modifier(Modifier::BOLD)));
 
         let left_width: usize = spans.iter().map(|s| UnicodeWidthStr::width(s.content.as_ref())).sum();
         let right_width: usize = right_spans.iter().map(|s| UnicodeWidthStr::width(s.content.as_ref())).sum();
-        let total_width = status_area.width as usize;
+        let total_width = footer_area.width as usize;
 
         if total_width > left_width + right_width {
             let pad_len = total_width - left_width - right_width;
-            spans.push(Span::styled(" ".repeat(pad_len), Style::default().bg(Color::Reset)));
+            spans.push(Span::raw(" ".repeat(pad_len)));
         }
         
         spans.extend(right_spans);
 
-        let status_line = Line::from(spans);
-        f.render_widget(Paragraph::new(status_line), status_area);
+        f.render_widget(Paragraph::new(Line::from(spans)), footer_area);
 
-        // ── Command bar (only in Command mode) ────────────────────────────
-        if let Some(cmd_rect) = cmd_area {
-            let cmd_style = if app.command_error {
-                Style::default()
-                    .fg(Color::White)
-                    .bg(Color::Red)
-                    .add_modifier(Modifier::BOLD)
-            } else {
-                Style::default()
-                    .fg(Color::Black)
-                    .bg(Color::Yellow)
-                    .add_modifier(Modifier::BOLD)
-            };
-
-            // Build styled spans: bold '/' prefix + command text + blinking cursor hint
-            let prefix = Span::styled(" / ", cmd_style.add_modifier(Modifier::BOLD));
-            let cmd_text = Span::styled(
-                format!("{} ", app.command_input),
-                cmd_style,
-            );
-            let hint_text = if app.command_input.is_empty() && !app.command_error {
-                Span::styled(" type a command, Tab to complete, Esc to cancel ", 
-                    Style::default().fg(Color::DarkGray).bg(Color::Yellow))
-            } else {
-                Span::raw("")
-            };
-
-            let cmd_line = ratatui::text::Line::from(vec![prefix, cmd_text, hint_text]);
-            f.render_widget(Paragraph::new(cmd_line), cmd_rect);
-
-            // Place cursor in command bar
-            let cur_x = cmd_rect.x + 3 + UnicodeWidthStr::width(app.command_input.as_str()) as u16;
-            f.set_cursor_position((cur_x, cmd_rect.y));
+        if app.mode == AppMode::Command {
+            let mode_w = UnicodeWidthStr::width(mode_str);
+            let fname_w = UnicodeWidthStr::width(fname.as_str()) + UnicodeWidthStr::width(dirty_str);
+            let cur_x = footer_area.x + (mode_w + 3 + fname_w + 3 + 1 + UnicodeWidthStr::width(app.command_input.as_str())) as u16;
+            f.set_cursor_position((cur_x, footer_area.y));
         }
     }
 

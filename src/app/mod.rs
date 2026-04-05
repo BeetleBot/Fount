@@ -1357,7 +1357,7 @@ impl App {
             }
             "clearnum" => {
                 self.strip_all_scene_numbers();
-                self.set_status("Scene numbers cleared");
+                self.set_status("All the scene numbers are cleared now");
                 *text_changed = true;
             }
             "locknum" => {
