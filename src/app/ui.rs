@@ -8,10 +8,10 @@ use ratatui::{
 use std::collections::HashSet;
 use unicode_width::UnicodeWidthStr;
 use crate::{
-    app::{App, AppMode},
+    app::{App, AppMode, LineType, NavigatorItem, EnsembleItem},
     formatting::{RenderConfig, StringCaseExt, render_inline},
     layout::{find_visual_cursor, strip_sigils},
-    types::{LineType, PAGE_WIDTH, base_style},
+    types::{PAGE_WIDTH, base_style},
 };
 
 pub fn draw(f: &mut Frame, app: &mut App) {
@@ -51,10 +51,10 @@ pub fn draw(f: &mut Frame, app: &mut App) {
     let (mut text_area, footer_area) = (chunks[0], chunks[1]);
 
     app.sidebar_area = Rect::default();
-    if app.mode == AppMode::SceneNavigator {
+    if app.mode == AppMode::SceneNavigator || app.mode == AppMode::CharacterNavigator {
         let side_chunks = Layout::default()
             .direction(Direction::Horizontal)
-            .constraints([Constraint::Length(55), Constraint::Min(0)])
+            .constraints([Constraint::Length(42), Constraint::Min(0)])
             .split(text_area);
         app.sidebar_area = side_chunks[0];
         text_area = side_chunks[1];
@@ -302,18 +302,8 @@ pub fn draw(f: &mut Frame, app: &mut App) {
                 let is_selected = i == app.selected_scene;
                 let mut lines = Vec::new();
                 
-                // Determine if we're "inside" a section by looking back
-                // (In this flat list, everything after a section is child until the next section)
-                let mut has_parent_section = false;
-                for prev in (0..i).rev() {
-                    if app.scenes[prev].is_section {
-                        has_parent_section = true;
-                        break;
-                    }
-                }
 
                 let line_style = Style::default().fg(Color::DarkGray).add_modifier(Modifier::DIM);
-                let line_char = if has_parent_section { "│ " } else { "  " };
 
                 if item.is_section {
                     // Section Header (ACT I, etc.)
@@ -382,7 +372,7 @@ pub fn draw(f: &mut Frame, app: &mut App) {
                         // Wrapping logic for each synopsis
                         for syn in &item.synopses {
                             let mut current_line = String::new();
-                            let max_syn_w = 38; // Fits within the wider navigator width
+                            let max_syn_w = 34; // Fits within the new 42-char wide navigator width
                             
                             for word in syn.split_whitespace() {
                                 if current_line.len() + word.len() + 1 > max_syn_w {
@@ -419,8 +409,8 @@ pub fn draw(f: &mut Frame, app: &mut App) {
                     if !is_last_in_section {
                         lines.push(Line::from(vec![
                             Span::styled("   ", Style::default()),
-                            Span::styled("│  ", line_style),
-                            Span::styled("─".repeat(36), Style::default().fg(Color::DarkGray).add_modifier(Modifier::DIM)),
+                            Span::styled(syn_line_char, line_style),
+                            Span::styled("─".repeat(30), Style::default().fg(Color::DarkGray).add_modifier(Modifier::DIM)),
                         ]));
                     } else {
                         lines.push(Line::from(""));
@@ -433,6 +423,85 @@ pub fn draw(f: &mut Frame, app: &mut App) {
 
         let list = List::new(items).highlight_style(Style::default());
         f.render_stateful_widget(list, app.sidebar_area.inner(ratatui::layout::Margin { horizontal: 0, vertical: 1 }), &mut app.navigator_state);
+    }
+
+    if app.mode == AppMode::CharacterNavigator {
+        let items: Vec<ListItem> = app
+            .ensemble_items
+            .iter()
+            .enumerate()
+            .map(|(i, item)| {
+                let is_selected = i == app.selected_ensemble_idx;
+                let mut lines = Vec::new();
+                
+                let line_style = Style::default().fg(Color::DarkGray).add_modifier(Modifier::DIM);
+                let base_style = if is_selected {
+                    Style::default().add_modifier(Modifier::REVERSED)
+                } else {
+                    Style::default()
+                };
+                let dim_style = if is_selected {
+                    base_style
+                } else {
+                    Style::default().add_modifier(Modifier::DIM)
+                };
+
+                let prefix = if is_selected { " ⟫ " } else { "   " };
+                
+                match item {
+                    EnsembleItem::CharacterHeader(char_idx) => {
+                        let char_item = &app.character_stats[*char_idx];
+                        lines.push(Line::from(vec![
+                            Span::styled(prefix, base_style.add_modifier(Modifier::BOLD)),
+                            Span::styled(char_item.name.clone(), base_style.add_modifier(Modifier::BOLD)),
+                        ]));
+                    }
+                    EnsembleItem::Stat(text, hint, is_last) => {
+                        let connector = if text.is_empty() {
+                            "│"
+                        } else if *is_last {
+                            "└─ "
+                        } else {
+                            "├─ "
+                        };
+                        
+                        let mut spans = vec![
+                            Span::styled("   ", Style::default()),
+                            Span::styled(connector, line_style),
+                            Span::styled(text.clone(), dim_style.add_modifier(Modifier::ITALIC)),
+                        ];
+                        
+                        if let Some(h) = hint {
+                            spans.push(Span::styled(format!(" {}", h), line_style.add_modifier(Modifier::ITALIC)));
+                        }
+                        
+                        lines.push(Line::from(spans));
+                    }
+                    EnsembleItem::SceneLink(name, _, _) => {
+                        lines.push(Line::from(vec![
+                            Span::styled(prefix, base_style),
+                            Span::styled("│  └─ ", line_style),
+                            Span::styled(name.clone(), dim_style.add_modifier(Modifier::ITALIC)),
+                        ]));
+                    }
+                    EnsembleItem::Separator => {
+                        lines.push(Line::from(""));
+                    }
+                }
+
+                ListItem::new(lines)
+            })
+            .collect();
+
+        let title = format!(" [ ENSEMBLE ({}) ] ", app.character_stats.len());
+        let list = List::new(items)
+            .block(
+                Block::default()
+                    .title(title)
+            )
+            .highlight_style(Style::default());
+
+        f.render_stateful_widget(list, app.sidebar_area.inner(ratatui::layout::Margin { horizontal: 0, vertical: 1 }), &mut app.ensemble_state);
     }
 
 

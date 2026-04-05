@@ -889,17 +889,18 @@ impl App {
         // Synopsis wrapping
         for syn in &item.synopses {
             let mut current_line_len: usize = 0;
-            let syn_indent: usize = 6; // prefix(3) + connector(3)
+            let max_syn_w = 34; // Sync with UI
             let mut syn_lines: usize = 0;
             for word in syn.split_whitespace() {
-                if current_line_len + word.len() + syn_indent + 1 > max_w {
+                if current_line_len + word.len() + 1 > max_syn_w {
                     syn_lines += 1;
-                    current_line_len = 0;
+                    current_line_len = word.len();
+                } else {
+                    if current_line_len > 0 {
+                        current_line_len += 1;
+                    }
+                    current_line_len += word.len();
                 }
-                if current_line_len > 0 {
-                    current_line_len += 1;
-                }
-                current_line_len += word.len();
             }
             if current_line_len > 0 {
                 syn_lines += 1;

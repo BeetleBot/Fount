@@ -25,6 +25,24 @@ pub struct NavigatorItem {
     pub color: Option<Color>,
 }
 
+#[derive(Clone, Debug, Default)]
+pub struct CharacterItem {
+    pub name: String,
+    pub scenes_count: usize,
+    pub dialogue_blocks: usize,
+    pub word_count: usize,
+    pub appears_in_scenes: Vec<(String, usize)>,
+    pub is_expanded: bool,
+}
+
+#[derive(Clone, Debug)]
+pub enum EnsembleItem {
+    CharacterHeader(usize), // index into character_stats
+    Stat(String, Option<String>, bool), // (Text, Hint, is_last_in_tree)
+    SceneLink(String, usize, bool), // (Text, line_idx, is_last_in_tree)
+    Separator,
+}
+
 #[derive(Clone)]
 
 pub struct HistoryState {
@@ -61,6 +79,8 @@ pub enum AppMode {
     PromptFilename,
 
     SceneNavigator,
+
+    CharacterNavigator,
 
     SettingsPane,
 
@@ -170,6 +190,16 @@ pub struct App {
     pub scenes: Vec<NavigatorItem>,
 
     pub selected_scene: usize,
+
+    pub selected_character: usize,
+
+    pub character_stats: Vec<CharacterItem>,
+
+    pub ensemble_items: Vec<EnsembleItem>,
+
+    pub selected_ensemble_idx: usize,
+
+    pub ensemble_state: ListState,
 
     pub selected_setting: usize,
 
@@ -305,6 +335,11 @@ impl App {
             compiled_search_regex: None,
             scenes: Vec::new(),
             selected_scene: 0,
+            selected_character: 0,
+            character_stats: Vec::new(),
+            ensemble_items: Vec::new(),
+            selected_ensemble_idx: 0,
+            ensemble_state: ListState::default(),
             selected_setting: 0,
             selected_export_option: 0,
             sidebar_area: Rect::default(),
@@ -661,6 +696,97 @@ impl App {
                 }
             }
             self.navigator_state.select(Some(self.selected_scene));
+        }
+    }
+
+    pub fn open_character_sidebar(&mut self) {
+        use std::collections::HashMap;
+        self.character_stats.clear();
+        let mut stats_map: HashMap<String, CharacterItem> = HashMap::new();
+        let mut current_scene = "Untitled Scene".to_string();
+        let mut current_character: Option<String> = None;
+
+        for row in &self.layout {
+            if row.line_type == LineType::SceneHeading {
+                let mut raw_heading = strip_sigils(&row.raw_text, row.line_type).to_string();
+                while let Some(start) = raw_heading.find("[[") {
+                    if let Some(end_offset) = raw_heading[start..].find("]]") {
+                        raw_heading.replace_range(start..start + end_offset + 2, "");
+                    } else {
+                        break;
+                    }
+                }
+                current_scene = raw_heading.trim().to_uppercase_1to1();
+            }
+
+            if row.line_type == LineType::Character {
+                let name = strip_sigils(&row.raw_text, row.line_type).trim().to_uppercase_1to1();
+                let entry = stats_map.entry(name.clone()).or_insert_with(|| CharacterItem {
+                    name: name.clone(),
+                    ..Default::default()
+                });
+                entry.dialogue_blocks += 1;
+                if !entry.appears_in_scenes.iter().any(|(s, _)| s == &current_scene) {
+                    entry.appears_in_scenes.push((current_scene.clone(), row.line_idx));
+                    entry.scenes_count += 1;
+                }
+                current_character = Some(name);
+            } else if row.line_type == LineType::Dialogue {
+                if let Some(name) = &current_character {
+                    if let Some(entry) = stats_map.get_mut(name) {
+                        let words = row.raw_text.split_whitespace().count();
+                        entry.word_count += words;
+                    }
+                }
+            } else if row.line_type != LineType::Parenthetical {
+                current_character = None;
+            }
+        }
+
+        let mut stats: Vec<CharacterItem> = stats_map.into_values().collect();
+        // Sort by dialogue prominence
+        stats.sort_by(|a, b| (b.dialogue_blocks * 10 + b.word_count).cmp(&(a.dialogue_blocks * 10 + a.word_count)));
+        
+        self.character_stats = stats;
+        self.selected_character = 0;
+        self.refresh_ensemble_list();
+        self.selected_ensemble_idx = 0;
+        self.ensemble_state.select(Some(0));
+        self.mode = AppMode::CharacterNavigator;
+    }
+
+    pub fn refresh_ensemble_list(&mut self) {
+        self.ensemble_items.clear();
+        for i in 0..self.character_stats.len() {
+            let item = self.character_stats[i].clone();
+            
+            // Character Header
+            self.ensemble_items.push(EnsembleItem::CharacterHeader(i));
+            
+            // Stat: Scenes (with Hint)
+            let scene_hint = if item.is_expanded {
+                Some("(Cast in Scenes ↓)".to_string())
+            } else {
+                Some("(Tab to show)".to_string())
+            };
+            self.ensemble_items.push(EnsembleItem::Stat(format!("Scenes: {}", item.scenes_count), scene_hint, false));
+            
+            // Scene Links (if expanded)
+            if item.is_expanded {
+                for (j, (scene_name, line_idx)) in item.appears_in_scenes.iter().enumerate() {
+                    let is_last_scene = j == item.appears_in_scenes.len() - 1;
+                    self.ensemble_items.push(EnsembleItem::SceneLink(scene_name.clone(), *line_idx, is_last_scene));
+                }
+            }
+            
+            // Stat: Dialogues
+            self.ensemble_items.push(EnsembleItem::Stat(format!("Dialogues: {}", item.dialogue_blocks), None, false));
+            
+            // Stat: Words (Last stat in tree)
+            self.ensemble_items.push(EnsembleItem::Stat(format!("Words: {}", item.word_count), None, true));
+            
+            // Separator
+            self.ensemble_items.push(EnsembleItem::Separator);
         }
     }
 
