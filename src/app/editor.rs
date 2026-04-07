@@ -1,6 +1,6 @@
 use std::{fs, io};
 
-use crate::app::{App, LastEdit, NavigatorItem};
+use crate::app::{App, AppMode, LastEdit, NavigatorItem};
 use crate::formatting::StringCaseExt;
 use crate::layout::find_visual_cursor;
 use crate::types::LineType;
@@ -138,7 +138,64 @@ impl App {
             fs::write(p, content)?;
             self.dirty = false;
             self.set_status(&format!("Wrote {} lines", self.lines.len()));
+
+            // Trigger snapshot on manual save
+            self.trigger_snapshot();
         }
+        Ok(())
+    }
+
+    pub fn trigger_snapshot(&mut self) {
+        if let Some(ref p) = self.file {
+            if let Err(e) = self.snapshot_manager.create_snapshot(p, &self.lines) {
+                self.set_status(&format!("Snapshot failed: {}", e));
+            } else {
+                self.last_snapshot_time = Some(std::time::Instant::now());
+            }
+        }
+    }
+
+    pub fn restore_snapshot(&mut self, index: usize) -> io::Result<()> {
+        if index >= self.snapshots.len() {
+            return Ok(());
+        }
+
+        let snapshot_path = self.snapshots[index].path.clone();
+        let snapshot_display_time = self.snapshots[index].display_time();
+        let content = fs::read_to_string(&snapshot_path)?;
+
+        let lines: Vec<String> = content.lines().map(|s| s.to_string()).collect();
+        let lines = if lines.is_empty() {
+            vec![String::new()]
+        } else {
+            lines
+        };
+
+        let buf_name = if let Some(ref p) = self.file {
+            p.file_name()
+                .map(|n| n.to_string_lossy().into_owned())
+                .unwrap_or_else(|| "unnamed".to_string())
+        } else {
+            "unnamed".to_string()
+        };
+
+        let new_buf = crate::app::BufferState {
+            lines,
+            dirty: true,
+            ..Default::default()
+        };
+
+        self.buffers.push(new_buf);
+        let new_idx = self.buffers.len() - 1;
+        self.has_multiple_buffers = true;
+        self.switch_buffer(new_idx);
+
+        self.set_status(&format!(
+            "Opened snapshot of {} from {}",
+            buf_name, snapshot_display_time
+        ));
+        self.mode = AppMode::Normal;
+
         Ok(())
     }
 

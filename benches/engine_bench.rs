@@ -103,6 +103,7 @@ fn bench_build_layout(c: &mut Criterion) {
     let lines = generate_doc(10_000);
     let types = Parser::parse(&lines);
     let config = Config::default();
+    let theme = fount::theme::Theme::default();
 
     c.bench_function("build_layout/10000_lines", |b| {
         b.iter(|| {
@@ -111,6 +112,7 @@ fn bench_build_layout(c: &mut Criterion) {
                 black_box(&types),
                 black_box(5_000),
                 black_box(&config),
+                black_box(&theme),
             )
         })
     });

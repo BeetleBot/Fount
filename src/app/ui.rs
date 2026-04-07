@@ -38,6 +38,7 @@ pub fn draw(f: &mut Frame, app: &mut App) {
             AppMode::Search => (" SEARCH ", Color::from(theme.ui.search_mode_bg.clone())),
             AppMode::Home => (" HOME ", Color::from(theme.ui.normal_mode_bg.clone())),
             AppMode::FilePicker => (" FILE ", Color::from(theme.ui.normal_mode_bg.clone())),
+            AppMode::Snapshots => (" SNAPSHOTS ", Color::from(theme.ui.navigator_mode_bg.clone())),
             _ => (" PROMPT ", Color::from(theme.ui.command_mode_bg.clone())),
         };
 
@@ -935,6 +936,10 @@ pub fn draw(f: &mut Frame, app: &mut App) {
     if app.mode == AppMode::FilePicker {
         draw_file_picker(f, app, area);
     }
+
+    if app.mode == AppMode::Snapshots {
+        draw_snapshots(f, app);
+    }
 }
 
 fn draw_file_picker(f: &mut Frame, app: &mut App, area: Rect) {
@@ -1045,4 +1050,56 @@ fn draw_file_picker(f: &mut Frame, app: &mut App, area: Rect) {
         let cursor_pos = layout[3].x + 2 + UnicodeWidthStr::width(state.filename_input.as_str()) as u16;
         f.set_cursor_position((cursor_pos, layout[3].y));
     }
+}
+
+pub fn draw_snapshots(f: &mut Frame, app: &mut App) {
+    let area = f.area();
+    let theme = &app.theme;
+
+    let block = Block::default()
+        .borders(Borders::ALL)
+        .title(" [ SESSION SNAPSHOTS ] ")
+        .border_style(Style::default().fg(Color::from(theme.ui.normal_mode_bg.clone())));
+
+    let snapshots: Vec<ListItem> = app.snapshots.iter().map(|s| {
+        ListItem::new(Line::from(vec![
+            Span::styled(" 󰄉 ", Style::default().fg(Color::Cyan)),
+            Span::raw(s.display_time()),
+        ]))
+    }).collect();
+
+    let list = List::new(snapshots)
+        .block(block)
+        .highlight_style(Style::default().bg(Color::Rgb(50, 50, 50)).add_modifier(Modifier::BOLD))
+        .highlight_symbol("⟫ ");
+
+    let popup_area = centered_rect(50, 60, area);
+    f.render_widget(Clear, popup_area);
+    f.render_stateful_widget(list, popup_area, &mut app.snapshot_list_state);
+}
+
+fn centered_rect(percent_x: u16, percent_y: u16, r: Rect) -> Rect {
+    let popup_layout = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints(
+            [
+                Constraint::Percentage((100 - percent_y) / 2),
+                Constraint::Percentage(percent_y),
+                Constraint::Percentage((100 - percent_y) / 2),
+            ]
+            .as_ref(),
+        )
+        .split(r);
+
+    Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints(
+            [
+                Constraint::Percentage((100 - percent_x) / 2),
+                Constraint::Percentage(percent_x),
+                Constraint::Percentage((100 - percent_x) / 2),
+            ]
+            .as_ref(),
+        )
+        .split(popup_layout[1])[1]
 }

@@ -753,6 +753,31 @@ impl App {
                     }
                     return Ok(false);
                 }
+                AppMode::Snapshots => {
+                    match key.code {
+                        KeyCode::Esc => {
+                            self.mode = AppMode::Normal;
+                        }
+                        KeyCode::Up | KeyCode::Char('k') => {
+                            let current = self.snapshot_list_state.selected().unwrap_or(0);
+                            if current > 0 {
+                                self.snapshot_list_state.select(Some(current - 1));
+                            }
+                        }
+                        KeyCode::Down | KeyCode::Char('j') => {
+                            let current = self.snapshot_list_state.selected().unwrap_or(0);
+                            if current + 1 < self.snapshots.len() {
+                                self.snapshot_list_state.select(Some(current + 1));
+                            }
+                        }
+                        KeyCode::Enter => {
+                            let selected = self.snapshot_list_state.selected().unwrap_or(0);
+                            self.restore_snapshot(selected)?;
+                        }
+                        _ => {}
+                    }
+                    return Ok(false);
+                }
                 AppMode::Command => {
                     match key.code {
                         KeyCode::Esc => {
@@ -767,6 +792,7 @@ impl App {
                                 "set", "search", "export",
                                 "ud", "rd", "copy", "cut", "paste", "pos",
                                 "selectall", "home", "o", "bn", "bp", "new", "newfile", "addtitle",
+                                "snap",
                             ];
                             let matches: Vec<&&str> = commands.iter()
                                 .filter(|c| c.starts_with(&self.command_input))

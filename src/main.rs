@@ -138,6 +138,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     &mut text_changed,
                     &mut cursor_moved,
                 )? {
+                    app.trigger_snapshot(); // Snapshot on exit
                     break;
                 }
             }
@@ -154,6 +155,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 app.set_status("Auto-saved");
             }
             last_save = std::time::Instant::now();
+        }
+
+        // Periodic snapshots every 15 minutes if dirty
+        let snapshot_interval = Duration::from_secs(900);
+        let now = std::time::Instant::now();
+        let last_snap = app.last_snapshot_time.unwrap_or(now.checked_sub(snapshot_interval).unwrap_or(now));
+        if app.dirty && app.file.is_some() && now.duration_since(last_snap) >= snapshot_interval {
+            app.trigger_snapshot();
         }
 
         if text_changed {

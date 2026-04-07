@@ -4,6 +4,8 @@ use std::{
     path::{Path, PathBuf},
 };
 
+pub mod snapshot;
+
 use ratatui::{layout::Rect, style::Color, widgets::ListState};
 
 use crate::{
@@ -92,6 +94,7 @@ pub enum AppMode {
 
     Home,
     FilePicker,
+    Snapshots,
 }
 
 #[derive(PartialEq, Debug, Clone)]
@@ -142,6 +145,8 @@ pub struct BufferState {
     pub redo_stack: Vec<HistoryState>,
 
     pub last_edit: LastEdit,
+
+    pub last_snapshot_time: Option<std::time::Instant>,
 }
 
 pub struct App {
@@ -242,6 +247,11 @@ pub struct App {
 
     pub theme: Theme,
     pub theme_manager: ThemeManager,
+
+    pub snapshot_manager: snapshot::SnapshotManager,
+    pub snapshots: Vec<snapshot::Snapshot>,
+    pub snapshot_list_state: ListState,
+    pub last_snapshot_time: Option<std::time::Instant>,
 }
 
 impl Drop for App {
@@ -254,6 +264,19 @@ impl Drop for App {
 }
 
 impl App {
+    pub fn open_snapshots(&mut self) {
+        if let Some(ref p) = self.file {
+            self.snapshots = self.snapshot_manager.list_snapshots(p);
+            if self.snapshots.is_empty() {
+                self.set_status("No snapshots found for this file.");
+            } else {
+                self.mode = AppMode::Snapshots;
+                self.snapshot_list_state.select(Some(0));
+            }
+        } else {
+            self.set_error("Save the file first to use snapshots.");
+        }
+    }
     pub fn new(cli: Cli) -> Self {
         let config = Config::load(&cli);
 
@@ -382,6 +405,11 @@ impl App {
 
             theme: Theme::default(),
             theme_manager: ThemeManager::new(),
+
+            snapshot_manager: snapshot::SnapshotManager::new(),
+            snapshots: Vec::new(),
+            snapshot_list_state: ListState::default(),
+            last_snapshot_time: None,
         };
 
         app.theme_manager.load_user_themes();
@@ -419,6 +447,7 @@ impl App {
         std::mem::swap(&mut self.undo_stack, &mut other.undo_stack);
         std::mem::swap(&mut self.redo_stack, &mut other.redo_stack);
         std::mem::swap(&mut self.last_edit, &mut other.last_edit);
+        std::mem::swap(&mut self.last_snapshot_time, &mut other.last_snapshot_time);
     }
 
     pub fn switch_buffer(&mut self, next_idx: usize) {
@@ -1753,7 +1782,7 @@ impl App {
                 } else if self.file.is_some() {
                     self.save()?;
                 } else {
-                    self.set_error("No filename. Use :w <file>");
+                    self.set_error("No filename. Use /w <file>");
                 }
             }
             "ww" => {
@@ -1772,7 +1801,7 @@ impl App {
             }
             "q" => {
                 if self.dirty && !self.is_tutorial {
-                    self.set_error("Unsaved changes. Use :q! or :wq");
+                    self.set_error("Unsaved changes. Use /q! or /wq");
                 } else {
                     self.close_current_buffer();
                 }
@@ -1817,7 +1846,7 @@ impl App {
                     }
                     *text_changed = true;
                 } else if args.len() == 1 {
-                    // Toggle syntax: :set focus
+                    // Toggle syntax: /set focus
                     let opt = args[0];
                     match opt {
                         "markup" => self.config.hide_markup = !self.config.hide_markup,
@@ -1840,9 +1869,12 @@ impl App {
                         _ => self.set_error(&format!("Unknown option: {}", opt)),
                     }
                     *text_changed = true;
-                } else {
-                    self.set_error("Usage: /set <option> [on/off]");
+                } else if args.is_empty() {
+                    self.set_status("Usage: /set <option> [on/off]");
                 }
+            }
+            "snap" => {
+                self.open_snapshots();
             }
             "ud" => {
                 if self.undo() {
