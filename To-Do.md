@@ -1,10 +1,6 @@
 # Fount: To-Do
 
 ### In the Works
-- [ ] **Aesthetics**: Cinematic Transitions & Themes.
-    - **Context**: The current TUI is functional and clean, but can be pushed further to feel like a premium, native application.
-    - **Goal**: Implement customizable theme files (e.g., `.toml` or `.json` for colors like "Solarized" or "Paper") and soft UI elements with drop-shadows.
-    - **HowToChangeThemes**: We will have predefined theme sets in ~/.config/fount/themes/ and a command (/theme) to switch between them. Like /theme nord - this command will switch the theme to nord. And users can create their own themes (.toml) file in ~/.config/fount/themes/ as well and can use them. And we can also have this option of switching themes in Settings pane as well. 
 - [ ] **Release Automation (GitHub Actions)**: Get `.msi`/`.exe` and `.dmg` installers ready for future releases. Tentative timing. 
 - [ ] **Session Snapshots (Auto-Versioning)**:
     - **Context**: Writers often "over-edit" and lose a phrase or beat that worked in an earlier draft, but full Git is too heavy for casual use.
@@ -65,3 +61,7 @@
 - [x] **Structural Locking (Production Mode)**: 
     - **Context**: Essential for professional production where scene numbers must remain static even when new scenes are added.
     - **Goal**: Implement a `/lock` command that freezes current numbering. Any scenes inserted between locked numbers (e.g., between 21 and 22) will be automatically designated with alphabetical suffixes (21A, 21B) to preserve the original production breakdown.
+- [x] **Aesthetics**: Cinematic Transitions & Themes.
+    - **Context**: The current TUI is functional and clean, but can be pushed further to feel like a premium, native application.
+    - **Goal**: Implement customizable theme files (e.g., `.toml` or `.json` for colors like "Solarized" or "Paper") and soft UI elements with drop-shadows.
+    - **HowToChangeThemes**: We will have predefined theme sets in ~/.config/fount/themes/ and a command (/theme) to switch between them. Like /theme nord - this command will switch the theme to nord. And users can create their own themes (.toml) file in ~/.config/fount/themes/ as well and can use them. And we can also have this option of switching themes in Settings pane as well. 
