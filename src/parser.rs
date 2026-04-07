@@ -388,7 +388,7 @@ mod parser_tests {
 
     #[test]
     fn test_parse_metadata_block_strict() {
-        let lines = vec![
+        let lines = [
             "Title: Date in Kutaisi".to_string(),
             "Authors:".to_string(),
             "  René Coignard,".to_string(),
@@ -407,7 +407,7 @@ mod parser_tests {
 
     #[test]
     fn test_parse_scene_headings() {
-        let lines = vec![
+        let lines = [
             "INT. ROOM - DAY".to_string(),
             "EXT. STREET - NIGHT".to_string(),
             "EST. BUILDING".to_string(),
@@ -417,7 +417,7 @@ mod parser_tests {
             "E./I. BOAT".to_string(),
         ];
         for (i, _) in lines.iter().enumerate() {
-            let test_block = vec!["".to_string(), lines[i].clone()];
+            let test_block = ["".to_string(), lines[i].clone()];
             let types = Parser::parse(&test_block);
             assert_eq!(types[1], LineType::SceneHeading);
         }
@@ -425,21 +425,21 @@ mod parser_tests {
 
     #[test]
     fn test_parse_forced_scene_heading() {
-        let lines = vec!["".to_string(), ".HOUSE".to_string()];
+        let lines = ["".to_string(), ".HOUSE".to_string()];
         let types = Parser::parse(&lines);
         assert_eq!(types[1], LineType::SceneHeading);
     }
 
     #[test]
     fn test_parse_not_scene_heading() {
-        let lines = vec!["".to_string(), "..not heading".to_string()];
+        let lines = ["".to_string(), "..not heading".to_string()];
         let types = Parser::parse(&lines);
         assert_eq!(types[1], LineType::Action);
     }
 
     #[test]
     fn test_parse_character_and_dialogue() {
-        let lines = vec![
+        let lines = [
             "".to_string(),
             "RENÉ".to_string(),
             "Hallo.".to_string(),
@@ -459,7 +459,7 @@ mod parser_tests {
 
     #[test]
     fn test_parse_dual_dialogue_character() {
-        let lines = vec![
+        let lines = [
             "".to_string(),
             "CHARLOTTE ^".to_string(),
             "Coucou.".to_string(),
@@ -471,7 +471,7 @@ mod parser_tests {
 
     #[test]
     fn test_parse_transitions() {
-        let lines = vec![
+        let lines = [
             "Action".to_string(),
             "".to_string(),
             "CUT TO:".to_string(),
@@ -491,21 +491,21 @@ mod parser_tests {
 
     #[test]
     fn test_parse_forced_transition() {
-        let lines = vec!["".to_string(), ">SMASH CUT".to_string()];
+        let lines = ["".to_string(), ">SMASH CUT".to_string()];
         let types = Parser::parse(&lines);
         assert_eq!(types[1], LineType::Transition);
     }
 
     #[test]
     fn test_parse_centered_text() {
-        let lines = vec![">THE END<".to_string()];
+        let lines = [">THE END<".to_string()];
         let types = Parser::parse(&lines);
         assert_eq!(types[0], LineType::Centered);
     }
 
     #[test]
     fn test_parse_forced_action_and_shot() {
-        let lines = vec!["!ACT".to_string(), "!!SHOT".to_string()];
+        let lines = ["!ACT".to_string(), "!!SHOT".to_string()];
         let types = Parser::parse(&lines);
         assert_eq!(types[0], LineType::Action);
         assert_eq!(types[1], LineType::Shot);
@@ -513,7 +513,7 @@ mod parser_tests {
 
     #[test]
     fn test_parse_lyrics_synopsis_section() {
-        let lines = vec![
+        let lines = [
             "~Song line".to_string(),
             "=Synopsis block".to_string(),
             "#Section block".to_string(),
@@ -526,7 +526,7 @@ mod parser_tests {
 
     #[test]
     fn test_parse_boneyard_multiline() {
-        let lines = vec![
+        let lines = [
             "/*".to_string(),
             "Hidden text".to_string(),
             "More hidden".to_string(),
@@ -543,14 +543,14 @@ mod parser_tests {
 
     #[test]
     fn test_parse_boneyard_inline() {
-        let lines = vec!["/* Inline hidden */".to_string()];
+        let lines = ["/* Inline hidden */".to_string()];
         let types = Parser::parse(&lines);
         assert_eq!(types[0], LineType::Boneyard);
     }
 
     #[test]
     fn test_parse_note_multiline() {
-        let lines = vec!["[[".to_string(), "Note text".to_string(), "]]".to_string()];
+        let lines = ["[[".to_string(), "Note text".to_string(), "]]".to_string()];
         let types = Parser::parse(&lines);
         assert_eq!(types[0], LineType::Note);
         assert_eq!(types[1], LineType::Note);
@@ -559,14 +559,14 @@ mod parser_tests {
 
     #[test]
     fn test_parse_note_inline() {
-        let lines = vec!["[[Inline note]]".to_string()];
+        let lines = ["[[Inline note]]".to_string()];
         let types = Parser::parse(&lines);
         assert_eq!(types[0], LineType::Note);
     }
 
     #[test]
     fn test_parse_page_break() {
-        let lines = vec!["===".to_string(), "=====".to_string()];
+        let lines = ["===".to_string(), "=====".to_string()];
         let types = Parser::parse(&lines);
         assert_eq!(types[0], LineType::PageBreak);
         assert_eq!(types[1], LineType::PageBreak);
@@ -574,7 +574,7 @@ mod parser_tests {
 
     #[test]
     fn test_parse_action_default() {
-        let lines = vec![
+        let lines = [
             "".to_string(),
             "A man walks into a foobar.".to_string(),
             "He orders foo, bar, and baz.".to_string(),
@@ -587,7 +587,7 @@ mod parser_tests {
 
     #[test]
     fn test_parse_dialogue_with_empty_line() {
-        let lines = vec![
+        let lines = [
             "CHARLOTTE".to_string(),
             "Line 1".to_string(),
             "  ".to_string(),
@@ -602,7 +602,7 @@ mod parser_tests {
 
     #[test]
     fn test_parse_transition_at_start_not_metadata() {
-        let lines = vec![
+        let lines = [
             "CUT TO:".to_string(),
             "".to_string(),
             "INT. ROOM - DAY".to_string(),
@@ -613,7 +613,7 @@ mod parser_tests {
 
     #[test]
     fn test_parse_cyrillic_metadata() {
-        let lines = vec![
+        let lines = [
             "Автор: Рене".to_string(),
             "".to_string(),
             "INT. ROOM - DAY".to_string(),
@@ -624,7 +624,7 @@ mod parser_tests {
 
     #[test]
     fn test_parse_cyrillic_transition() {
-        let lines = vec![
+        let lines = [
             "ИЗ ЗТМ:".to_string(),
             "".to_string(),
             "ИНТ. КОМНАТА - ДЕНЬ".to_string(),
@@ -635,7 +635,7 @@ mod parser_tests {
 
     #[test]
     fn test_parse_transition_not_metadata_at_eof_or_start() {
-        let lines = vec![
+        let lines = [
             "CUT TO:".to_string(),
             "".to_string(),
             "INT. ROOM - DAY".to_string(),
@@ -648,7 +648,7 @@ mod parser_tests {
 
     #[test]
     fn test_parse_cyrillic_metadata_with_unicode_regex() {
-        let lines = vec![
+        let lines = [
             "Автор: Рене".to_string(),
             "".to_string(),
             "ИНТ. КОМНАТА - ДЕНЬ".to_string(),
@@ -661,7 +661,7 @@ mod parser_tests {
 
     #[test]
     fn test_parser_metadata_leading_spaces() {
-        let lines = vec![
+        let lines = [
             "Title: Script".to_string(),
             "  Subtitle".to_string(),
             "\tAuthor".to_string(),
@@ -674,7 +674,7 @@ mod parser_tests {
 
     #[test]
     fn test_parser_forced_dual_dialogue() {
-        let lines = vec!["".to_string(), "@CHAR^".to_string(), "＠CHAR2^".to_string()];
+        let lines = ["".to_string(), "@CHAR^".to_string(), "＠CHAR2^".to_string()];
         let types = Parser::parse(&lines);
         assert_eq!(types[1], LineType::DualDialogueCharacter);
         assert_eq!(types[2], LineType::DualDialogueCharacter);
@@ -688,7 +688,7 @@ mod parser_tests {
 
     #[test]
     fn test_parse_cyrillic_scene_heading_with_dot() {
-        let lines = vec![
+        let lines = [
             "".to_string(),
             "НАТ. МЕСТО. ДЕНЬ".to_string(),
             "".to_string(),

@@ -23,6 +23,12 @@ pub struct SnapshotManager {
     root: PathBuf,
 }
 
+impl Default for SnapshotManager {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl SnapshotManager {
     pub fn new() -> Self {
         let root = if let Some(proj_dirs) = ProjectDirs::from("", "", "Fount") {
@@ -70,9 +76,9 @@ impl SnapshotManager {
             for entry in entries.flatten() {
                 let name = entry.file_name().to_string_lossy().into_owned();
 
-                if name.starts_with(&filename) && name.ends_with(".fountain") {
-                    if let Ok(metadata) = entry.metadata() {
-                        if let Ok(timestamp) = metadata.modified() {
+                if name.starts_with(&filename) && name.ends_with(".fountain")
+                    && let Ok(metadata) = entry.metadata()
+                        && let Ok(timestamp) = metadata.modified() {
                             let path = entry.path();
                             snapshots.push(Snapshot {
                                 path,
@@ -80,8 +86,6 @@ impl SnapshotManager {
                                 filename: name,
                             });
                         }
-                    }
-                }
             }
         }
 
@@ -97,14 +101,12 @@ impl SnapshotManager {
                 let name = name_os.to_string_lossy();
                 let should_include = name.starts_with(filename) && name.ends_with(".fountain");
 
-                if should_include {
-                    if let Ok(metadata) = entry.metadata() {
-                        if let Ok(timestamp) = metadata.modified() {
+                if should_include
+                    && let Ok(metadata) = entry.metadata()
+                        && let Ok(timestamp) = metadata.modified() {
                             let path = entry.path();
                             snapshots.push((path, timestamp));
                         }
-                    }
-                }
             }
         }
 
@@ -135,13 +137,13 @@ mod tests {
     fn test_snapshot_creation_and_listing() {
         let dir = tempdir().unwrap();
         let manager = SnapshotManager { root: dir.path().to_path_buf() };
-        let original = std::path::Path::new("test.fountain");
-        let lines = vec!["Title: Test".to_string(), "Body".to_string()];
+        let lines = ["Title: Test".to_string(), "Body".to_string()];
 
-        let snapshot_path = manager.create_snapshot(&original, &lines).unwrap();
+        let original = std::path::Path::new("test.fountain");
+        let snapshot_path = manager.create_snapshot(original, &lines[..]).unwrap();
         assert!(snapshot_path.exists());
 
-        let snapshots = manager.list_snapshots(&original);
+        let snapshots = manager.list_snapshots(original);
         assert_eq!(snapshots.len(), 1);
         // Matches TitleDD_MM_YYYY_HH_MM.fountain
         assert!(snapshots[0].filename.starts_with("test"));
@@ -152,13 +154,13 @@ mod tests {
     fn test_snapshot_pruning() {
         let dir = tempdir().unwrap();
         let manager = SnapshotManager { root: dir.path().to_path_buf() };
-        let original = std::path::Path::new("test.fountain");
-        let lines = vec!["Content".to_string()];
+        let _original = std::path::Path::new("test.fountain");
+        let lines = ["Content".to_string()];
 
         // Create 5 snapshots with different names to simulate different minutes/files
         for i in 0..5 {
             let p = dir.path().join(format!("test{}.fountain", i));
-            manager.create_snapshot(&p, &lines).unwrap();
+            manager.create_snapshot(&p, &lines[..]).unwrap();
         }
 
         // Check for specific file

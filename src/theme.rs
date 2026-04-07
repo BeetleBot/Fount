@@ -69,11 +69,10 @@ pub struct HexColor(pub String);
 
 impl From<HexColor> for Color {
     fn from(val: HexColor) -> Self {
-        if val.0.starts_with('#') {
-            if let Ok(c) = hex_to_rgb(&val.0) {
+        if val.0.starts_with('#')
+            && let Ok(c) = hex_to_rgb(&val.0) {
                 return Color::Rgb(c.0, c.1, c.2);
             }
-        }
         match val.0.to_lowercase().as_str() {
             "black" => Color::Black,
             "red" => Color::Red,
@@ -794,8 +793,8 @@ impl Theme {
                 return true;
             }
             // Basic brightness check for hex colors
-            if hex.len() == 6 {
-                if let (Ok(r), Ok(g), Ok(b)) = (
+            if hex.len() == 6
+                && let (Ok(r), Ok(g), Ok(b)) = (
                     u8::from_str_radix(&hex[0..2], 16),
                     u8::from_str_radix(&hex[2..4], 16),
                     u8::from_str_radix(&hex[4..6], 16),
@@ -804,7 +803,6 @@ impl Theme {
                     let brightness = ((r as u32 * 299) + (g as u32 * 587) + (b as u32 * 114)) / 1000;
                     return brightness > 150;
                 }
-            }
         }
         self.name.to_lowercase().contains("light") || self.name.to_lowercase() == "paper"
     }
@@ -813,6 +811,12 @@ impl Theme {
 pub struct ThemeManager {
     pub themes: HashMap<String, Theme>,
     pub current_theme: Theme,
+}
+
+impl Default for ThemeManager {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl ThemeManager {
@@ -875,13 +879,11 @@ impl ThemeManager {
         if let Ok(entries) = fs::read_dir(themes_dir) {
             for entry in entries.flatten() {
                 let path = entry.path();
-                if path.extension().map_or(false, |ext| ext == "toml") {
-                    if let Ok(content) = fs::read_to_string(&path) {
-                        if let Ok(theme) = toml::from_str::<Theme>(&content) {
+                if path.extension().is_some_and(|ext| ext == "toml")
+                    && let Ok(content) = fs::read_to_string(&path)
+                        && let Ok(theme) = toml::from_str::<Theme>(&content) {
                             self.themes.insert(theme.name.to_lowercase(), theme);
                         }
-                    }
-                }
             }
         }
     }

@@ -149,8 +149,8 @@ impl<'a> Parser<'a> {
             line,
             |_, s| s.trim_start().strip_prefix('='),
             |this, inner| {
-                if this.state == State::InBlock {
-                    if let Some(Span {
+                if this.state == State::InBlock
+                    && let Some(Span {
                         start_line: _,
                         end_line,
                         inner: Element::Synopsis(rs),
@@ -161,7 +161,6 @@ impl<'a> Parser<'a> {
                         *end_line = line_idx;
                         return;
                     }
-                }
 
                 let rs = RichString::from(inner);
                 this.elements
@@ -200,8 +199,8 @@ impl<'a> Parser<'a> {
             |_, s| s.trim().strip_prefix('>').and_then(|u| u.strip_suffix('<')),
             |this, inner| {
                 let inner = inner.trim();
-                if this.state == State::InBlock {
-                    if let Some(Span {
+                if this.state == State::InBlock
+                    && let Some(Span {
                         start_line: _,
                         end_line,
                         inner: Element::CenteredText(rs),
@@ -212,7 +211,6 @@ impl<'a> Parser<'a> {
                         *end_line = line_idx;
                         return;
                     }
-                }
 
                 let rs = RichString::from(inner);
                 this.elements
@@ -228,8 +226,8 @@ impl<'a> Parser<'a> {
             line,
             |_, s| s.trim_start().strip_prefix('~'),
             |this, inner| {
-                if this.state == State::InBlock {
-                    if let Some(Span {
+                if this.state == State::InBlock
+                    && let Some(Span {
                         start_line: _,
                         end_line,
                         inner: Element::Lyrics(rs),
@@ -240,7 +238,6 @@ impl<'a> Parser<'a> {
                         *end_line = line_idx;
                         return;
                     }
-                }
 
                 let rs = RichString::from(inner);
                 this.elements.push(Span::new(Element::Lyrics(rs), line_idx));
@@ -255,8 +252,8 @@ impl<'a> Parser<'a> {
             line,
             |_, line| Some(line),
             |this, inner| {
-                if this.state == State::InBlock {
-                    if let Some(Span {
+                if this.state == State::InBlock
+                    && let Some(Span {
                         start_line: _,
                         end_line,
                         inner: Element::Action(rs),
@@ -267,7 +264,6 @@ impl<'a> Parser<'a> {
                         *end_line = line_idx;
                         return;
                     }
-                }
 
                 let rs = RichString::from(inner);
                 this.elements.push(Span::new(Element::Action(rs), line_idx));
@@ -309,17 +305,15 @@ impl<'a> Parser<'a> {
             |this, inner| {
                 let mut number = None;
                 let mut inner = inner;
-                if let Some(start) = inner.trim_end().strip_suffix('#') {
-                    if let Some((new_inner, numbering)) = start.rsplit_once('#') {
-                        if numbering
+                if let Some(start) = inner.trim_end().strip_suffix('#')
+                    && let Some((new_inner, numbering)) = start.rsplit_once('#')
+                        && numbering
                             .chars()
                             .all(|c| c.is_alphanumeric() || c == '-' || c == '.')
                         {
                             number = Some(numbering.to_string());
                             inner = new_inner.trim_end();
                         }
-                    }
-                }
 
                 this.elements.push(Span::new(
                     Element::Heading {
@@ -350,14 +344,13 @@ impl<'a> Parser<'a> {
     fn insert_empty_dialogue<'s>(&mut self, inner: &'s str, line_idx: usize) -> &'s str {
         let new_dialogue = Dialogue::new();
 
-        if let Some(stripped) = inner.trim_end().strip_suffix('^') {
-            if let Some(&Span {
+        if let Some(stripped) = inner.trim_end().strip_suffix('^')
+            && let Some(&Span {
                 start_line: _,
                 end_line: _,
                 inner: Element::Dialogue(_),
             }) = self.elements.last()
-            {
-                if let Some(Span {
+                && let Some(Span {
                     start_line,
                     end_line: _,
                     inner: Element::Dialogue(d),
@@ -369,8 +362,6 @@ impl<'a> Parser<'a> {
                     ));
                     return stripped;
                 }
-            }
-        }
 
         self.elements
             .push(Span::new(Element::Dialogue(new_dialogue), line_idx));
@@ -398,12 +389,11 @@ impl<'a> Parser<'a> {
                     .get_last_dialogue()
                     .expect("Just pushed to list, must exist");
 
-                if let Some((head, tail)) = inner.split_once('(') {
-                    if let Some((extension, _)) = tail.split_once(')') {
+                if let Some((head, tail)) = inner.split_once('(')
+                    && let Some((extension, _)) = tail.split_once(')') {
                         curr_dialogue.extension = Some(RichString::from(extension));
                         inner = head.trim_end();
                     }
-                }
 
                 curr_dialogue.character = RichString::from(inner);
                 *end_line = line_idx;
@@ -417,11 +407,10 @@ impl<'a> Parser<'a> {
         self.try_(
             line,
             |this, line| {
-                if let Some(inner) = line.trim_start().strip_prefix('>') {
-                    if !line.trim_end().ends_with('<') {
+                if let Some(inner) = line.trim_start().strip_prefix('>')
+                    && !line.trim_end().ends_with('<') {
                         return Some(inner);
                     }
-                }
 
                 let transition_ending = line.ends_with("TO:");
                 let has_lower = line.chars().any(char::is_lowercase);

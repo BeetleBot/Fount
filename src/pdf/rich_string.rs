@@ -146,14 +146,12 @@ impl RichString {
     pub fn append(&mut self, mut other: Self) {
         if let Some(e) = other.elements.first()
             && let Some(l) = self.elements.last_mut()
-        {
-            if e.attributes == l.attributes {
+            && e.attributes == l.attributes {
                 l.text.push_str(&e.text);
                 other.elements.drain(..1);
                 self.elements.append(&mut other.elements);
                 return;
             }
-        }
         self.elements.append(&mut other.elements);
     }
 
@@ -450,7 +448,7 @@ impl Display for RichString {
                 attr_to_delim!(is_italic, "*"),
                 attr_to_delim!(is_bold, "**"),
             );
-            str.extend(element_text.chars());
+            str.push_str(&element_text);
         }
 
         write!(f, "{str}")

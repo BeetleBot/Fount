@@ -273,8 +273,15 @@ impl PdfExporter {
             if (screenplay.titlepage.is_none() && page_idx > 0)
                 || (screenplay.titlepage.is_some() && page_idx > 1)
             {
-                let residual_page_number = write_element_custom_top_margin(
+                let mut p_line_idx = 0;
+                let mut ctx = DrawContext {
                     layout_info,
+                    surface: &mut surface,
+                    line_index: &mut p_line_idx,
+                    max_lines: 36, // Specific for page numbers?
+                };
+                let residual_page_number = write_element_custom_top_margin(
+                    &mut ctx,
                     &format!(
                         "{}.",
                         if screenplay.titlepage.is_some() {
@@ -286,10 +293,8 @@ impl PdfExporter {
                     .into(),
                     &MARGINS.page_number,
                     &mut 0,
-                    &mut 0,
-                    1,
-                    &mut surface,
                     Alignment::RightToLeft,
+                    36,
                     36,
                 )?;
 
@@ -325,18 +330,22 @@ impl PdfExporter {
                     std::option::Option::None => 0,
                 };
 
+                let mut ctx = DrawContext {
+                    layout_info,
+                    surface: &mut surface,
+                    line_index: &mut line_idx,
+                    max_lines: max_lines_per_page,
+                };
+
                 /// Macro for the most common usage of write_element(...), as most types of
                 /// [`Element`]s call this function with almost identical parameters.
                 macro_rules! write_element {
                     ($content:expr, $margin:expr, $text_direction:expr) => {
                         residual_breakpoint_idx = write_element(
-                            layout_info,
+                            &mut ctx,
                             $content,
                             $margin,
                             &mut breakpoint_idx,
-                            &mut line_idx,
-                            max_lines_per_page,
-                            &mut surface,
                             $text_direction,
                         )?
                     };
@@ -345,7 +354,13 @@ impl PdfExporter {
                 match &element {
                     Element::Heading { slug, number } => {
                         if number.is_some() {
-                            let initial_line_index = line_idx;
+                            let mut initial_line_index = *ctx.line_index;
+                            let mut ctx_number = DrawContext {
+                                layout_info,
+                                surface: ctx.surface,
+                                line_index: &mut initial_line_index,
+                                max_lines: max_lines_per_page,
+                            };
 
                             let left_number_margin = Margin {
                                 left: 54.0,
@@ -359,24 +374,25 @@ impl PdfExporter {
                             let rich_number = &number.as_ref().unwrap().into();
 
                             write_element(
-                                layout_info,
+                                &mut ctx_number,
                                 rich_number,
                                 &left_number_margin,
                                 &mut 0,
-                                &mut initial_line_index.clone(),
-                                max_lines_per_page,
-                                &mut surface,
                                 Alignment::LeftToRight,
                             )?;
 
-                            write_element(
+                            let mut initial_line_index_right = *ctx.line_index;
+                            let mut ctx_number_right = DrawContext {
                                 layout_info,
+                                surface: ctx.surface,
+                                line_index: &mut initial_line_index_right,
+                                max_lines: max_lines_per_page,
+                            };
+                            write_element(
+                                &mut ctx_number_right,
                                 rich_number,
                                 &right_number_margin,
                                 &mut 0,
-                                &mut initial_line_index.clone(),
-                                max_lines_per_page,
-                                &mut surface,
                                 Alignment::RightToLeft,
                             )?;
                         }
@@ -386,7 +402,7 @@ impl PdfExporter {
                                 page_idx,
                                 Point {
                                     x: MARGINS.heading.left,
-                                    y: (TOP_MARGIN + (line_idx * FONT_SIZE) - FONT_SIZE) as f32,
+                                    y: (TOP_MARGIN + ((*ctx.line_index) * FONT_SIZE) - FONT_SIZE) as f32,
                                 },
                             ),
                         ));
@@ -404,13 +420,10 @@ impl PdfExporter {
                     }
                     Element::Dialogue(dialogue) => {
                         let premature_exit = write_dialogue(
-                            layout_info,
+                            &mut ctx,
                             dialogue,
                             &mut residual_dialogue_idx,
                             &mut residual_breakpoint_idx,
-                            max_lines_per_page,
-                            &mut line_idx,
-                            &mut surface,
                             &MARGINS.dialogue,
                         )?;
                         if residual_dialogue_idx.is_some() || premature_exit {
@@ -418,23 +431,18 @@ impl PdfExporter {
                         }
                     }
                     Element::DualDialogue(dialogue0, dialogue1) => {
-                        let mut initial_line_index = line_idx;
+                        let mut initial_line_index = *ctx.line_index;
                         let mut premature_exit = false;
-                        // Ensures dual dialogue is only written it either both have not been
-                        // written, or if this specifically is to be continued on a new page.
                         if (residual_dual_dialogue_idx.0.is_none()
                             && residual_dual_dialogue_idx.1.is_none())
                             || residual_dual_dialogue_idx.0.is_some()
                         {
                             premature_exit = premature_exit
                                 || write_dialogue(
-                                    layout_info,
+                                    &mut ctx,
                                     dialogue0,
                                     &mut residual_dual_dialogue_idx.0,
                                     &mut residual_dual_breakpoint_idx.0,
-                                    max_lines_per_page,
-                                    &mut line_idx,
-                                    &mut surface,
                                     &MARGINS.dual_dialogue.left,
                                 )?;
                         }
@@ -442,19 +450,22 @@ impl PdfExporter {
                             && residual_dual_dialogue_idx.0.is_none())
                             || residual_dual_dialogue_idx.1.is_some()
                         {
+                            let mut ctx_dual = DrawContext {
+                                layout_info,
+                                surface: ctx.surface,
+                                line_index: &mut initial_line_index,
+                                max_lines: max_lines_per_page,
+                            };
                             premature_exit = premature_exit
                                 || write_dialogue(
-                                    layout_info,
+                                    &mut ctx_dual,
                                     dialogue1,
                                     &mut residual_dual_dialogue_idx.1,
                                     &mut residual_dual_breakpoint_idx.1,
-                                    max_lines_per_page,
-                                    &mut initial_line_index,
-                                    &mut surface,
                                     &MARGINS.dual_dialogue.right,
                                 )?;
+                            *ctx.line_index = (*ctx.line_index).max(initial_line_index);
                         }
-                        line_idx = line_idx.max(initial_line_index);
                         if residual_dual_dialogue_idx.0.is_some()
                             || residual_dual_dialogue_idx.1.is_some()
                             || premature_exit
@@ -473,13 +484,13 @@ impl PdfExporter {
                     }
                     Element::Synopsis(s) => {
                         if self.synopses {
-                            surface.set_fill(Some(Fill {
+                            ctx.surface.set_fill(Some(Fill {
                                 paint: rgb::Color::new(143, 143, 143).into(),
                                 opacity: NormalizedF32::new(0.5).unwrap(),
                                 rule: Default::default(),
                             }));
                             write_element!(s, &MARGINS.synopsis, Alignment::LeftToRight);
-                            surface.set_fill(None);
+                            ctx.surface.set_fill(None);
                         }
                     }
                     Element::PageBreak => {
@@ -511,14 +522,18 @@ impl PdfExporter {
 /// Writes a diologue [`Element`] to the `pdf` document. If a dialogue spans multiple pages it will
 /// write the character name with the extension `(CONT'D)` on each new page. Returns a
 /// [Option<bool>] which is true if the whole dialogue element did not fit on the same page.
+struct DrawContext<'a, 'b> {
+    layout_info: &'a LayoutInfo<'a>,
+    surface: &'a mut Surface<'b>,
+    line_index: &'a mut usize,
+    max_lines: usize,
+}
+
 fn write_dialogue(
-    layout_info: &LayoutInfo,
+    ctx: &mut DrawContext<'_, '_>,
     dialogue: &Dialogue,
     residual_dialogue: &mut Option<usize>,
     residual_index: &mut Option<usize>,
-    max_lines: usize,
-    line_index: &mut usize,
-    surface: &mut Surface,
     dialogue_margins: &DialogueMargins,
 ) -> std::io::Result<bool> {
     let mut character_name = dialogue.character.clone();
@@ -534,49 +549,45 @@ fn write_dialogue(
         _ => (),
     };
     let span = glyph_span(
-        layout_info.size,
+        ctx.layout_info.size,
         dialogue_margins.character.left,
         dialogue_margins.character.right,
     );
     let name_lines_count = break_points(&character_name, span).len() + 1;
 
-    if name_lines_count >= max_lines {
+    if name_lines_count >= ctx.max_lines {
         return Err(std::io::Error::new(
             std::io::ErrorKind::InvalidData,
             "Character name cannot be longer than a whole page.",
         ));
     }
 
-    if *line_index + name_lines_count + 1 >= max_lines {
+    if *ctx.line_index + name_lines_count + 1 >= ctx.max_lines {
         return Ok(true);
     }
 
     write_element(
-        layout_info,
+        ctx,
         &character_name,
         &dialogue_margins.character,
         &mut 0,
-        line_index,
-        max_lines,
-        surface,
         Alignment::LeftToRight,
     )?;
 
     let mut dialogue_index = residual_dialogue.unwrap_or(0);
     while dialogue_index < dialogue.elements.len() {
-        if *line_index >= max_lines {
+        if *ctx.line_index >= ctx.max_lines {
             *residual_dialogue = Some(dialogue_index);
             // If a dialogue continues on the next page, writes `(MORE)` at the bottom of the
             // current page, inside the bottom margin.
-            write_element(
-                layout_info,
+            write_element_custom_top_margin(
+                ctx,
                 &"(MORE)".into(),
                 &dialogue_margins.character,
                 &mut 0,
-                line_index,
-                max_lines + 1,
-                surface,
                 Alignment::LeftToRight,
+                TOP_MARGIN,
+                ctx.max_lines + 1,
             )?;
 
             return Ok(true);
@@ -595,13 +606,10 @@ fn write_dialogue(
         };
 
         *residual_index = write_element(
-            layout_info,
+            ctx,
             content,
             margin,
             &mut breakpoint_index,
-            line_index,
-            max_lines,
-            surface,
             Alignment::LeftToRight,
         )?;
 
@@ -616,52 +624,39 @@ fn write_dialogue(
     Ok(false)
 }
 
-/// Writes a [`Element`] to the `pdf` document. If it cannot fit the whole element on the page it
-/// will return [`Some`] with an index to which [`BreakPoint`] the function made it to. Calls
-/// [`write_element_custom_top_margin`] with the standard top margin.
 fn write_element(
-    layout_info: &LayoutInfo,
+    ctx: &mut DrawContext<'_, '_>,
     content: &RichString,
     margin: &Margin,
     breakpoint_index: &mut usize,
-    line_index: &mut usize,
-    max_lines: usize,
-    surface: &mut Surface,
     text_direction: Alignment,
 ) -> std::io::Result<Option<usize>> {
     write_element_custom_top_margin(
-        layout_info,
+        ctx,
         content,
         margin,
         breakpoint_index,
-        line_index,
-        max_lines,
-        surface,
         text_direction,
         TOP_MARGIN,
+        ctx.max_lines,
     )
 }
 
-/// Writes a [`Element`] to the `pdf` document. If it cannot fit the whole element on the page it
-/// will return [`Some`] with an index to which [`BreakPoint`] the function made it to. Allows for
-/// using a non-default top margin (for page numbers).
 fn write_element_custom_top_margin(
-    layout_info: &LayoutInfo,
+    ctx: &mut DrawContext<'_, '_>,
     content: &RichString,
     margin: &Margin,
     breakpoint_index: &mut usize,
-    line_index: &mut usize,
-    max_lines: usize,
-    surface: &mut Surface,
     text_direction: Alignment,
     top_margin: usize,
+    local_max_lines: usize,
 ) -> std::io::Result<Option<usize>> {
     let left_margin = margin.left;
     let right_margin = margin.right;
-    let span = glyph_span(layout_info.size, left_margin, right_margin);
+    let span = glyph_span(ctx.layout_info.size, left_margin, right_margin);
     let breakpoints = break_points(content, span);
     while *breakpoint_index <= breakpoints.len() {
-        if *line_index >= max_lines {
+        if *ctx.line_index >= local_max_lines {
             return Ok(Some(*breakpoint_index));
         }
 
@@ -671,10 +666,9 @@ fn write_element_custom_top_margin(
             breakpoints[*breakpoint_index - 1].index
         };
         write_line(
-            layout_info,
-            surface,
+            ctx,
             left_margin,
-            (FONT_SIZE * *line_index + top_margin) as f32,
+            (FONT_SIZE * *ctx.line_index + top_margin) as f32,
             content,
             start_index,
             breakpoints.get(*breakpoint_index),
@@ -682,26 +676,22 @@ fn write_element_custom_top_margin(
             margin,
         )?;
         *breakpoint_index += 1;
-        *line_index += 1;
+        *ctx.line_index += 1;
     }
     Ok(std::option::Option::None)
 }
 
-/// Writes a single line (not to be confused with [`DialogueElement::Line`]) onto the page.
 fn write_line(
-    layout_info: &LayoutInfo,
-    surface: &mut Surface,
+    ctx: &mut DrawContext<'_, '_>,
     mut x: f32,
     y: f32,
     content: &RichString,
-    mut start_index: usize, // the "global" index to the rich string
+    mut start_index: usize,
     breakpoint: Option<&BreakPoint>,
     text_direction: Alignment,
     margin: &Margin,
 ) -> std::io::Result<()> {
     match content.get_char(start_index) {
-        // Newlines are handled as part of the layout engine, so it should never write ut a newline
-        // character.
         Some(c) => {
             if c == '\n' {
                 start_index += 1
@@ -720,25 +710,21 @@ fn write_line(
         std::option::Option::None => (content.char_count(), false),
     };
 
-    // If we use a nonstandard [`Alignment`] we must move the `x` value of which we start writing
-    // the line on.
     match text_direction {
         Alignment::LeftToRight => (),
         Alignment::RightToLeft => {
             let line_length = breakpoint_index - start_index;
             let line_span = line_length as f32 * FONT_WIDTH;
-            x += layout_info.size.x as f32 - (margin.left + margin.right) - line_span;
+            x += ctx.layout_info.size.x as f32 - (margin.left + margin.right) - line_span;
         }
         Alignment::Centered => {
             let line_length = breakpoint_index - start_index;
             let line_span = (line_length / 2) as f32 * FONT_WIDTH;
-            x = (layout_info.size.x / 2) as f32 - line_span;
+            x = (ctx.layout_info.size.x / 2) as f32 - line_span;
         }
     }
 
-    // Keeps track of the position on the line which the writer is currently at.
     let mut glyph_index = 0;
-    // Writes until reaching the breakpoint position.
     while start_index < breakpoint_index {
         let (string_element, relative_index) = match content.get_element_from_index(start_index) {
             Some(res) => res,
@@ -752,7 +738,6 @@ fn write_line(
 
         let element_length = string_element.text.chars().count();
 
-        // The local index in the rich string element at which to break the line.
         let relative_break_index =
             if breakpoint_index - start_index >= element_length - relative_index {
                 element_length
@@ -760,19 +745,19 @@ fn write_line(
                 breakpoint_index - (start_index - relative_index)
             };
         let font = match (string_element.is_bold(), string_element.is_italic()) {
-            (false, false) => &layout_info.fonts.regular,
-            (true, false) => &layout_info.fonts.bold,
-            (false, true) => &layout_info.fonts.italic,
-            (true, true) => &layout_info.fonts.bold_italic,
+            (false, false) => &ctx.layout_info.fonts.regular,
+            (true, false) => &ctx.layout_info.fonts.bold,
+            (false, true) => &ctx.layout_info.fonts.italic,
+            (true, true) => &ctx.layout_info.fonts.bold_italic,
         };
         let mut char_indices = string_element.text.char_indices();
         let start_byte_index = char_indices.nth(relative_index).unwrap().0;
         let end_byte_index = match char_indices.nth(relative_break_index - relative_index - 1) {
             Some((i, _)) => i,
-            None => string_element.text.len(),
+            Option::None => string_element.text.len(),
         };
 
-        surface.draw_text(
+        ctx.surface.draw_text(
             Point::from_xy(x + (glyph_index as f32 * FONT_WIDTH), y),
             font.clone(),
             FONT_SIZE as f32,
@@ -783,7 +768,6 @@ fn write_line(
 
         let glyphs_written = relative_break_index - relative_index;
 
-        // Draws a line under the characters (to create an underline effect).
         if string_element.is_underline() {
             let underline = {
                 let mut pb = PathBuilder::new();
@@ -798,18 +782,17 @@ fn write_line(
                 pb.close();
                 pb.finish().unwrap()
             };
-            surface.draw_path(&underline);
+            ctx.surface.draw_path(&underline);
         }
 
         glyph_index += glyphs_written;
         start_index += glyphs_written;
     }
 
-    // Adds a `-` at the end of a line if the linebreak took place inside a word.
     if break_word {
-        surface.draw_text(
+        ctx.surface.draw_text(
             Point::from_xy(x + (glyph_index as f32 * FONT_WIDTH), y),
-            layout_info.fonts.regular.clone(),
+            ctx.layout_info.fonts.regular.clone(),
             FONT_SIZE as f32,
             "-",
             false,
@@ -880,14 +863,17 @@ fn write_titlepage(
         ($element:ident) => {
             if !titlepage.$element.is_empty() {
                 for s in &titlepage.$element {
-                    let residual = write_element(
+                    let mut ctx = DrawContext {
                         layout_info,
+                        surface: &mut surface,
+                        line_index: &mut line_idx,
+                        max_lines,
+                    };
+                    let residual = write_element(
+                        &mut ctx,
                         s,
                         &TITLE_PAGE_MARGINS.$element,
                         &mut 0,
-                        &mut line_idx,
-                        max_lines,
-                        &mut surface,
                         Alignment::Centered,
                     )?;
 
@@ -925,14 +911,17 @@ fn write_titlepage(
                 line_idx = max_lines - total_lines;
 
                 for s in &titlepage.$element {
-                    write_element(
+                    let mut ctx = DrawContext {
                         layout_info,
+                        surface: &mut surface,
+                        line_index: &mut line_idx,
+                        max_lines,
+                    };
+                    write_element(
+                        &mut ctx,
                         s,
                         &TITLE_PAGE_MARGINS.$element,
                         &mut 0,
-                        &mut line_idx,
-                        max_lines,
-                        &mut surface,
                         $alignment,
                     )?;
                 }

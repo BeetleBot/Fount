@@ -461,8 +461,10 @@ mod types_tests {
 
     #[test]
     fn test_base_style_custom_heading() {
-        let mut config = Config::default();
-        config.heading_style = "underline".to_string();
+        let config = Config {
+            heading_style: "underline".to_string(),
+            ..Config::default()
+        };
         let theme = Theme::default();
         let style = base_style(LineType::SceneHeading, &config, &theme);
         assert!(!style.add_modifier.contains(Modifier::BOLD));
@@ -471,8 +473,10 @@ mod types_tests {
 
     #[test]
     fn test_base_style_custom_shot() {
-        let mut config = Config::default();
-        config.shot_style = "bold underline".to_string();
+        let config = Config {
+            shot_style: "bold underline".to_string(),
+            ..Config::default()
+        };
         let theme = Theme::default();
         let style = base_style(LineType::Shot, &config, &theme);
         assert!(style.add_modifier.contains(Modifier::BOLD));
@@ -535,8 +539,10 @@ mod types_tests {
 
     #[test]
     fn test_base_style_no_color_strips_color_only() {
-        let mut config = Config::default();
-        config.no_color = true;
+        let config = Config {
+            no_color: true,
+            ..Config::default()
+        };
         let theme = Theme::default();
 
         let style_heading = base_style(LineType::SceneHeading, &config, &theme);
@@ -554,8 +560,10 @@ mod types_tests {
 
     #[test]
     fn test_base_style_no_formatting_strips_modifiers() {
-        let mut config = Config::default();
-        config.no_formatting = true;
+        let config = Config {
+            no_formatting: true,
+            ..Config::default()
+        };
         let theme = Theme::default();
 
         let style_heading = base_style(LineType::SceneHeading, &config, &theme);
@@ -573,9 +581,11 @@ mod types_tests {
 
     #[test]
     fn test_base_style_no_color_and_no_formatting() {
-        let mut config = Config::default();
-        config.no_color = true;
-        config.no_formatting = true;
+        let config = Config {
+            no_color: true,
+            no_formatting: true,
+            ..Config::default()
+        };
         let theme = Theme::default();
 
         let style_heading = base_style(LineType::SceneHeading, &config, &theme);

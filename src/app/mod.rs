@@ -696,7 +696,7 @@ impl App {
         self.layout
             .iter()
             .filter_map(|r| r.page_num)
-            .last()
+            .next_back()
             .unwrap_or(1)
     }
 
@@ -772,15 +772,14 @@ impl App {
                 last_color = None;
             }
 
-            if let Some(ref mut s) = current_scene {
-                if s.color.is_none() {
+            if let Some(ref mut s) = current_scene
+                && s.color.is_none() {
                     if let Some(c) = row.override_color {
                         s.color = Some(c);
                     } else if let Some(c) = row.fmt.note_color.values().next() {
                         s.color = Some(*c);
                     }
                 }
-            }
         }
         if let Some(s) = current_scene {
             self.scenes.push(s);
@@ -845,12 +844,11 @@ impl App {
                 }
                 current_character = Some(name);
             } else if row.line_type == LineType::Dialogue {
-                if let Some(name) = &current_character {
-                    if let Some(entry) = stats_map.get_mut(name) {
+                if let Some(name) = &current_character
+                    && let Some(entry) = stats_map.get_mut(name) {
                         let words = row.raw_text.split_whitespace().count();
                         entry.word_count += words;
                     }
-                }
             } else if row.line_type != LineType::Parenthetical {
                 current_character = None;
             }
@@ -1190,28 +1188,26 @@ impl App {
     /// Strips a trailing `#num#` tag from a scene heading line if present.
     fn strip_scene_number_from_line(line: &str) -> &str {
         let trimmed = line.trim_end();
-        if trimmed.ends_with('#') {
-            if let Some(open) = trimmed[..trimmed.len() - 1].rfind('#') {
+        if trimmed.ends_with('#')
+            && let Some(open) = trimmed[..trimmed.len() - 1].rfind('#') {
                 let inner = &trimmed[open + 1..trimmed.len() - 1];
                 if !inner.is_empty() && !inner.contains(' ') {
                     return trimmed[..open].trim_end();
                 }
             }
-        }
         line
     }
 
     /// Extracts the `#tag#` inner value from a scene heading, if present.
     fn extract_scene_tag(line: &str) -> Option<String> {
         let trimmed = line.trim_end();
-        if trimmed.ends_with('#') {
-            if let Some(open) = trimmed[..trimmed.len() - 1].rfind('#') {
+        if trimmed.ends_with('#')
+            && let Some(open) = trimmed[..trimmed.len() - 1].rfind('#') {
                 let inner = &trimmed[open + 1..trimmed.len() - 1];
                 if !inner.is_empty() && !inner.contains(' ') {
                     return Some(inner.to_string());
                 }
             }
-        }
         None
     }
 
@@ -1298,14 +1294,13 @@ impl App {
             let mut existing_suffixes: Vec<String> = Vec::new();
             let prefix = base_num.to_string();
             for (_, other_tag) in &scene_tags {
-                if let Some(t) = other_tag {
-                    if t.len() > prefix.len()
+                if let Some(t) = other_tag
+                    && t.len() > prefix.len()
                         && t.starts_with(&prefix)
                         && t[prefix.len()..].chars().all(|c| c.is_ascii_uppercase())
                     {
                         existing_suffixes.push(t[prefix.len()..].to_string());
                     }
-                }
             }
 
             // Also check the lines directly (in case we already assigned
@@ -1314,8 +1309,8 @@ impl App {
                 if other_idx == line_idx {
                     continue;
                 }
-                if let Some(t) = Self::extract_scene_tag(&self.lines[other_idx]) {
-                    if t.len() > prefix.len()
+                if let Some(t) = Self::extract_scene_tag(&self.lines[other_idx])
+                    && t.len() > prefix.len()
                         && t.starts_with(&prefix)
                         && t[prefix.len()..].chars().all(|c| c.is_ascii_uppercase())
                     {
@@ -1324,7 +1319,6 @@ impl App {
                             existing_suffixes.push(suf);
                         }
                     }
-                }
             }
 
             let suffix = Self::next_suffix_label(&existing_suffixes);
@@ -1362,11 +1356,10 @@ impl App {
             };
             if i == target_line_idx {
                 // If the existing tag is non-integer (custom lock like 14B) keep count as-is
-                if let Some(num) = existing {
-                    if !num.chars().all(|c| c.is_ascii_digit()) {
+                if let Some(num) = existing
+                    && !num.chars().all(|c| c.is_ascii_digit()) {
                         return count; // will be ignored by caller
                     }
-                }
                 return count;
             }
             // Advance count only for scenes that consume an integer slot
@@ -1518,15 +1511,14 @@ impl App {
         // non-empty line's type after a fresh parse.
         self.parse_document();
         let first_content = self.types.iter().find(|t| **t != LineType::Empty);
-        if let Some(lt) = first_content {
-            if matches!(
+        if let Some(lt) = first_content
+            && matches!(
                 lt,
                 LineType::MetadataTitle | LineType::MetadataKey | LineType::MetadataValue
             ) {
                 self.set_error("Title page already exists");
                 return;
             }
-        }
 
         let title_lines = vec![
             "Title: Untitled".to_string(),
@@ -1676,11 +1668,8 @@ impl App {
         if text.is_empty() {
             return false;
         }
-        match arboard::Clipboard::new() {
-            Ok(mut cb) => {
-                let _ = cb.set_text(text);
-            }
-            Err(_) => {}
+        if let Ok(mut cb) = arboard::Clipboard::new() {
+            let _ = cb.set_text(text);
         }
         self.delete_selection()
     }
@@ -1761,7 +1750,7 @@ impl App {
         match cmd {
             "theme" | "t" => {
                 let themes_list = self.theme_manager.list_themes();
-                if let Some(name) = args.get(0) {
+                if let Some(name) = args.first() {
                     if self.theme_manager.set_theme(name) {
                         self.theme = self.theme_manager.current_theme.clone();
                         self.config.theme = self.theme.name.clone();
@@ -1777,7 +1766,7 @@ impl App {
                 }
             }
             "w" => {
-                if let Some(path_str) = args.get(0) {
+                if let Some(path_str) = args.first() {
                     self.save_as(PathBuf::from(path_str))?;
                 } else if self.file.is_some() {
                     self.save()?;
@@ -1818,7 +1807,7 @@ impl App {
                     if self.close_current_buffer() {
                         return Ok(true);
                     }
-                } else if let Some(path_str) = args.get(0) {
+                } else if let Some(path_str) = args.first() {
                     self.save_as(PathBuf::from(path_str))?;
                     if self.close_current_buffer() {
                         return Ok(true);
@@ -1965,7 +1954,7 @@ impl App {
                 self.set_status("Production lock DISABLED");
             }
             "search" => {
-                if let Some(query) = args.get(0) {
+                if let Some(query) = args.first() {
                     self.search_query = query.to_string();
                     self.last_search = query.to_string();
                     self.show_search_highlight = true;
@@ -2008,7 +1997,7 @@ impl App {
                 self.home_selected = 0;
             }
             "o" => {
-                let path_arg = args.get(0).map(|p| PathBuf::from(*p));
+                let path_arg = args.first().map(|p| PathBuf::from(*p));
                 if let Some(path) = path_arg {
                     // Direct open if path provided
                     let path_ref: &Path = path.as_ref();

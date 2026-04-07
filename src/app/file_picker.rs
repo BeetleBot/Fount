@@ -61,8 +61,8 @@ impl App {
                 }
                 Ok(false)
             } else {
-                if action == FilePickerAction::Save || action == FilePickerAction::ExportReport || action == FilePickerAction::ExportScript {
-                    if let Some(ref mut state) = self.file_picker {
+                if (action == FilePickerAction::Save || action == FilePickerAction::ExportReport || action == FilePickerAction::ExportScript)
+                    && let Some(ref mut state) = self.file_picker {
                         let selected_idx = state.list_state.selected().unwrap_or(0);
                         // If we clicked a file in save mode, fill the input
                         if selected_idx < state.items.len() {
@@ -70,7 +70,6 @@ impl App {
                             return Ok(false);
                         }
                     }
-                }
                 self.handle_file_picker_choice(path)
             }
         } else {

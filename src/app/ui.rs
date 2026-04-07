@@ -365,17 +365,15 @@ pub fn draw(f: &mut Frame, app: &mut App) {
                         Style::default()
                     };
                     
-                    if let Some(c) = &theme.ui.foreground {
-                        if !is_selected {
+                    if let Some(c) = &theme.ui.foreground
+                        && !is_selected {
                             base_style = base_style.fg(Color::from(c.clone()));
                         }
-                    }
 
-                    if let Some(c) = item.color {
-                        if !is_selected {
+                    if let Some(c) = item.color
+                        && !is_selected {
                             base_style = base_style.fg(c);
                         }
-                    }
                     
                     let dim_style = if is_selected {
                         base_style
@@ -640,11 +638,11 @@ pub fn draw(f: &mut Frame, app: &mut App) {
         visual_items.push(ListItem::new(Line::from(vec![Span::raw("")])));
         visual_items.push(render_item(3, " [ EXPORT SCREENPLAY ]", app));
         
-        visual_items.push(ListItem::new(Line::from(vec![Span::raw("")])));
-        visual_items.push(ListItem::new(Line::from(vec![Span::styled("  ── PRODUCTION REPORTS ──", header_style)])));
+        visual_items.push(ListItem::new(Line::from(Span::raw(""))));
+        visual_items.push(ListItem::new(Line::from(Span::styled("  ── PRODUCTION REPORTS ──", header_style))));
         visual_items.push(render_item(4, &format!(" Type: {}", report_label), app));
         
-        visual_items.push(ListItem::new(Line::from(vec![Span::raw("")])));
+        visual_items.push(ListItem::new(Line::from(Span::raw(""))));
         visual_items.push(render_item(5, " [ EXPORT REPORT ]", app));
 
         let list = List::new(visual_items);
@@ -652,21 +650,21 @@ pub fn draw(f: &mut Frame, app: &mut App) {
     }
 
     if app.mode == AppMode::Shortcuts {
-        let categories = vec![
-            (" GLOBAL KEYS ", vec![
+        let categories: [(&str, &[(&str, &str)]); 4] = [
+            (" GLOBAL KEYS ", &[
                 ("^H / ^L  ", "Scenes / Ensemble"),
                 ("^P / ^E  ", "Settings / Export"),
                 ("/         ", "Help / Command mode"),
                 ("F1        ", "Toggle This Panel"),
-            ]),
-            (" EDITING ", vec![
+            ][..]),
+            (" EDITING ", &[
                 ("^A / ^C  ", "Select / Copy"),
                 ("^X / ^V  ", "Cut / Paste"),
                 ("Tab       ", "Indent / Assist"),
                 ("Enter     ", "Add Line"),
                 ("Shift+Arr ", "Select Text"),
-            ]),
-            (" COMMANDS (/) ", vec![
+            ][..]),
+            (" COMMANDS (/) ", &[
                 ("/w / /ww    ", "Save / Save As"),
                 ("/o [path]   ", "Open script"),
                 ("/new        ", "New script"),
@@ -688,8 +686,8 @@ pub fn draw(f: &mut Frame, app: &mut App) {
                 ("/[line]     ", "Jump to Line"),
                 ("/s[num]     ", "Jump to Scene"),
                 ("/pos / /home", "Cursor Info / Home"),
-            ]),
-            (" ZEN SETS (/set) ", vec![
+            ][..]),
+            (" ZEN SETS (/set) ", &[
                 ("focus     ", "Zen Mode (Clean UI)"),
                 ("typewriter", "Lock cursor center"),
                 ("markup    ", "Hide syntax markers"),
@@ -697,7 +695,7 @@ pub fn draw(f: &mut Frame, app: &mut App) {
                 ("scenenums ", "Show scene numbers"),
                 ("contd     ", "Auto (CONT'D) tags"),
                 ("autosave  ", "Save every 30s"),
-            ]),
+            ][..]),
         ];
 
         let mut items = Vec::new();
@@ -709,13 +707,13 @@ pub fn draw(f: &mut Frame, app: &mut App) {
             let header_str = format!(" ━━━ {} ", cat.trim());
             let header_line = header_str.clone() + &"━".repeat(40usize.saturating_sub(header_str.len()));
             
-            items.push(ListItem::new(Line::from(vec![
+            items.push(ListItem::new(Line::from(
                 Span::styled(header_line, Style::default().fg(mode_bg).add_modifier(Modifier::BOLD)),
-            ])));
+            )));
             
             items.push(ListItem::new(""));
 
-            for (key, desc) in shortcuts {
+            for (key, desc) in *shortcuts {
                 let key_clean = key.trim();
                 let key_padded = format!("  {:<16} ", key_clean);
                 
@@ -906,12 +904,10 @@ pub fn draw(f: &mut Frame, app: &mut App) {
         home_lines.push(Line::from(Span::styled(center(&"\u{2500}".repeat(42)), dim_style)));
         home_lines.push(Line::from(""));
 
-        let menu = vec![
-            ("New Script", "N", "Start a blank fountain screenplay"),
+        let menu = [("New Script", "N", "Start a blank fountain screenplay"),
             ("Open File", "O", "Browse for a .fountain script"),
             ("Tutorial", "T", "Getting started guide"),
-            ("Exit", "Q", "Quit Fount"),
-        ];
+            ("Exit", "Q", "Quit Fount")];
 
         for (i, (label, key, hint)) in menu.iter().enumerate() {
             let is_sel = i == app.home_selected;

@@ -413,11 +413,11 @@ impl App {
         let next_is_word = next_char.is_some_and(|nc| nc.is_alphanumeric());
         let prev_is_word = prev_char.is_some_and(|pc| pc.is_alphanumeric());
 
-        let step_over = if (c == '"' || c == '\'') && true {
+        let step_over = if c == '"' || c == '\'' {
             is_inside_string && next_char == Some(c)
-        } else if c == ')' && true {
+        } else if c == ')' {
             next_char == Some(')')
-        } else if c == ']' && true {
+        } else if c == ']' {
             next_char == Some(']')
         } else {
             false
@@ -446,11 +446,11 @@ impl App {
             }
         }
 
-        if c == '[' && true {
+        if c == '[' {
             if self.lines[self.cursor_y][..new_b].ends_with("[[") {
                 self.lines[self.cursor_y].insert_str(new_b, "]]");
             }
-        } else if c == '*' && true {
+        } else if c == '*' {
             if self.lines[self.cursor_y][..new_b].ends_with("/*") {
                 self.lines[self.cursor_y].insert_str(new_b, "*/");
             } else if self.lines[self.cursor_y][..new_b].ends_with("**") {
@@ -488,8 +488,8 @@ impl App {
         } else {
             self.lines[self.cursor_y] = format!("{}{}", prefix, lines[0]);
             let mut insert_idx = self.cursor_y + 1;
-            for i in 1..lines.len() - 1 {
-                self.lines.insert(insert_idx, lines[i].clone());
+            for line in lines.iter().take(lines.len() - 1).skip(1) {
+                self.lines.insert(insert_idx, line.clone());
                 self.types.insert(insert_idx, LineType::Action);
                 insert_idx += 1;
             }

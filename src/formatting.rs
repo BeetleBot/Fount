@@ -105,14 +105,18 @@ pub struct LineFormatting {
 
 
 
+struct PairDef<'a> {
+    open: &'a [char],
+    close: &'a [char],
+    hide_markers: bool,
+}
+
 fn find_pairs(
     len: usize,
     chars: &[char],
     skip: &mut HashSet<usize>,
     fmt: &mut LineFormatting,
-    open: &[char],
-    close: &[char],
-    hide_markers: bool,
+    def: PairDef,
     apply: &mut dyn FnMut(usize, usize, &mut LineFormatting),
 ) {
     let mut i = 0;
@@ -122,21 +126,21 @@ fn find_pairs(
             continue;
         }
         let mut match_open = true;
-        for (k, &c) in open.iter().enumerate() {
+        for (k, &c) in def.open.iter().enumerate() {
             if i + k >= len || chars[i + k] != c || skip.contains(&(i + k)) {
                 match_open = false;
                 break;
             }
         }
         if match_open {
-            let mut j = i + open.len();
+            let mut j = i + def.open.len();
             while j < len {
                 if skip.contains(&j) {
                     j += 1;
                     continue;
                 }
                 let mut match_close = true;
-                for (k, &c) in close.iter().enumerate() {
+                for (k, &c) in def.close.iter().enumerate() {
                     if j + k >= len || chars[j + k] != c || skip.contains(&(j + k)) {
                         match_close = false;
                         break;
@@ -144,19 +148,19 @@ fn find_pairs(
                 }
                 if match_close {
                     apply(i, j, fmt);
-                    for k in 0..open.len() {
+                    for k in 0..def.open.len() {
                         skip.insert(i + k);
-                        if hide_markers {
+                        if def.hide_markers {
                             fmt.hidden_chars.insert(i + k);
                         }
                     }
-                    for k in 0..close.len() {
+                    for k in 0..def.close.len() {
                         skip.insert(j + k);
-                        if hide_markers {
+                        if def.hide_markers {
                             fmt.hidden_chars.insert(j + k);
                         }
                     }
-                    i = j + close.len() - 1;
+                    i = j + def.close.len() - 1;
                     break;
                 }
                 j += 1;
@@ -189,9 +193,7 @@ pub fn parse_formatting(text: &str, theme: &crate::theme::Theme) -> LineFormatti
         &chars,
         &mut skip,
         &mut fmt,
-        &['/', '*'][..],
-        &['*', '/'][..],
-        true,
+        PairDef { open: &['/', '*'][..], close: &['*', '/'][..], hide_markers: true },
         &mut |start, end, f| {
             for i in start..(end + 2) {
                 f.boneyard.insert(i);
@@ -204,9 +206,7 @@ pub fn parse_formatting(text: &str, theme: &crate::theme::Theme) -> LineFormatti
         &chars,
         &mut skip,
         &mut fmt,
-        &['[', '['][..],
-        &[']', ']'][..],
-        true,
+        PairDef { open: &['[', '['][..], close: &[']', ']'][..], hide_markers: true },
         &mut |start, end, f| {
             let content: String = chars[start + 2..end].iter().collect();
             let color = get_marker_color(&content, theme);
@@ -224,9 +224,7 @@ pub fn parse_formatting(text: &str, theme: &crate::theme::Theme) -> LineFormatti
         &chars,
         &mut skip,
         &mut fmt,
-        &['*', '*', '*'][..],
-        &['*', '*', '*'][..],
-        true,
+        PairDef { open: &['*', '*', '*'][..], close: &['*', '*', '*'][..], hide_markers: true },
         &mut |start, end, f| {
             for i in (start + 3)..end {
                 f.bold.insert(i);
@@ -239,9 +237,7 @@ pub fn parse_formatting(text: &str, theme: &crate::theme::Theme) -> LineFormatti
         &chars,
         &mut skip,
         &mut fmt,
-        &['*', '*'][..],
-        &['*', '*'][..],
-        true,
+        PairDef { open: &['*', '*'][..], close: &['*', '*'][..], hide_markers: true },
         &mut |start, end, f| {
             for i in (start + 2)..end {
                 f.bold.insert(i);
@@ -253,9 +249,7 @@ pub fn parse_formatting(text: &str, theme: &crate::theme::Theme) -> LineFormatti
         &chars,
         &mut skip,
         &mut fmt,
-        &['*'][..],
-        &['*'][..],
-        true,
+        PairDef { open: &['*'][..], close: &['*'][..], hide_markers: true },
         &mut |start, end, f| {
             for i in (start + 1)..end {
                 f.italic.insert(i);
@@ -267,9 +261,7 @@ pub fn parse_formatting(text: &str, theme: &crate::theme::Theme) -> LineFormatti
         &chars,
         &mut skip,
         &mut fmt,
-        &['_'][..],
-        &['_'][..],
-        true,
+        PairDef { open: &['_'][..], close: &['_'][..], hide_markers: true },
         &mut |start, end, f| {
             for i in (start + 1)..end {
                 f.underlined.insert(i);

@@ -724,7 +724,7 @@ impl App {
                             }
                         }
                         KeyCode::Enter => {
-                            if self.file_picker_enter().map_err(|e| io::Error::new(io::ErrorKind::Other, e.to_string()))? {
+                            if self.file_picker_enter().map_err(|e| io::Error::other(e.to_string()))? {
                                 return Ok(true);
                             }
                         }
@@ -743,11 +743,10 @@ impl App {
                             }
                         }
                         KeyCode::Char(c) => {
-                            if let Some(ref mut state) = self.file_picker {
-                                if state.action != FilePickerAction::Open {
+                            if let Some(ref mut state) = self.file_picker
+                                && state.action != FilePickerAction::Open {
                                     state.filename_input.push(c);
                                 }
-                            }
                         }
                         _ => {}
                     }

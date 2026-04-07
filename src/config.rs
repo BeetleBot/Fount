@@ -571,15 +571,15 @@ impl Config {
             format!("unset {}", key)
         };
 
-        for i in 0..lines.len() {
-            let trimmed = lines[i].trim();
+        for line in &mut lines {
+            let trimmed = line.trim();
             // Match exact `set key` or `unset key` or starting with `set key ` (e.g. if it had value like `set paper_size "a4"`)
             if trimmed == search_prefix_set
                 || trimmed == search_prefix_unset
                 || trimmed.starts_with(&format!("{} ", search_prefix_set))
             {
                 // We keep indentation? Not super necessary, usually it's none
-                lines[i] = new_line.clone();
+                *line = new_line.clone();
                 found = true;
                 break;
             }
@@ -608,10 +608,10 @@ impl Config {
         let search_prefix = format!("set {}", key);
         let new_line = format!("set {} \"{}\"", key, value);
 
-        for i in 0..lines.len() {
-            let trimmed = lines[i].trim();
+        for line in &mut lines {
+            let trimmed = line.trim();
             if trimmed.starts_with(&search_prefix) {
-                lines[i] = new_line.clone();
+                *line = new_line.clone();
                 found = true;
                 break;
             }
@@ -629,7 +629,7 @@ impl Config {
         let mut config = Self::default();
 
         let is_custom_path = cli.config.is_some();
-        let config_path = cli.config.clone().or_else(|| Self::config_path());
+        let config_path = cli.config.clone().or_else(Self::config_path);
 
         if let Some(path) = config_path {
             if !is_custom_path && !path.exists() {
@@ -673,7 +673,7 @@ impl Config {
         config.export_bold_scene_headings |= cli.export_bold_scene_headings;
         config.include_title_page |= cli.include_title_page;
         
-        if config.export_format == "" {
+        if config.export_format.is_empty() {
             config.export_format = "pdf".to_string();
         }
 
