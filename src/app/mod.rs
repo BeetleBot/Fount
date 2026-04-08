@@ -7,8 +7,6 @@ use std::{
 
 pub mod snapshot;
 pub mod sprint;
-pub mod planning;
-pub mod methods;
 
 use ratatui::{layout::Rect, style::Color, widgets::{ListState, TableState}};
 
@@ -100,8 +98,6 @@ pub enum AppMode {
     FilePicker,
     Snapshots,
     SprintStat,
-    StructurePicker,
-    PlanningStudio,
 }
 
 #[derive(PartialEq, Debug, Clone, Default)]
@@ -278,8 +274,6 @@ pub struct App {
     pub sprint_history: Vec<sprint::SprintRecord>,
     pub sprint_stats_state: TableState,
     pub flash_timer: Option<Instant>,
-    pub planning: planning::PlanningState,
-    pub previous_mode: Option<AppMode>,
 }
 
 impl Drop for App {
@@ -443,8 +437,6 @@ impl App {
             sprint_history: Vec::new(),
             sprint_stats_state: TableState::default(),
             flash_timer: None,
-            planning: planning::PlanningState::new(),
-            previous_mode: None,
         };
 
         app.theme_manager.load_user_themes();
