@@ -1,4 +1,5 @@
 use std::io;
+use std::fs;
 use std::path::PathBuf;
 use crossterm::event::{Event, KeyCode, KeyEventKind, KeyModifiers, MouseButton, MouseEventKind};
 use crate::app::{App, AppMode, EnsembleItem, FilePickerAction};
@@ -617,7 +618,7 @@ impl App {
                     return Ok(false);
                 }
                 AppMode::Home => {
-                    const HOME_ITEMS: usize = 4;
+                    let home_items = 4 + self.recent_files.len().min(5);
                     match key.code {
                         KeyCode::Esc => {
                             // If there's an actual file loaded, dismiss home
@@ -630,10 +631,14 @@ impl App {
                             self.mode = AppMode::Normal;
                         }
                         KeyCode::Up | KeyCode::Char('k') => {
-                            self.home_selected = self.home_selected.saturating_sub(1);
+                            if self.home_selected > 0 {
+                                self.home_selected -= 1;
+                            } else {
+                                self.home_selected = home_items.saturating_sub(1);
+                            }
                         }
                         KeyCode::Down | KeyCode::Char('j') => {
-                            self.home_selected = (self.home_selected + 1).min(HOME_ITEMS - 1);
+                            self.home_selected = (self.home_selected + 1) % home_items;
                         }
                         KeyCode::Enter | KeyCode::Char(' ') | KeyCode::Char('\n') |
                         KeyCode::Char('n') | KeyCode::Char('N') |
@@ -693,7 +698,41 @@ impl App {
                                     // Exit App
                                     return Ok(true);
                                 }
-                                _ => {}
+                                _ => {
+                                    // Recent Files
+                                    let recent_idx = self.home_selected - 4;
+                                    if recent_idx < self.recent_files.len() {
+                                        let path = self.recent_files[recent_idx].clone();
+                                        if let Ok(content) = fs::read_to_string(&path) {
+                                            let lines: Vec<String> = content.replace('\t', "    ")
+                                                .lines()
+                                                .map(|s| s.to_string())
+                                                .collect();
+                                            let new_buf = crate::app::BufferState {
+                                                lines: if lines.is_empty() { vec![String::new()] } else { lines },
+                                                file: Some(path.clone()),
+                                                ..Default::default()
+                                            };
+                                            self.buffers.push(new_buf);
+                                            let new_idx = self.buffers.len() - 1;
+                                            self.has_multiple_buffers = self.buffers.len() > 1;
+                                            self.switch_buffer(new_idx);
+                                            self.add_recent_file(path.clone());
+                                            self.mode = AppMode::Normal;
+                                            self.parse_document();
+                                            self.update_autocomplete();
+                                            self.update_layout();
+                                            let name = path.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
+                                            self.set_status(&format!("Opened: {}", name));
+                                            *text_changed = true;
+                                            *cursor_moved = true;
+                                        } else {
+                                            self.set_status("Error opening recent file");
+                                            self.recent_files.remove(recent_idx);
+                                            self.save_recent_files();
+                                        }
+                                    }
+                                }
                             }
                         }
                         _ => {}

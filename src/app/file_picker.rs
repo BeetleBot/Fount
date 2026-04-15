@@ -95,6 +95,7 @@ impl App {
                 let new_idx = self.buffers.len() - 1;
                 self.has_multiple_buffers = self.buffers.len() > 1;
                 self.switch_buffer(new_idx);
+                self.add_recent_file(path.clone());
                 self.parse_document();
                 self.update_autocomplete();
                 self.update_layout();

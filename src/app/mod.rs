@@ -274,6 +274,7 @@ pub struct App {
     pub sprint_history: Vec<sprint::SprintRecord>,
     pub sprint_stats_state: TableState,
     pub flash_timer: Option<Instant>,
+    pub recent_files: Vec<PathBuf>,
 }
 
 impl Drop for App {
@@ -437,7 +438,10 @@ impl App {
             sprint_history: Vec::new(),
             sprint_stats_state: TableState::default(),
             flash_timer: None,
+            recent_files: Vec::new(),
         };
+
+        app.load_recent_files();
 
         app.theme_manager.load_user_themes();
         if !app.config.theme.is_empty() {
@@ -710,6 +714,41 @@ impl App {
             char_pct
         );
         self.set_status(&msg);
+    }
+    
+    pub fn load_recent_files(&mut self) {
+        if let Some(proj_dirs) = directories::ProjectDirs::from("", "", "Fount") {
+            let path = proj_dirs.data_dir().join("recent.txt");
+            if let Ok(content) = fs::read_to_string(path) {
+                self.recent_files = content
+                    .lines()
+                    .map(PathBuf::from)
+                    .filter(|p| p.exists())
+                    .collect();
+            }
+        }
+    }
+
+    pub fn save_recent_files(&self) {
+        if let Some(proj_dirs) = directories::ProjectDirs::from("", "", "Fount") {
+            let path = proj_dirs.data_dir().join("recent.txt");
+            let content = self.recent_files
+                .iter()
+                .map(|p| p.to_string_lossy())
+                .collect::<Vec<_>>()
+                .join("\n");
+            let _ = fs::write(path, content);
+        }
+    }
+
+    pub fn add_recent_file(&mut self, path: PathBuf) {
+        let path = path.canonicalize().unwrap_or(path);
+        self.recent_files.retain(|p| p != &path);
+        self.recent_files.insert(0, path);
+        if self.recent_files.len() > 10 {
+            self.recent_files.truncate(10);
+        }
+        self.save_recent_files();
     }
 
     pub fn total_word_count(&self) -> usize {
@@ -1737,8 +1776,9 @@ impl App {
         }
         let content = self.lines.join("\n");
         fs::write(&path, content)?;
-        self.file = Some(path);
+        self.file = Some(path.clone());
         self.dirty = false;
+        self.add_recent_file(path);
         self.set_status(&format!(
             "Saved as {}",
             self.file.as_ref().unwrap().display()

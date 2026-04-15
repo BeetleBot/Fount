@@ -1150,10 +1150,10 @@ pub fn draw(f: &mut Frame, app: &mut App) {
         }
     }
 
-    // -- Floating Home Screen --
+    // -- Minimalist Home Screen --
     if app.mode == AppMode::Home {
-        let panel_w = 66u16;
-        let panel_h = 24u16;
+        let panel_w = 72u16;
+        let panel_h = 32u16;
         let x = area.x + area.width.saturating_sub(panel_w) / 2;
         let y = area.y + area.height.saturating_sub(panel_h) / 2;
         let panel = Rect {
@@ -1165,92 +1165,94 @@ pub fn draw(f: &mut Frame, app: &mut App) {
 
         f.render_widget(ratatui::widgets::Clear, panel);
 
-        let outer_block = Block::default()
-            .borders(Borders::ALL)
-            .border_style(Style::default().fg(Color::DarkGray));
-        f.render_widget(outer_block, panel);
+        let accent = Color::from(theme.ui.normal_mode_bg.clone());
+        let dim = Color::from(theme.ui.dim.clone());
+        let sel_bg = Color::from(theme.ui.selection_bg.clone());
+        let sel_fg = Color::from(theme.ui.selection_fg.clone());
+        let normal_fg = theme.ui.foreground.clone().map(Color::from).unwrap_or(Color::White);
+
+        let block = Block::default()
+            .borders(ratatui::widgets::Borders::ALL)
+            .border_type(ratatui::widgets::BorderType::Rounded)
+            .border_style(Style::default().fg(dim));
+        f.render_widget(block, panel);
 
         let inner = Rect {
-            x: panel.x + 1,
-            y: panel.y + 1,
-            width: panel.width.saturating_sub(2),
-            height: panel.height.saturating_sub(2),
-        };
-
-        let w = inner.width as usize;
-        let accent = Color::LightCyan;
-        let dim = Color::DarkGray;
-        let sel_bg = mode_bg;
-
-        let logo_style = Style::default().fg(accent).add_modifier(Modifier::BOLD);
-        let dim_style = Style::default().fg(dim);
-
-        let center = |text: &str| -> String {
-            let text_w = unicode_width::UnicodeWidthStr::width(text);
-            let pad = (w.saturating_sub(text_w)) / 2;
-            format!("{}{}", " ".repeat(pad), text)
+            x: panel.x + 2,
+            y: panel.y + 2,
+            width: panel.width.saturating_sub(4),
+            height: panel.height.saturating_sub(4),
         };
 
         let mut home_lines = Vec::new();
         home_lines.push(Line::from(""));
 
+        // ASCII LOGO
+        let logo_style = Style::default().fg(accent).add_modifier(Modifier::BOLD);
         for row in &[
-            "\u{2588}\u{2588}\u{2588}\u{2588}\u{2588}\u{2588}\u{2588}\u{2557} \u{2588}\u{2588}\u{2588}\u{2588}\u{2588}\u{2588}\u{2557} \u{2588}\u{2588}\u{2557}   \u{2588}\u{2588}\u{2557}\u{2588}\u{2588}\u{2588}\u{2557}   \u{2588}\u{2588}\u{2557}\u{2588}\u{2588}\u{2588}\u{2588}\u{2588}\u{2588}\u{2588}\u{2588}\u{2557}",
-            "\u{2588}\u{2588}\u{2554}\u{2550}\u{2550}\u{2550}\u{2550}\u{255d}\u{2588}\u{2588}\u{2554}\u{2550}\u{2550}\u{2550}\u{2588}\u{2588}\u{2557}\u{2588}\u{2588}\u{2551}   \u{2588}\u{2588}\u{2551}\u{2588}\u{2588}\u{2588}\u{2588}\u{2557}  \u{2588}\u{2588}\u{2551}\u{255a}\u{2550}\u{2550}\u{2588}\u{2588}\u{2554}\u{2550}\u{2550}\u{255d}",
-            "\u{2588}\u{2588}\u{2588}\u{2588}\u{2588}\u{2557}  \u{2588}\u{2588}\u{2551}   \u{2588}\u{2588}\u{2551}\u{2588}\u{2588}\u{2551}   \u{2588}\u{2588}\u{2551}\u{2588}\u{2588}\u{2554}\u{2588}\u{2588}\u{2557} \u{2588}\u{2588}\u{2551}   \u{2588}\u{2588}\u{2551}   ",
-            "\u{2588}\u{2588}\u{2554}\u{2550}\u{2550}\u{255d}  \u{2588}\u{2588}\u{2551}   \u{2588}\u{2588}\u{2551}\u{2588}\u{2588}\u{2551}   \u{2588}\u{2588}\u{2551}\u{2588}\u{2588}\u{2551}\u{255a}\u{2588}\u{2588}\u{2557}\u{2588}\u{2588}\u{2551}   \u{2588}\u{2588}\u{2551}   ",
-            "\u{2588}\u{2588}\u{2551}     \u{255a}\u{2588}\u{2588}\u{2588}\u{2588}\u{2588}\u{2588}\u{2554}\u{255d}\u{255a}\u{2588}\u{2588}\u{2588}\u{2588}\u{2588}\u{2588}\u{2554}\u{255d}\u{2588}\u{2588}\u{2551} \u{255a}\u{2588}\u{2588}\u{2588}\u{2588}\u{2551}   \u{2588}\u{2588}\u{2551}   ",
-            "\u{255a}\u{2550}\u{255d}      \u{255a}\u{2550}\u{2550}\u{2550}\u{2550}\u{2550}\u{255d}  \u{255a}\u{2550}\u{2550}\u{2550}\u{2550}\u{2550}\u{255d} \u{255a}\u{2550}\u{255d}  \u{255a}\u{2550}\u{2550}\u{2550}\u{255d}   \u{255a}\u{2550}\u{255d}   ",
+            "███████╗ ██████╗ ██╗   ██╗███╗   ██╗████████╗",
+            "██╔════╝██╔═══██╗██║   ██║████╗  ██║╚══██╔══╝",
+            "█████╗  ██║   ██║██║   ██║██╔██╗ ██║   ██║   ",
+            "██╔══╝  ██║   ██║██║   ██║██║╚██╗██║   ██║   ",
+            "██║     ╚██████╔╝╚██████╔╝██║ ╚████║   ██║   ",
+            "╚═╝      ╚═════╝  ╚═════╝ ╚═╝  ╚═══╝   ╚═╝   ",
         ] {
-            home_lines.push(Line::from(Span::styled(center(row), logo_style)));
+            home_lines.push(Line::from(Span::styled(*row, logo_style)));
         }
 
         home_lines.push(Line::from(""));
         home_lines.push(Line::from(Span::styled(
-            center("Screenwriting in the terminal. Distraction-free."),
-            dim_style,
+            "WRITE BLOCKBUSTER IN YOUR TERMINAL!",
+            Style::default().fg(dim).add_modifier(Modifier::DIM),
         )));
         home_lines.push(Line::from(""));
-        home_lines.push(Line::from(Span::styled(
-            center(&"\u{2500}".repeat(42)),
-            dim_style,
-        )));
+        home_lines.push(Line::from(Span::styled("\u{2500}".repeat(40), Style::default().fg(dim))));
         home_lines.push(Line::from(""));
 
-        let menu = [
-            ("New Script", "N", "Start a blank fountain screenplay"),
-            ("Open File", "O", "Browse for a .fountain script"),
-            ("Tutorial", "T", "Getting started guide"),
-            ("Exit", "Q", "Quit Fount"),
+        // MAIN MENU
+        let menu_options = [
+            "NEW SCRIPT",
+            "OPEN FILE",
+            "TUTORIAL",
+            "EXIT APP",
         ];
 
-        for (i, (label, key, hint)) in menu.iter().enumerate() {
+        for (i, label) in menu_options.iter().enumerate() {
             let is_sel = i == app.home_selected;
-            let display = format!("[{}]  {:<12} \u{2014}  {}", key, label, hint);
-            let centered = center(&display);
-            if is_sel {
-                let s = Style::default()
-                    .fg(Color::Black)
-                    .bg(sel_bg)
-                    .add_modifier(Modifier::BOLD);
-                home_lines.push(Line::from(Span::styled(centered, s)));
+            let text = if is_sel { format!(" ▶ {} ◀ ", label) } else { format!("   {}   ", label) };
+            let style = if is_sel {
+                Style::default().fg(sel_fg).bg(sel_bg).add_modifier(Modifier::BOLD)
             } else {
-                home_lines.push(Line::from(Span::styled(centered, dim_style)));
-            }
+                Style::default().fg(normal_fg)
+            };
+            home_lines.push(Line::from(Span::styled(text, style)));
             home_lines.push(Line::from(""));
         }
 
-        home_lines.push(Line::from(Span::styled(
-            center(&"\u{2500}".repeat(42)),
-            dim_style,
-        )));
-        home_lines.push(Line::from(""));
-        home_lines.push(Line::from(Span::styled(
-            center("github.com/BeetleBot/Fount"),
-            Style::default().fg(dim).add_modifier(Modifier::DIM),
-        )));
+        // RECENT DOCUMENTS
+        if !app.recent_files.is_empty() {
+            home_lines.push(Line::from(""));
+            home_lines.push(Line::from(Span::styled("RECENT DOCUMENTS", Style::default().fg(dim).add_modifier(Modifier::BOLD))));
+            home_lines.push(Line::from(""));
+            
+            for (i, path) in app.recent_files.iter().take(4).enumerate() {
+                let idx = menu_options.len() + i;
+                let is_sel = idx == app.home_selected;
+                
+                let name = path.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_else(|| "Unknown".to_string());
+                let text = if is_sel { format!(" ▶ {} ◀ ", name) } else { format!("   {}   ", name) };
+                
+                let style = if is_sel {
+                    Style::default().fg(sel_fg).bg(sel_bg).add_modifier(Modifier::BOLD)
+                } else {
+                    Style::default().fg(dim)
+                };
+                
+                home_lines.push(Line::from(Span::styled(text, style)));
+            }
+        }
 
-        f.render_widget(Paragraph::new(home_lines), inner);
+        f.render_widget(Paragraph::new(home_lines).alignment(ratatui::layout::Alignment::Center), inner);
     }
 
     if app.mode == AppMode::FilePicker {
