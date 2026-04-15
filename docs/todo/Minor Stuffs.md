@@ -6,9 +6,7 @@
 - [ ] **UndoTree (Visual Branching Undo)**:
     - **Context**: Standard linear undo/redo can be frustrating when you undo a change, write something new, and then realize you wanted the old version back.
     - **Goal**: Implement a non-linear undo history using a Merkle Tree-like structure. Add a `/undotree` view that visualizes the "branches" of your script's evolution, allowing you to jump back to any point in time, even if those changes were previously "overwritten."
-- [ ] **Word-Count Sprint Timer**:
-    - **Context**: Many professional writers use "sprints" or timed goals to maintain momentum and combat writer's block.
-    - **Goal**: Add a `/sprint [minutes]` or `/goal [words]` command. Implement a subtle visual progress bar in the status bar that tracks time or word count in real-time, providing low-friction motivation directly in the TUI environment.
+
 
 
 ### Already Done
@@ -65,3 +63,6 @@
 - [x] **Session Snapshots (Auto-Versioning)**:
     - **Context**: Writers often "over-edit" and lose a phrase or beat that worked in an earlier draft, but full Git is too heavy for casual use.
     - **Goal**: Automatically save a copy of the current buffer to the system's temporary folder (e.g., `/tmp` or `%TEMP%`) every time a session is closed or a major milestone is reached. Include a `/snapshots` interface to browse, diff, and restore these temporary versions without cluttering the project directory.
+- [x] **Word-Count Sprint Timer**:
+    - **Context**: Many professional writers use "sprints" or timed goals to maintain momentum and combat writer's block.
+    - **Goal**: Add a `/sprint [minutes]` or `/goal [words]` command. Implement a subtle visual progress bar in the status bar that tracks time or word count in real-time, providing low-friction motivation directly in the TUI environment.
