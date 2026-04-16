@@ -123,6 +123,15 @@ Example : /set focus
 
 ---
 
+## 🛠️ Troubleshooting
+
+**macOS Colors Look Wrong?**
+The default macOS `Terminal.app` lacks Truecolor (24-bit) support, which Fount uses for its themes. To fix this:
+1. Use a modern terminal emulator (iTerm2, Alacritty, Kitty, Ghostty).
+2. Add `export COLORTERM=truecolor` to your `~/.zshrc` or `~/.bashrc`.
+
+---
+
 ## 🏛️ Credits
 
 - **[Ratatui](https://ratatui.rs/)**: Powering the terminal interface.
