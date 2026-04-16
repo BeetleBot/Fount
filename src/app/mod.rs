@@ -2042,8 +2042,13 @@ impl App {
                 *update_target_x = true;
             }
             "renum" => {
-                self.renumber_all_scenes();
-                self.set_status("Scenes renumbered");
+                if self.config.production_lock {
+                    self.auto_number_locked_scenes();
+                    self.set_status("Production lock active. Sub-scene numbers generated.");
+                } else {
+                    self.renumber_all_scenes();
+                    self.set_status("Scenes renumbered");
+                }
                 *text_changed = true;
             }
             "clearnum" => {
@@ -2054,6 +2059,7 @@ impl App {
             "locknum" => {
                 self.config.production_lock = true;
                 self.set_status("Production lock ENABLED");
+                *text_changed = true;
             }
             "unlocknum" => {
                 self.config.production_lock = false;
