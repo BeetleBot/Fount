@@ -166,8 +166,20 @@ impl App {
                             *update_target_x = true;
                             *cursor_moved = true;
                         }
+                        KeyCode::PageUp if ctrl => {
+                            self.switch_prev_buffer();
+                            *update_target_x = true;
+                            *text_changed = true;
+                            *cursor_moved = true;
+                        }
                         KeyCode::PageUp => {
                             self.move_page_up();
+                            *cursor_moved = true;
+                        }
+                        KeyCode::PageDown if ctrl => {
+                            self.switch_next_buffer();
+                            *update_target_x = true;
+                            *text_changed = true;
                             *cursor_moved = true;
                         }
                         KeyCode::PageDown => {

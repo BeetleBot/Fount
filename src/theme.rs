@@ -66,6 +66,19 @@ pub struct SidebarTheme {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct HexColor(pub String);
+    
+impl HexColor {
+    pub fn is_light(&self) -> bool {
+        if self.0.starts_with('#') && let Ok((r, g, b)) = hex_to_rgb(&self.0) {
+            let luminance = 0.299 * r as f32 + 0.587 * g as f32 + 0.114 * b as f32;
+            return luminance > 128.0;
+        }
+        match self.0.to_lowercase().as_str() {
+            "white" | "yellow" | "lightcyan" | "lightgreen" | "lightyellow" | "lightblue" | "lightmagenta" | "lightred" | "cyan" | "silver" => true,
+            _ => false,
+        }
+    }
+}
 
 impl From<HexColor> for Color {
     fn from(val: HexColor) -> Self {

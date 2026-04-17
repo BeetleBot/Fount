@@ -13,7 +13,7 @@ use ratatui::{
     layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
     text::{Line, Span},
-    widgets::{Block, Borders, List, ListItem, Paragraph},
+    widgets::{Block, Borders, List, ListItem, Paragraph, Tabs},
 };
 use std::collections::HashSet;
 use unicode_width::UnicodeWidthStr;
@@ -59,13 +59,74 @@ pub fn draw(f: &mut Frame, app: &mut App) {
 
     let _in_command_mode = app.mode == AppMode::Command;
     let footer_height = if show_bottom { 1 } else { 0 };
-
+    let header_height = if app.buffers.len() > 1 { 2 } else { 0 };
     let chunks = Layout::default()
         .direction(Direction::Vertical)
-        .constraints([Constraint::Min(0), Constraint::Length(footer_height)])
+        .constraints([
+            Constraint::Length(header_height),
+            Constraint::Min(0),
+            Constraint::Length(footer_height),
+        ])
         .split(area);
 
-    let (mut text_area, footer_area) = (chunks[0], chunks[1]);
+    let (header_area, mut text_area, footer_area) = (chunks[0], chunks[1], chunks[2]);
+
+    if header_height > 0 {
+        let header_chunks = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints([Constraint::Length(1), Constraint::Length(1)])
+            .split(header_area);
+        
+        let (tabs_area, sep_area) = (header_chunks[0], header_chunks[1]);
+
+        let tab_titles: Vec<Line> = (0..app.buffers.len())
+            .map(|i| {
+                let (file, dirty) = if i == app.current_buf_idx {
+                    (&app.file, app.dirty)
+                } else {
+                    (&app.buffers[i].file, app.buffers[i].dirty)
+                };
+
+                let name = file
+                    .as_ref()
+                    .and_then(|p| p.file_name())
+                    .map(|n| n.to_string_lossy().into_owned())
+                    .unwrap_or_else(|| "New Buffer".to_string());
+
+                let mut text = format!(" {} ", name);
+                if dirty {
+                    text.push('*');
+                }
+                text.push(' ');
+                Line::from(text)
+            })
+            .collect();
+
+        let highlight_bg = Color::from(theme.ui.normal_mode_bg.clone());
+        let highlight_fg = if theme.ui.normal_mode_bg.is_light() {
+            Color::Black
+        } else {
+            Color::White
+        };
+
+        let tabs = Tabs::new(tab_titles)
+            .select(app.current_buf_idx)
+            .style(Style::default().fg(Color::from(theme.ui.dim.clone())))
+            .highlight_style(
+                Style::default()
+                    .bg(highlight_bg)
+                    .fg(highlight_fg)
+                    .add_modifier(Modifier::BOLD),
+            )
+            .divider("│");
+
+        f.render_widget(tabs, tabs_area);
+        
+        // Draw separator line
+        let dim_color = Color::from(theme.ui.dim.clone());
+        let sep_line = "─".repeat(sep_area.width as usize);
+        f.render_widget(Paragraph::new(sep_line).style(Style::default().fg(dim_color)), sep_area);
+    }
 
     app.sidebar_area = Rect::default();
     if app.mode == AppMode::SceneNavigator || app.mode == AppMode::CharacterNavigator {
@@ -893,6 +954,7 @@ pub fn draw(f: &mut Frame, app: &mut App) {
                     ("autosave   ", "Toggle auto-save (30s)"),
                     ("autocomplete", "Toggle suggestions"),
                     ("autobreaks ", "Toggle smart breaks"),
+                    ("^PgUp/PgDn ", "Switch Buffers"),
                 ][..],
             ),
         ];

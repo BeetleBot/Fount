@@ -858,7 +858,12 @@ impl App {
                 } else if self.file.is_some() {
                     self.save()?;
                 } else {
-                    self.set_error("No filename. Use /w <file>");
+                    // Open picker for unnamed buffer save
+                    self.open_file_picker(
+                        FilePickerAction::Save,
+                        vec!["fountain".to_string()],
+                        Some("unnamed.fountain".to_string()),
+                    );
                 }
             }
             "ww" => {
