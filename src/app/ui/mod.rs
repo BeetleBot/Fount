@@ -1336,7 +1336,7 @@ pub fn draw(f: &mut Frame, app: &mut App) {
 
         // MAIN MENU
         let menu_options = [
-            "New Script",
+            "New File",
             "Open File",
             "Tutorial",
             "Exit",
@@ -1357,7 +1357,7 @@ pub fn draw(f: &mut Frame, app: &mut App) {
         // RECENT DOCUMENTS
         if !app.recent_files.is_empty() {
             home_lines.push(Line::from(""));
-            home_lines.push(Line::from(Span::styled("[ Recent Documents ]", Style::default().fg(dim).add_modifier(Modifier::BOLD))));
+            home_lines.push(Line::from(Span::styled("[ Recent Files ]", Style::default().fg(dim).add_modifier(Modifier::BOLD))));
             home_lines.push(Line::from(""));
             
             for (i, path) in app.recent_files.iter().take(4).enumerate() {
