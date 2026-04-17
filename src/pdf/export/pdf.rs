@@ -934,9 +934,38 @@ fn write_titlepage(
         };
     }
 
-    write_title_element!(title);
+    // Styling the title: industry standard is BOLD and UPPERCASE
+    if !titlepage.title.is_empty() {
+        let mut title_line_idx = max_lines / 3;
+        for s in &titlepage.title {
+            let mut bold_title = s.clone();
+            for element in &mut bold_title.elements {
+                element.text = element.text.to_uppercase();
+                element.set_bold();
+            }
+            
+            let mut ctx = DrawContext {
+                layout_info,
+                surface: &mut surface,
+                line_index: &mut title_line_idx,
+                max_lines,
+            };
+            write_element(
+                &mut ctx,
+                &bold_title,
+                &TITLE_PAGE_MARGINS.title,
+                &mut 0,
+                Alignment::Centered,
+            )?;
+        }
+        line_idx = title_line_idx;
+    }
+
+    line_idx += 3; // Extra spacing after title
     write_title_element!(credit);
+    line_idx += 1; // Spacing after "Written by"
     write_title_element!(authors);
+    line_idx += 2; // Spacing before source
     write_title_element!(source);
 
     write_title_element!(contact, Alignment::LeftToRight);

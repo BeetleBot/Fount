@@ -273,6 +273,7 @@ impl App {
                                     } else {
                                         self.config.export_format = "pdf".to_string();
                                     }
+                                    let _ = crate::config::Config::save_string_setting("export_format", &self.config.export_format);
                                 }
                                 1 => {
                                     if self.config.paper_size == "a4" {
@@ -280,8 +281,12 @@ impl App {
                                     } else {
                                         self.config.paper_size = "a4".to_string();
                                     }
+                                    let _ = crate::config::Config::save_string_setting("paper_size", &self.config.paper_size);
                                 }
-                                2 => self.config.export_bold_scene_headings = !self.config.export_bold_scene_headings,
+                                2 => {
+                                    self.config.export_bold_scene_headings = !self.config.export_bold_scene_headings;
+                                    let _ = crate::config::Config::save_setting("export_bold_scene_headings", self.config.export_bold_scene_headings);
+                                }
                                 3 => {
                                     if self.config.mirror_scene_numbers == crate::config::MirrorOption::Off {
                                         self.config.mirror_scene_numbers = crate::config::MirrorOption::ExportOnly;
@@ -311,6 +316,7 @@ impl App {
                                     } else {
                                         self.config.report_format = "csv_scene".to_string();
                                     }
+                                    let _ = crate::config::Config::save_string_setting("report_format", &self.config.report_format);
                                 }
                                 6 => {
                                     let (ext, default_name) = match self.config.report_format.as_str() {
