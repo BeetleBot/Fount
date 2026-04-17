@@ -1,398 +1,234 @@
-use std::{fs, io};
-
-use crate::app::{App, AppMode, LastEdit, NavigatorItem};
-use crate::formatting::StringCaseExt;
-use crate::layout::find_visual_cursor;
+use crate::app::{App, LastEdit, HistoryState};
 use crate::types::LineType;
-
+use crate::formatting::StringCaseExt;
 
 impl App {
-
-
-    pub fn current_visual_x(&self) -> u16 {
-        let (_, vis_x) = find_visual_cursor(&self.layout, self.cursor_y, self.cursor_x);
-        vis_x
-    }
-
-    pub fn update_autocomplete(&mut self) {
-        let pending_tab_suggestion = self.suggestion.take();
-        let mut matched = false;
-
-        if !self.config.autocomplete {
-            return;
+    pub fn cut_line(&mut self) {
+        if self.last_edit != LastEdit::Cut {
+            self.save_state(true);
         }
 
-        if self.cursor_y >= self.lines.len() {
-            return;
-        }
+        if self.cursor_y < self.lines.len() {
+            let cut_line = self.lines.remove(self.cursor_y);
 
-        let line = &self.lines[self.cursor_y];
-        let char_count = line.chars().count();
-
-        if self.cursor_x != char_count || char_count == 0 {
-            return;
-        }
-
-        let upper_line = line.to_uppercase_1to1();
-
-        if let Some(sug) = pending_tab_suggestion {
-            let upper_trim = upper_line.trim_start();
-            let full_text = format!("{}{}", upper_trim, sug);
-
-            if self.characters.contains(&full_text) || self.locations.contains(&full_text) {
-                self.suggestion = Some(sug);
-                if self.characters.contains(&full_text) {
-                    self.types[self.cursor_y] = LineType::Character;
-                } else if self.locations.contains(&full_text) {
-                    self.types[self.cursor_y] = LineType::SceneHeading;
+            if self.last_edit == LastEdit::Cut {
+                if let Some(buf) = &mut self.cut_buffer {
+                    buf.push('\n');
+                    buf.push_str(&cut_line);
                 }
-                return;
-            }
-        }
-
-        let is_char_type = matches!(
-            self.types.get(self.cursor_y),
-            Some(LineType::Character) | Some(LineType::DualDialogueCharacter)
-        );
-
-        if is_char_type || upper_line.starts_with('@') {
-            let input = upper_line.trim_start_matches('@').trim_start();
-            if !input.is_empty() {
-                let best_match = self
-                    .characters
-                    .iter()
-                    .filter(|c| c.starts_with(input) && c.len() > input.len())
-                    .min_by_key(|c| c.len());
-                if let Some(c) = best_match {
-                    self.suggestion = Some(c[input.len()..].to_string());
-                    return;
-                }
-            }
-        }
-
-        let is_scene_type = self.types.get(self.cursor_y) == Some(&LineType::SceneHeading);
-
-        if is_scene_type || upper_line.starts_with('.') {
-            let mut input = upper_line.trim_start();
-
-            if input.starts_with('.') && !input.starts_with("..") {
-                input = &input[1..];
             } else {
-                let prefixes = [
-                    "INT. ",
-                    "EXT. ",
-                    "EST. ",
-                    "INT/EXT. ",
-                    "I/E. ",
-                    "E/I. ",
-                    "I./E. ",
-                    "E./I. ",
-                    "INT ",
-                    "EXT ",
-                    "EST ",
-                    "INT/EXT ",
-                    "I/E ",
-                    "E/I ",
-                ];
-                for p in prefixes {
-                    if let Some(rest) = input.strip_prefix(p) {
-                        input = rest;
-                        matched = true;
-                        break;
-                    }
-                }
-                if !matched && let Some((_, rest)) = input.split_once(". ") {
-                    input = rest;
-                }
+                self.cut_buffer = Some(cut_line);
             }
+            self.last_edit = LastEdit::Cut;
 
-            input = input.trim_start();
-
-            if !input.is_empty() {
-                let mut best_match: Option<&String> = None;
-                for loc in &self.locations {
-                    if loc.starts_with(input)
-                        && loc.len() > input.len()
-                        && (best_match.is_none() || loc.len() < best_match.unwrap().len())
-                    {
-                        best_match = Some(loc);
-                    }
-                }
-                if let Some(loc) = best_match {
-                    self.suggestion = Some(loc[input.len()..].to_string());
-                }
+            if self.lines.is_empty() {
+                self.lines.push(String::new());
             }
-        }
-    }
-
-    pub fn save(&mut self) -> io::Result<()> {
-        if self.is_tutorial {
-            self.set_status("Cannot save the tutorial buffer. Press Ctrl+X to exit.");
-            return Ok(());
-        }
-        if let Some(ref p) = self.file {
-            let mut content = self.lines.join("\n");
-            if !content.ends_with('\n') {
-                content.push('\n');
-            }
-            fs::write(p, content)?;
-            self.dirty = false;
-            self.set_status(&format!("Wrote {} lines", self.lines.len()));
-
-            // Trigger snapshot on manual save
-            self.trigger_snapshot();
-        }
-        Ok(())
-    }
-
-    pub fn trigger_snapshot(&mut self) {
-        if let Some(ref p) = self.file {
-            if let Err(e) = self.snapshot_manager.create_snapshot(p, &self.lines) {
-                self.set_status(&format!("Snapshot failed: {}", e));
+            if self.cursor_y >= self.lines.len() {
+                self.cursor_y = self.lines.len().saturating_sub(1);
+                self.cursor_x = self.line_len(self.cursor_y);
             } else {
-                self.last_snapshot_time = Some(std::time::Instant::now());
+                self.cursor_x = 0;
             }
+            self.dirty = true;
         }
     }
 
-    pub fn restore_snapshot(&mut self, index: usize, in_new_buffer: bool) -> io::Result<()> {
-        if index >= self.snapshots.len() {
-            return Ok(());
-        }
-
-        let snapshot_path = self.snapshots[index].path.clone();
-        let snapshot_display_time = self.snapshots[index].display_time();
-        let content = fs::read_to_string(&snapshot_path)?;
-
-        let mut lines: Vec<String> = content.lines().map(|s| s.to_string()).collect();
-        if lines.is_empty() {
-            lines = vec![String::new()];
-        }
-
-        let buf_name = if let Some(ref p) = self.file {
-            p.file_name()
-                .map(|n| n.to_string_lossy().into_owned())
-                .unwrap_or_else(|| "unnamed".to_string())
-        } else {
-            "unnamed".to_string()
-        };
-
-        if in_new_buffer {
-            let new_buf = crate::app::BufferState {
-                lines,
-                dirty: true,
-                ..Default::default()
-            };
-            self.buffers.push(new_buf);
-            let new_idx = self.buffers.len() - 1;
-            self.has_multiple_buffers = true;
-            self.switch_buffer(new_idx);
-            self.set_status(&format!(
-                "Opened snapshot of {} from {} in a new buffer",
-                buf_name, snapshot_display_time
-            ));
-        } else {
-            self.save_state(true); // Save current for undo
-            self.lines = lines;
-            self.cursor_y = 0;
+    pub fn paste_line(&mut self) {
+        if let Some(cut_buf) = self.cut_buffer.clone() {
+            self.save_state(true);
+            let lines_to_paste: Vec<&str> = cut_buf.split('\n').collect();
+            for (i, l) in lines_to_paste.iter().enumerate() {
+                self.lines
+                    .insert(self.cursor_y + i, l.replace('\t', "    "));
+            }
+            self.cursor_y += lines_to_paste.len();
             self.cursor_x = 0;
             self.dirty = true;
-            self.parse_document();
-            self.update_autocomplete();
-            self.update_layout();
-            self.set_status(&format!(
-                "Replaced current buffer with snapshot from {}",
-                snapshot_display_time
-            ));
+            self.last_edit = LastEdit::Other;
         }
-
-        self.mode = AppMode::Normal;
-        Ok(())
     }
 
-    pub fn line_len(&self, y: usize) -> usize {
-        self.lines.get(y).map(|l| l.chars().count()).unwrap_or(0)
-    }
-
-    pub fn move_up(&mut self) {
-        self.last_edit = LastEdit::Other;
-        let (vis_row, _) = find_visual_cursor(&self.layout, self.cursor_y, self.cursor_x);
-        if vis_row > 0 {
-            let mut target_vi = vis_row - 1;
-            while target_vi > 0 && self.layout[target_vi].is_phantom {
-                target_vi -= 1;
+    pub fn save_state(&mut self, force: bool) {
+        let state = HistoryState {
+            lines: self.lines.clone(),
+            cursor_y: self.cursor_y,
+            cursor_x: self.cursor_x,
+        };
+        if force
+            || self
+                .undo_stack
+                .last()
+                .is_none_or(|last| last.lines != state.lines)
+        {
+            self.undo_stack.push(state);
+            if self.undo_stack.len() > 640 {
+                self.undo_stack.remove(0);
             }
-            self.jump_to_visual_row(target_vi, Some(false));
-        } else {
-            self.cursor_y = 0;
-            self.cursor_x = 0;
+            self.redo_stack.clear();
         }
     }
 
-    pub fn move_down(&mut self) {
-        self.last_edit = LastEdit::Other;
-        let (vis_row, _) = find_visual_cursor(&self.layout, self.cursor_y, self.cursor_x);
-        if vis_row + 1 < self.layout.len() {
-            let mut target_vi = vis_row + 1;
-            while target_vi + 1 < self.layout.len() && self.layout[target_vi].is_phantom {
-                target_vi += 1;
+    pub fn undo(&mut self) -> bool {
+        if let Some(state) = self.undo_stack.pop() {
+            self.redo_stack.push(HistoryState {
+                lines: self.lines.clone(),
+                cursor_y: self.cursor_y,
+                cursor_x: self.cursor_x,
+            });
+            self.lines = state.lines;
+            self.cursor_y = state.cursor_y;
+            self.cursor_x = state.cursor_x;
+            self.dirty = true;
+            self.last_edit = LastEdit::None;
+            true
+        } else {
+            false
+        }
+    }
+
+    pub fn redo(&mut self) -> bool {
+        if let Some(state) = self.redo_stack.pop() {
+            self.undo_stack.push(HistoryState {
+                lines: self.lines.clone(),
+                cursor_y: self.cursor_y,
+                cursor_x: self.cursor_x,
+            });
+            self.lines = state.lines;
+            self.cursor_y = state.cursor_y;
+            self.cursor_x = state.cursor_x;
+            self.dirty = true;
+            self.last_edit = LastEdit::None;
+            true
+        } else {
+            false
+        }
+    }
+
+    pub fn clear_selection(&mut self) {
+        self.selection_anchor = None;
+    }
+
+    pub fn selection_range(&self) -> Option<((usize, usize), (usize, usize))> {
+        let anchor = self.selection_anchor?;
+        let cursor = (self.cursor_y, self.cursor_x);
+        if anchor <= cursor {
+            Some((anchor, cursor))
+        } else {
+            Some((cursor, anchor))
+        }
+    }
+
+    pub fn selected_text(&self) -> String {
+        let Some(((sl, sc), (el, ec))) = self.selection_range() else {
+            return String::new();
+        };
+        if sl == el {
+            // Single line
+            let line = &self.lines[sl];
+            let chars: Vec<char> = line.chars().collect();
+            let sc = sc.min(chars.len());
+            let ec = ec.min(chars.len());
+            chars[sc..ec].iter().collect()
+        } else {
+            let mut result = String::new();
+            // First partial line
+            let first: Vec<char> = self.lines[sl].chars().collect();
+            let sc = sc.min(first.len());
+            result.push_str(&first[sc..].iter().collect::<String>());
+            result.push('\n');
+            // Middle lines
+            for li in (sl + 1)..el {
+                result.push_str(&self.lines[li]);
+                result.push('\n');
             }
-            self.jump_to_visual_row(target_vi, Some(true));
+            // Last partial line
+            let last: Vec<char> = self.lines[el].chars().collect();
+            let ec = ec.min(last.len());
+            result.push_str(&last[..ec].iter().collect::<String>());
+            result
+        }
+    }
+
+    pub fn delete_selection(&mut self) -> bool {
+        let Some(((sl, sc), (el, ec))) = self.selection_range() else {
+            return false;
+        };
+        self.selection_anchor = None;
+
+        if sl == el {
+            let chars: Vec<char> = self.lines[sl].chars().collect();
+            let sc = sc.min(chars.len());
+            let ec = ec.min(chars.len());
+            let new_line: String = chars[..sc].iter().chain(chars[ec..].iter()).collect();
+            self.lines[sl] = new_line;
         } else {
-            self.cursor_y = self.lines.len().saturating_sub(1);
-            self.cursor_x = self.line_len(self.cursor_y);
+            let prefix: String = self.lines[sl].chars().take(sc).collect();
+            let suffix: String = self.lines[el].chars().skip(ec).collect();
+            self.lines[sl] = format!("{}{}", prefix, suffix);
+            self.lines.drain((sl + 1)..=el);
+            self.types.drain((sl + 1)..=el);
         }
+
+        self.cursor_y = sl;
+        self.cursor_x = sc;
+        true
     }
 
-    pub fn move_left(&mut self) {
-        self.last_edit = LastEdit::Other;
-        if self.cursor_x > 0 {
-            self.cursor_x -= 1;
-        } else if self.cursor_y > 0 {
-            self.cursor_y -= 1;
-            self.cursor_x = self.line_len(self.cursor_y);
-        }
-    }
-
-    pub fn move_right(&mut self) {
-        self.last_edit = LastEdit::Other;
-        let max = self.line_len(self.cursor_y);
-        if self.cursor_x < max {
-            self.cursor_x += 1;
-        } else if self.cursor_y + 1 < self.lines.len() {
-            self.cursor_y += 1;
-            self.cursor_x = 0;
-        }
-    }
-
-    pub fn move_word_left(&mut self) {
-        self.last_edit = LastEdit::Other;
-        if self.cursor_x == 0 {
-            self.move_left();
+    pub fn copy_to_clipboard(&mut self) {
+        let text = self.selected_text();
+        if text.is_empty() {
             return;
         }
-        let chars: Vec<char> = self.lines[self.cursor_y].chars().collect();
-        while self.cursor_x > 0 && chars[self.cursor_x - 1].is_whitespace() {
-            self.cursor_x -= 1;
-        }
-        while self.cursor_x > 0 && !chars[self.cursor_x - 1].is_whitespace() {
-            self.cursor_x -= 1;
-        }
-    }
-
-    pub fn move_word_right(&mut self) {
-        self.last_edit = LastEdit::Other;
-        let chars: Vec<char> = self.lines[self.cursor_y].chars().collect();
-        let max = chars.len();
-        if self.cursor_x == max {
-            self.move_right();
-            return;
-        }
-        while self.cursor_x < max && chars[self.cursor_x].is_whitespace() {
-            self.cursor_x += 1;
-        }
-        while self.cursor_x < max && !chars[self.cursor_x].is_whitespace() {
-            self.cursor_x += 1;
-        }
-    }
-
-    pub fn move_home(&mut self) {
-        self.last_edit = LastEdit::Other;
-        self.cursor_x = 0;
-    }
-
-    pub fn move_end(&mut self) {
-        self.last_edit = LastEdit::Other;
-        self.cursor_x = self.line_len(self.cursor_y);
-    }
-
-    pub fn move_page_up(&mut self) {
-        self.last_edit = LastEdit::Other;
-        let height = self.visible_height.max(1);
-        let (vis_row, _) = find_visual_cursor(&self.layout, self.cursor_y, self.cursor_x);
-        if vis_row > 0 {
-            let mut target_vi = vis_row.saturating_sub(height);
-            while target_vi > 0 && self.layout[target_vi].is_phantom {
-                target_vi -= 1;
-            }
-            self.jump_to_visual_row(target_vi, None);
-        } else {
-            self.cursor_y = 0;
-            self.cursor_x = 0;
-        }
-    }
-
-    pub fn move_page_down(&mut self) {
-        self.last_edit = LastEdit::Other;
-        let height = self.visible_height.max(1);
-        let (vis_row, _) = find_visual_cursor(&self.layout, self.cursor_y, self.cursor_x);
-        if vis_row + 1 < self.layout.len() {
-            let mut target_vi = (vis_row + height).min(self.layout.len().saturating_sub(1));
-            while target_vi + 1 < self.layout.len() && self.layout[target_vi].is_phantom {
-                target_vi += 1;
-            }
-            self.jump_to_visual_row(target_vi, None);
-        } else {
-            self.cursor_y = self.lines.len().saturating_sub(1);
-            self.cursor_x = self.line_len(self.cursor_y);
-        }
-    }
-
-    fn jump_to_visual_row(&mut self, target_vi: usize, snap_edge: Option<bool>) {
-        let target_line_idx = self.layout[target_vi].line_idx;
-        let changed_line = self.cursor_y != target_line_idx;
-
-        let mut offset = 0;
-        for i in (0..target_vi).rev() {
-            if self.layout[i].line_idx == target_line_idx && !self.layout[i].is_phantom {
-                offset += 1;
-            } else if self.layout[i].line_idx != target_line_idx {
-                break;
-            }
-        }
-
-        self.cursor_y = target_line_idx;
-        let mut final_vi = target_vi;
-
-        if changed_line {
-            self.update_layout();
-
-            let new_rows: Vec<usize> = self
-                .layout
-                .iter()
-                .enumerate()
-                .filter(|(_, r)| !r.is_phantom && r.line_idx == target_line_idx)
-                .map(|(i, _)| i)
-                .collect();
-
-            if !new_rows.is_empty() {
-                if let Some(moving_down) = snap_edge {
-                    if moving_down {
-                        final_vi = *new_rows.first().unwrap();
-                    } else {
-                        final_vi = *new_rows.last().unwrap();
-                    }
+        match arboard::Clipboard::new() {
+            Ok(mut cb) => {
+                if let Err(e) = cb.set_text(text) {
+                    self.set_status(&format!("Clipboard error: {}", e));
                 } else {
-                    final_vi = new_rows[offset.min(new_rows.len().saturating_sub(1))];
+                    self.set_status("Copied to clipboard");
                 }
             }
-        }
-
-        if final_vi < self.layout.len() {
-            let target_row = &self.layout[final_vi];
-            let is_last = target_row.char_end == self.line_len(target_row.line_idx);
-            self.cursor_x = target_row
-                .visual_to_logical_x(self.target_visual_x, is_last)
-                .min(self.line_len(self.cursor_y));
+            Err(e) => self.set_status(&format!("Clipboard unavailable: {}", e)),
         }
     }
 
-    pub fn byte_of(&self, y: usize, cx: usize) -> usize {
-        self.lines[y]
-            .char_indices()
-            .nth(cx)
-            .map(|(b, _)| b)
-            .unwrap_or(self.lines[y].len())
+    pub fn cut_to_clipboard(&mut self) -> bool {
+        let text = self.selected_text();
+        if text.is_empty() {
+            return false;
+        }
+        if let Ok(mut cb) = arboard::Clipboard::new() {
+            let _ = cb.set_text(text);
+        }
+        self.delete_selection()
+    }
+
+    pub fn paste_from_clipboard(&mut self) {
+        match arboard::Clipboard::new() {
+            Ok(mut cb) => {
+                match cb.get_text() {
+                    Ok(text) => {
+                        // If selection active, replace it first
+                        if self.selection_anchor.is_some() {
+                            self.delete_selection();
+                        }
+                        // Insert text at cursor, handling multi-line paste
+                        let mut first = true;
+                        for part in text.split('\n') {
+                            if !first {
+                                self.insert_newline(false);
+                            }
+                            for ch in part.chars() {
+                                self.insert_char(ch);
+                            }
+                            first = false;
+                        }
+                    }
+                    Err(e) => self.set_status(&format!("Paste error: {}", e)),
+                }
+            }
+            Err(e) => self.set_status(&format!("Clipboard unavailable: {}", e)),
+        }
     }
 
     pub fn insert_char(&mut self, c: char) {
@@ -469,49 +305,6 @@ impl App {
             }
         }
 
-        self.dirty = true;
-    }
-
-    pub fn insert_str(&mut self, text: &str) {
-        if text.is_empty() {
-            return;
-        }
-        self.save_state(true);
-        self.last_edit = LastEdit::Other;
-
-        let b = self.byte_of(self.cursor_y, self.cursor_x);
-        let current_line = self.lines[self.cursor_y].clone();
-        let prefix = current_line[..b].to_string();
-        let suffix = current_line[b..].to_string();
-
-        let mut lines: Vec<String> = text.lines().map(|s| s.to_string()).collect();
-        if text.ends_with('\n') {
-            lines.push(String::new());
-        }
-
-        if lines.is_empty() {
-            return;
-        }
-
-        if lines.len() == 1 {
-            self.lines[self.cursor_y] = format!("{}{}{}", prefix, lines[0], suffix);
-            self.cursor_x += lines[0].chars().count();
-        } else {
-            self.lines[self.cursor_y] = format!("{}{}", prefix, lines[0]);
-            let mut insert_idx = self.cursor_y + 1;
-            for line in lines.iter().take(lines.len() - 1).skip(1) {
-                self.lines.insert(insert_idx, line.clone());
-                self.types.insert(insert_idx, LineType::Action);
-                insert_idx += 1;
-            }
-            let last_line_content = lines.last().unwrap();
-            self.lines
-                .insert(insert_idx, format!("{}{}", last_line_content, suffix));
-            self.types.insert(insert_idx, LineType::Action);
-
-            self.cursor_y = insert_idx;
-            self.cursor_x = last_line_content.chars().count();
-        }
         self.dirty = true;
     }
 
@@ -928,60 +721,62 @@ impl App {
         self.lines[self.cursor_y] = chars.into_iter().collect();
         self.dirty = true;
     }
+}
 
-    pub fn calculate_scene_height(&self, item: &NavigatorItem) -> usize {
-        if item.is_section {
-            return 2; // Section name + spacer
-        }
 
-        let max_w: usize = 45; // Match the wider navigator sidebar
-        let mut height: usize = 0;
-
-        // Heading wrapping
-        let mut current_line_len: usize = 0;
-        let heading_indent: usize = 5; // prefix(3) + connector(2)
-        for word in item.label.split_whitespace() {
-            if current_line_len + word.len() + heading_indent + 1 > max_w {
-                height += 1;
-                current_line_len = 0;
-            }
-            if current_line_len > 0 {
-                current_line_len += 1;
-            }
-            current_line_len += word.len();
-        }
-        if current_line_len > 0 || height == 0 {
-            height += 1;
-        }
-
-        // Synopsis wrapping
-        for syn in &item.synopses {
-            let mut current_line_len: usize = 0;
-            let max_syn_w = 34; // Sync with UI
-            let mut syn_lines: usize = 0;
-            for word in syn.split_whitespace() {
-                if current_line_len + word.len() + 1 > max_syn_w {
-                    syn_lines += 1;
-                    current_line_len = word.len();
-                } else {
-                    if current_line_len > 0 {
-                        current_line_len += 1;
-                    }
-                    current_line_len += word.len();
-                }
-            }
-            if current_line_len > 0 {
-                syn_lines += 1;
-            }
-            height += syn_lines;
-        }
-
-        if item.synopses.is_empty() {
-            height += 1; // "no synopsis" placeholder height
-        }
-
-        height += 1; // Empty separator line or ending spacer
-        height
+impl crate::app::App {
+    pub fn line_len(&self, y: usize) -> usize {
+        self.lines.get(y).map(|l| l.chars().count()).unwrap_or(0)
     }
 
+    pub fn byte_of(&self, y: usize, cx: usize) -> usize {
+        self.lines[y]
+            .char_indices()
+            .nth(cx)
+            .map(|(b, _)| b)
+            .unwrap_or(self.lines[y].len())
+    }
+
+    pub fn insert_str(&mut self, text: &str) {
+        if text.is_empty() {
+            return;
+        }
+        self.save_state(true);
+        self.last_edit = LastEdit::Other;
+
+        let b = self.byte_of(self.cursor_y, self.cursor_x);
+        let current_line = self.lines[self.cursor_y].clone();
+        let prefix = current_line[..b].to_string();
+        let suffix = current_line[b..].to_string();
+
+        let mut lines: Vec<String> = text.lines().map(|s| s.to_string()).collect();
+        if text.ends_with('\n') {
+            lines.push(String::new());
+        }
+
+        if lines.is_empty() {
+            return;
+        }
+
+        if lines.len() == 1 {
+            self.lines[self.cursor_y] = format!("{}{}{}", prefix, lines[0], suffix);
+            self.cursor_x += lines[0].chars().count();
+        } else {
+            self.lines[self.cursor_y] = format!("{}{}", prefix, lines[0]);
+            let mut insert_idx = self.cursor_y + 1;
+            for line in lines.iter().take(lines.len() - 1).skip(1) {
+                self.lines.insert(insert_idx, line.clone());
+                self.types.insert(insert_idx, LineType::Action);
+                insert_idx += 1;
+            }
+            let last_line_content = lines.last().unwrap();
+            self.lines
+                .insert(insert_idx, format!("{}{}", last_line_content, suffix));
+            self.types.insert(insert_idx, LineType::Action);
+
+            self.cursor_y = insert_idx;
+            self.cursor_x = last_line_content.chars().count();
+        }
+        self.dirty = true;
+    }
 }

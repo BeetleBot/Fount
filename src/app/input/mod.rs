@@ -1,0 +1,249 @@
+pub mod normal;
+pub mod command;
+pub mod navigation;
+pub mod panes;
+
+use std::io;
+use crossterm::event::{Event, KeyEventKind, KeyModifiers, MouseButton, MouseEventKind};
+use crate::app::{App, AppMode, EnsembleItem};
+
+impl App {
+
+    fn handle_mouse_cursor(
+        &mut self,
+        mouse_y: u16,
+        mouse_x: u16,
+        cursor_moved: &mut bool,
+        update_target_x: &mut bool,
+    ) {
+        // Adjust for title bar (fixed at 1 line if not focus mode)
+        let title_height = if !self.config.focus_mode { 1 } else { 0 };
+        let vis_y = (mouse_y as usize).saturating_sub(title_height) + self.scroll;
+        
+        if let Some(row) = self.layout.get(vis_y) {
+            self.cursor_y = row.line_idx;
+            
+            // Need to know if this is the last visual row for the logical line
+            let is_last = self.layout.get(vis_y + 1).map(|next| next.line_idx != row.line_idx).unwrap_or(true);
+            
+            self.cursor_x = row.visual_to_logical_x(mouse_x, is_last);
+            *cursor_moved = true;
+            *update_target_x = true;
+        }
+    }
+
+    pub fn handle_event(
+        &mut self,
+        ev: Event,
+        update_target_x: &mut bool,
+        text_changed: &mut bool,
+        cursor_moved: &mut bool,
+    ) -> io::Result<bool> {
+        if let Event::Mouse(mouse_event) = ev {
+            self.clear_status();
+            if self.show_search_highlight {
+                self.show_search_highlight = false;
+            }
+
+            match mouse_event.kind {
+                MouseEventKind::ScrollUp => {
+                    if self.mode == AppMode::SceneNavigator
+                        && mouse_event.column < self.sidebar_area.x + self.sidebar_area.width
+                    {
+                        if self.selected_scene > 0 {
+                            self.selected_scene -= 1;
+                            self.navigator_state.select(Some(self.selected_scene));
+                        }
+                    } else {
+                        self.clear_selection();
+                        self.move_up();
+                        *cursor_moved = true;
+                    }
+                }
+                MouseEventKind::ScrollDown => {
+                    if self.mode == AppMode::SceneNavigator
+                        && mouse_event.column < self.sidebar_area.x + self.sidebar_area.width
+                    {
+                        if self.selected_scene < self.scenes.len() - 1 {
+                            self.selected_scene += 1;
+                            self.navigator_state.select(Some(self.selected_scene));
+                        }
+                    } else {
+                        self.clear_selection();
+                        self.move_down();
+                        *cursor_moved = true;
+                    }
+                }
+                MouseEventKind::Down(MouseButton::Left) => {
+                    if self.mode == AppMode::Normal {
+                        self.clear_selection();
+                        self.handle_mouse_cursor(
+                            mouse_event.row,
+                            mouse_event.column,
+                            cursor_moved,
+                            update_target_x,
+                        );
+                        self.selection_anchor = Some((self.cursor_y, self.cursor_x));
+                    } else if self.mode == AppMode::SettingsPane {
+                        let x = mouse_event.column;
+                        let y = mouse_event.row;
+                        if x >= self.settings_area.x
+                            && x < self.settings_area.x + self.settings_area.width
+                            && y >= self.settings_area.y
+                            && y < self.settings_area.y + self.settings_area.height
+                        {
+                            let rel_y = (y - self.settings_area.y) as usize;
+                            if rel_y > 0 && rel_y <= 10 {
+                                let setting_idx = rel_y - 1;
+                                self.selected_setting = setting_idx;
+
+                                if x >= self.settings_area.x + self.settings_area.width - 5 {
+                                    let desc = match self.selected_setting {
+                                        0 => {
+                                            "Always center the cursor, even at the start of the file."
+                                        }
+                                        1 => "Periodically save the current buffer to disk.",
+                                        2 => "Display scene numbers in the left margin.",
+                                        3 => "Display page numbers in the right margin.",
+                                        4 => "Hide Fountain markup unless the line is active.",
+                                        5 => "Enable scene heading/character name completion.",
+                                        6 => "Automatically append (CONT'D) to character names.",
+                                        7 => "Insert paragraph breaks after screenplay elements.",
+                                        8 => "Hide the UI bars for a distraction-free view.",
+                                        _ => "",
+                                    };
+                                    if !desc.is_empty() {
+                                        self.set_status(desc);
+                                    }
+                                } else {
+                                    match self.selected_setting {
+                                        0 => {
+                                            self.config.strict_typewriter_mode =
+                                                !self.config.strict_typewriter_mode
+                                        }
+                                        1 => self.config.auto_save = !self.config.auto_save,
+                                        2 => {
+                                            self.config.show_scene_numbers =
+                                                !self.config.show_scene_numbers
+                                        }
+                                        3 => {
+                                            self.config.show_page_numbers =
+                                                !self.config.show_page_numbers
+                                        }
+                                        4 => self.config.hide_markup = !self.config.hide_markup,
+                                        5 => self.config.autocomplete = !self.config.autocomplete,
+                                        6 => self.config.auto_contd = !self.config.auto_contd,
+                                        7 => {
+                                            self.config.auto_paragraph_breaks =
+                                                !self.config.auto_paragraph_breaks
+                                        }
+                                        8 => self.config.focus_mode = !self.config.focus_mode,
+                                        _ => {}
+                                    }
+                                    *text_changed = true;
+                                }
+                            }
+                        }
+                    } else if self.mode == AppMode::SceneNavigator {
+                        let x = mouse_event.column;
+                        let y = mouse_event.row;
+                        if x < self.sidebar_area.x + self.sidebar_area.width
+                            && y >= self.sidebar_area.y
+                            && y < self.sidebar_area.y + self.sidebar_area.height
+                        {
+                            let mut current_y = self.sidebar_area.y as usize + 1;
+                            let offset = self.navigator_state.offset();
+                            if self.mode == AppMode::SceneNavigator {
+                                for i in offset..self.scenes.len() {
+                                    let h = self.calculate_scene_height(&self.scenes[i]);
+                                    if (y as usize) < current_y + h {
+                                        self.selected_scene = i;
+                                        self.navigator_state.select(Some(i));
+
+                                        let line_idx = self.scenes[i].line_idx;
+                                        self.cursor_y = line_idx;
+                                        self.cursor_x = 0;
+                                        *cursor_moved = true;
+                                        *update_target_x = true;
+                                        break;
+                                    }
+                                    current_y += h;
+                                    if current_y >= (self.sidebar_area.y + self.sidebar_area.height) as usize {
+                                        break;
+                                    }
+                                }
+                            } else if self.mode == AppMode::CharacterNavigator {
+                                for i in offset..self.ensemble_items.len() {
+                                    let h = 1; // Flat list, 1 line per item
+                                    if (y as usize) < current_y + h {
+                                        match self.ensemble_items[i] {
+                                            EnsembleItem::CharacterHeader(_) | EnsembleItem::SceneLink(..) => {
+                                                self.selected_ensemble_idx = i;
+                                                self.ensemble_state.select(Some(i));
+
+                                                if let EnsembleItem::SceneLink(_, line_idx, _) = self.ensemble_items[i] {
+                                                    self.cursor_y = line_idx;
+                                                    self.cursor_x = 0;
+                                                    self.mode = AppMode::Normal;
+                                                    *cursor_moved = true;
+                                                    *update_target_x = true;
+                                                }
+                                            }
+                                            _ => {}
+                                        }
+                                        break;
+                                    }
+                                    current_y += h;
+                                    if current_y >= (self.sidebar_area.y + self.sidebar_area.height) as usize {
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                MouseEventKind::Drag(MouseButton::Left) => {
+                    if self.mode == AppMode::Normal {
+                        self.handle_mouse_cursor(
+                            mouse_event.row,
+                            mouse_event.column,
+                            cursor_moved,
+                            update_target_x,
+                        );
+                        *cursor_moved = true;
+                    }
+                }
+                _ => {}
+            }
+            return Ok(false);
+        }
+
+        if let Event::Paste(text) = ev {
+            if self.mode == AppMode::Normal {
+                self.insert_str(&text);
+                *text_changed = true;
+                *cursor_moved = true;
+                *update_target_x = true;
+            }
+            return Ok(false);
+        }
+
+        if let Event::Key(key) = ev {
+            if key.kind != KeyEventKind::Press {
+                return Ok(false);
+            }
+
+            let _ctrl = key.modifiers.contains(KeyModifiers::CONTROL);
+            let _shift = key.modifiers.contains(KeyModifiers::SHIFT);
+
+            match self.mode {
+                AppMode::Normal => return self.handle_normal(key, update_target_x, text_changed, cursor_moved),
+                AppMode::Command => return self.handle_command(key, update_target_x, text_changed, cursor_moved),
+                AppMode::SceneNavigator | AppMode::CharacterNavigator => return self.handle_navigation(key, update_target_x, text_changed, cursor_moved),
+                _ => return self.handle_panes(key, update_target_x, text_changed, cursor_moved),
+            }
+        }
+        
+        Ok(false)
+    }
+}

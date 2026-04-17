@@ -1,0 +1,240 @@
+use crate::app::{App, AppMode};
+use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
+use std::io;
+
+impl App {
+    pub fn handle_normal(&mut self, key: KeyEvent, update_target_x: &mut bool, text_changed: &mut bool, cursor_moved: &mut bool) -> io::Result<bool> {
+        let ctrl = key.modifiers.contains(KeyModifiers::CONTROL);
+        let shift = key.modifiers.contains(KeyModifiers::SHIFT);
+        match self.mode {
+                AppMode::Normal => {
+                    self.clear_status();
+
+                    if self.show_search_highlight {
+                        match key.code {
+                            KeyCode::Char('w') if ctrl => {}
+                            KeyCode::Char('c') if ctrl => {}
+                            _ => {
+                                self.show_search_highlight = false;
+                                *text_changed = true;
+                            }
+                        }
+                    }
+
+                    match key.code {
+                        KeyCode::Esc => {}
+
+
+                        KeyCode::Left if ctrl => {
+                            self.move_word_left();
+                            *update_target_x = true;
+                            *cursor_moved = true;
+                        }
+                        KeyCode::Right if ctrl => {
+                            self.move_word_right();
+                            *update_target_x = true;
+                            *cursor_moved = true;
+                        }
+
+                        KeyCode::Backspace if ctrl => {
+                            self.delete_word_back();
+                            *update_target_x = true;
+                            *text_changed = true;
+                            *cursor_moved = true;
+                        }
+                        KeyCode::Delete if ctrl => {
+                            self.delete_word_forward();
+                            *update_target_x = true;
+                            *text_changed = true;
+                            *cursor_moved = true;
+                        }
+
+                        KeyCode::Char('h') if ctrl => {
+                            self.open_scene_navigator();
+                        }
+                        KeyCode::Char('l') if ctrl => {
+                            self.open_character_sidebar();
+                        }
+                        KeyCode::Char('p') if ctrl => {
+                            self.mode = AppMode::SettingsPane;
+                            self.selected_setting = 0;
+                        }
+                        KeyCode::Char('f') if ctrl => {}
+                        KeyCode::Char('/') => {
+                            self.mode = AppMode::Command;
+                            self.command_input.clear();
+                            self.command_error = false;
+                        }
+                        KeyCode::Char('e') if ctrl => {
+                            self.mode = AppMode::ExportPane;
+                            self.selected_export_option = 0;
+                        }
+                        KeyCode::Char('i') if ctrl && shift => {}
+
+                        KeyCode::Char('a') if ctrl => {
+                            self.select_all();
+                            *cursor_moved = true;
+                        }
+                        KeyCode::Char('c') if ctrl => {
+                            self.copy_to_clipboard();
+                        }
+                        KeyCode::Char('x') if ctrl => {
+                            if self.selection_anchor.is_some() {
+                                self.cut_to_clipboard();
+                            } else {
+                                self.cut_line();
+                                self.set_status("Line cut");
+                            }
+                            *update_target_x = true;
+                            *text_changed = true;
+                            *cursor_moved = true;
+                        }
+                        KeyCode::Char('v') if ctrl => {
+                            self.paste_from_clipboard();
+                            *update_target_x = true;
+                            *text_changed = true;
+                            *cursor_moved = true;
+                        }
+                        KeyCode::F(1) => {
+                            self.mode = AppMode::Shortcuts;
+                        }
+                        KeyCode::Up if shift => {
+                            if self.selection_anchor.is_none() {
+                                self.selection_anchor = Some((self.cursor_y, self.cursor_x));
+                            }
+                            self.move_up();
+                            *cursor_moved = true;
+                        }
+                        KeyCode::Down if shift => {
+                            if self.selection_anchor.is_none() {
+                                self.selection_anchor = Some((self.cursor_y, self.cursor_x));
+                            }
+                            self.move_down();
+                            *cursor_moved = true;
+                        }
+                        KeyCode::Left if shift => {
+                            if self.selection_anchor.is_none() {
+                                self.selection_anchor = Some((self.cursor_y, self.cursor_x));
+                            }
+                            self.move_left();
+                            *update_target_x = true;
+                            *cursor_moved = true;
+                        }
+                        KeyCode::Right if shift => {
+                            if self.selection_anchor.is_none() {
+                                self.selection_anchor = Some((self.cursor_y, self.cursor_x));
+                            }
+                            self.move_right();
+                            *update_target_x = true;
+                            *cursor_moved = true;
+                        }
+                        KeyCode::Home if shift => {
+                            if self.selection_anchor.is_none() {
+                                self.selection_anchor = Some((self.cursor_y, self.cursor_x));
+                            }
+                            self.move_home();
+                            *update_target_x = true;
+                            *cursor_moved = true;
+                        }
+                        KeyCode::End if shift => {
+                            if self.selection_anchor.is_none() {
+                                self.selection_anchor = Some((self.cursor_y, self.cursor_x));
+                            }
+                            self.move_end();
+                            *update_target_x = true;
+                            *cursor_moved = true;
+                        }
+                        KeyCode::Up => {
+                            self.clear_selection();
+                            self.move_up();
+                            *cursor_moved = true;
+                        }
+                        KeyCode::Down => {
+                            self.clear_selection();
+                            self.move_down();
+                            *cursor_moved = true;
+                        }
+                        KeyCode::Left => {
+                            self.clear_selection();
+                            self.move_left();
+                            *update_target_x = true;
+                            *cursor_moved = true;
+                        }
+                        KeyCode::Right => {
+                            self.clear_selection();
+                            self.move_right();
+                            *update_target_x = true;
+                            *cursor_moved = true;
+                        }
+                        KeyCode::PageUp => {
+                            self.move_page_up();
+                            *cursor_moved = true;
+                        }
+                        KeyCode::PageDown => {
+                            self.move_page_down();
+                            *cursor_moved = true;
+                        }
+                        KeyCode::Home => {
+                            self.move_home();
+                            *update_target_x = true;
+                            *cursor_moved = true;
+                        }
+                        KeyCode::End => {
+                            self.move_end();
+                            *update_target_x = true;
+                            *cursor_moved = true;
+                        }
+
+                        KeyCode::Enter => {
+                            self.suggestion = None;
+                            self.insert_newline(shift);
+                            *update_target_x = true;
+                            *text_changed = true;
+                            *cursor_moved = true;
+                        }
+                        KeyCode::Backspace => {
+                            if self.selection_anchor.is_some() {
+                                self.delete_selection();
+                                self.parse_document();
+                            } else {
+                                self.backspace();
+                            }
+                            *update_target_x = true;
+                            *text_changed = true;
+                            *cursor_moved = true;
+                        }
+                        KeyCode::Delete => {
+                            if self.selection_anchor.is_some() {
+                                self.delete_selection();
+                                self.parse_document();
+                            } else {
+                                self.delete_forward();
+                            }
+                            *update_target_x = true;
+                            *text_changed = true;
+                            *cursor_moved = true;
+                        }
+                        KeyCode::Tab => {
+                            self.handle_tab();
+                            *update_target_x = true;
+                            *text_changed = true;
+                            *cursor_moved = true;
+                        }
+                        KeyCode::Char(c) if !ctrl => {
+                            if self.selection_anchor.is_some() {
+                                self.delete_selection();
+                                self.parse_document();
+                            }
+                            self.insert_char(c);
+                            *update_target_x = true;
+                            *text_changed = true;
+                            *cursor_moved = true;
+                        }
+                        _ => {}
+                    }
+                }
+            _ => {}
+        }
+        Ok(false)
+    }
+}
