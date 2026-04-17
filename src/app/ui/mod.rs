@@ -102,12 +102,8 @@ pub fn draw(f: &mut Frame, app: &mut App) {
             })
             .collect();
 
-        let highlight_bg = Color::from(theme.ui.normal_mode_bg.clone());
-        let highlight_fg = if theme.ui.normal_mode_bg.is_light() {
-            Color::Black
-        } else {
-            Color::White
-        };
+        let highlight_bg = Color::from(theme.ui.selection_bg.clone());
+        let highlight_fg = Color::from(theme.ui.selection_fg.clone());
 
         let tabs = Tabs::new(tab_titles)
             .select(app.current_buf_idx)
@@ -118,14 +114,18 @@ pub fn draw(f: &mut Frame, app: &mut App) {
                     .fg(highlight_fg)
                     .add_modifier(Modifier::BOLD),
             )
-            .divider("│");
+            .divider(" | ");
 
-        f.render_widget(tabs, tabs_area);
+        let tab_area_with_pad = tabs_area.inner(ratatui::layout::Margin {
+            horizontal: 1,
+            vertical: 0,
+        });
+        f.render_widget(tabs, tab_area_with_pad);
         
         // Draw separator line
-        let dim_color = Color::from(theme.ui.dim.clone());
+        let line_color = Color::from(theme.ui.normal_mode_bg.clone());
         let sep_line = "─".repeat(sep_area.width as usize);
-        f.render_widget(Paragraph::new(sep_line).style(Style::default().fg(dim_color)), sep_area);
+        f.render_widget(Paragraph::new(sep_line).style(Style::default().fg(line_color)), sep_area);
     }
 
     app.sidebar_area = Rect::default();
