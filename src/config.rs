@@ -230,6 +230,10 @@ pub struct Cli {
 
     
     #[arg(long)]
+    pub force_ascii: bool,
+
+    
+    #[arg(long)]
     pub force_ansi: bool,
 
     #[arg(long)]
@@ -640,7 +644,6 @@ impl Config {
         let is_custom_path = cli.config.is_some();
         let config_path = cli.config.clone().or_else(Self::config_path);
 
-        let mut config_content = String::new();
         if let Some(path) = config_path {
             if !is_custom_path && !path.exists() {
                 if let Some(parent) = path.parent() {
@@ -650,10 +653,7 @@ impl Config {
             }
 
             match fs::read_to_string(&path) {
-                Ok(content) => {
-                    config.parse_config_str(&content);
-                    config_content = content;
-                }
+                Ok(content) => config.parse_config_str(&content),
                 Err(e) if is_custom_path => {
                     eprintln!(
                         "Warning: Failed to load custom config file at '{}': {}",
@@ -679,6 +679,7 @@ impl Config {
         config.focus_mode |= cli.focus_mode;
         config.no_color |= cli.no_color;
         config.no_formatting |= cli.no_formatting;
+        config.force_ascii |= cli.force_ascii;
         config.force_ansi |= cli.force_ansi;
         config.goto_end |= cli.goto_end;
         config.force_scene_numbers |= cli.force_scene_numbers;
@@ -726,25 +727,11 @@ impl Config {
             config.no_color = true;
         }
 
-        // On Windows, default to no Nerd Fonts unless explicitly enabled in config
-        // (because most standard Windows terminals don't have them installed by default)
-        if cfg!(windows) && !content_had_nerd_font_setting(&config_content) {
-            config.use_nerd_fonts = false;
-        }
-
         config
     }
 }
 
-fn content_had_nerd_font_setting(content: &str) -> bool {
-    for line in content.lines() {
-        let trimmed = line.trim();
-        if trimmed.starts_with("set use_nerd_fonts") || trimmed.starts_with("unset use_nerd_fonts") {
-            return true;
-        }
-    }
-    false
-}
+
 
 #[cfg(test)]
 mod config_tests {
