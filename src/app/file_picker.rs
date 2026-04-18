@@ -132,6 +132,10 @@ impl App {
             FilePickerAction::ExportReport => {
                 let result = match self.config.report_format.as_str() {
                     "csv_char" => self.export_character_csv(&path),
+                    "csv_location" => self.export_location_csv(&path),
+                    "csv_notes" => self.export_note_csv(&path),
+                    "csv_breakdown" => self.export_breakdown_csv(&path),
+                    "txt_dialogue" => self.export_dialogue_txt(&path),
                     _ => self.export_scene_csv(&path),
                 };
                 match result {

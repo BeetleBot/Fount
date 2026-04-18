@@ -819,6 +819,10 @@ pub fn draw(f: &mut Frame, app: &mut App) {
         let report_label = match app.config.report_format.as_str() {
             "csv_scene" => "Scene List (CSV)",
             "csv_char" => "Character Report (CSV)",
+            "csv_location" => "Location Report (CSV)",
+            "csv_notes" => "Notes & Markers (CSV)",
+            "csv_breakdown" => "Script Breakdown (CSV)",
+            "txt_dialogue" => "Dialogue Only (TXT)",
             _ => "Scene List (CSV)",
         };
 

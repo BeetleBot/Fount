@@ -310,7 +310,7 @@ impl App {
                                     self.open_file_picker(FilePickerAction::ExportScript, vec![ext.to_string()], Some(default_name.to_string()));
                                 }
                                 5 => {
-                                    let formats = ["csv_scene", "csv_char"];
+                                    let formats = ["csv_scene", "csv_char", "csv_location", "csv_notes", "csv_breakdown", "txt_dialogue"];
                                     if let Some(idx) = formats.iter().position(|&x| x == self.config.report_format.as_str()) {
                                         self.config.report_format = formats[(idx + 1) % formats.len()].to_string();
                                     } else {
@@ -322,6 +322,10 @@ impl App {
                                     let (ext, default_name) = match self.config.report_format.as_str() {
                                         "csv_scene" => ("csv", "scene_list.csv"),
                                         "csv_char" => ("csv", "character_report.csv"),
+                                        "csv_location" => ("csv", "location_report.csv"),
+                                        "csv_notes" => ("csv", "notes_report.csv"),
+                                        "csv_breakdown" => ("csv", "script_breakdown.csv"),
+                                        "txt_dialogue" => ("txt", "dialogue_only.txt"),
                                         _ => ("csv", "report.csv"),
                                     };
 
