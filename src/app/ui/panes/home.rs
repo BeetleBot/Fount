@@ -67,8 +67,29 @@ pub fn draw_home(f: &mut Frame, app: &mut App) {
     }
 
     home_lines.push(Line::from(""));
+    
+    // Rotating Quotes (Idea 1)
+    let quotes = [
+        "\"The first draft is just you telling yourself the story.\" — Terry Pratchett",
+        "\"Pick up a pen, pick up a computer, and write.\" — Quentin Tarantino",
+        "\"The screenplayer's first duty is to be interesting.\" — Billy Wilder",
+        "\"Action is character. If we don't know the character, we don't care.\" — Syd Field",
+        "\"Writing is a marathon, not a sprint. Pace yourself.\" — Unknown",
+        "\"Every scene should be able to answer: Why is this here?\" — David Mamet",
+        "\"Don't get it right, get it written.\" — James Thurber",
+        "\"The structure is the most important part of the screenplay.\" — Aaron Sorkin",
+        "\"The screenplay is the soul of the film. Everything else is just dressing.\" — Kamal Haasan",
+        "\"Be so honest with your writing that it makes people uncomfortable.\" — Anurag Kashyap",
+    ];
+
+    // Pick a quote based on current time (minute) to keep it stable but rotating
+    let quote_idx = (std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_secs() / 120) as usize % quotes.len();
+    
     home_lines.push(Line::from(Span::styled(
-        "Write blockbusters in your terminal.",
+        quotes[quote_idx],
         Style::default().fg(dim).add_modifier(Modifier::ITALIC),
     )));
     home_lines.push(Line::from(""));

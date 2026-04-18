@@ -1109,6 +1109,15 @@ pub fn draw(f: &mut Frame, app: &mut App) {
             format!("{}{}{}", fname, dirty_str, lock_str),
             Style::default().fg(mode_bg),
         ));
+        
+        // Saved indicator
+        if let Some(time) = app.save_indicator_timer {
+            let elapsed = time.elapsed().as_secs_f32();
+            if elapsed < 2.0 {
+                spans.push(Span::styled("  ✓ Saved", Style::default().fg(Color::Green).add_modifier(Modifier::BOLD)));
+            }
+        }
+
         spans.push(Span::styled(sep, sep_style));
 
         // Center content: command, search, status, or hint

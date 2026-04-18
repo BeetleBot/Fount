@@ -6,6 +6,11 @@
 ### Changed
 - **Windows Distribution**: Removed pre-built Windows binaries and MSI installer from releases due to Smart App Control blocking unsigned apps. Windows users should install via `cargo install fount`.
 
+### Added
+- **Zen Studio Polish**:
+    - **Rotating Quotes**: The home screen now features inspiring quotes from legendary screenwriters.
+    - **Saved Indicator**: A subtle visual confirmation (✓ Saved) now appears in the status bar after successful saves.
+
 ## [0.7.8] - 2026-04-18
 
 ### Added

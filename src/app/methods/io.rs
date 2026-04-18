@@ -103,6 +103,7 @@ impl App {
             "Saved as {}",
             self.file.as_ref().unwrap().display()
         ));
+        self.save_indicator_timer = Some(std::time::Instant::now());
         Ok(())
     }
 
@@ -437,6 +438,7 @@ impl App {
 
             // Trigger snapshot on manual save
             self.trigger_snapshot();
+            self.save_indicator_timer = Some(std::time::Instant::now());
         }
         Ok(())
     }

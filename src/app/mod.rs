@@ -311,6 +311,7 @@ pub struct App {
     pub xray_data: Option<XRayData>,
     pub xray_scroll: usize,
     pub xray_tab: usize,
+    pub save_indicator_timer: Option<Instant>,
 }
 
 impl Drop for App {
@@ -466,6 +467,7 @@ impl App {
             xray_data: None,
             xray_scroll: 0,
             xray_tab: 0,
+            save_indicator_timer: None,
         };
 
         app.load_recent_files();
