@@ -1,5 +1,6 @@
 pub mod home;
 pub mod xray;
+pub mod index_cards;
 
 use unicode_width::UnicodeWidthStr;
 use crate::app::App;

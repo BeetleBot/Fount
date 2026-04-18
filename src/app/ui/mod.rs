@@ -1,5 +1,5 @@
 pub mod panes;
-use self::panes::{draw_snapshots, draw_sprint_stats, draw_file_picker, home::draw_home, xray::draw_xray};
+use self::panes::{draw_snapshots, draw_sprint_stats, draw_file_picker, home::draw_home, xray::draw_xray, index_cards::draw_index_cards};
 
 use crate::{
     app::{App, AppMode, EnsembleItem, GoalType},
@@ -20,6 +20,11 @@ use unicode_width::UnicodeWidthStr;
 pub fn draw(f: &mut Frame, app: &mut App) {
     let area = f.area();
     let theme = &app.theme;
+
+    if app.mode == AppMode::IndexCards {
+        draw_index_cards(f, app);
+        return;
+    }
 
     let mut base_ui_style = Style::default();
     if let Some(bg) = &theme.ui.background {
@@ -49,6 +54,7 @@ pub fn draw(f: &mut Frame, app: &mut App) {
         ),
         AppMode::SprintStat => (" Sprints ", Color::from(theme.ui.normal_mode_bg.clone())),
         AppMode::XRay => (" X-Ray ", Color::from(theme.ui.navigator_mode_bg.clone())),
+        AppMode::IndexCards => (" Architect ", Color::from(theme.ui.navigator_mode_bg.clone())),
         _ => (" Prompt ", Color::from(theme.ui.command_mode_bg.clone())),
     };
 

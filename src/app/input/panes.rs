@@ -598,6 +598,144 @@ impl App {
                     }
                     return Ok(false);
                 }
+                AppMode::IndexCards => {
+                    let cards_count = self.extract_scene_cards().len();
+                    let columns = 3;
+
+                    if self.is_card_editing {
+                        match key.code {
+                            KeyCode::Esc => {
+                                self.is_card_editing = false;
+                                self.is_heading_editing = false;
+                                self.card_input_buffer.clear();
+                            }
+                            KeyCode::Enter => {
+                                let idx = self.selected_card_idx;
+                                let mut h = String::new();
+                                let mut s = String::new();
+                                
+                                {
+                                   let cards = self.extract_scene_cards();
+                                   if let Some(card) = cards.get(idx) {
+                                       h = card.heading.trim_start_matches('.').to_string();
+                                       s = card.synopsis.clone();
+                                   }
+                                }
+
+                                if self.is_heading_editing {
+                                    self.update_card_content(idx, self.card_input_buffer.clone(), s);
+                                    self.is_heading_editing = false;
+                                    {
+                                        let cards = self.extract_scene_cards();
+                                        self.card_input_buffer = cards.get(idx).map(|c| c.synopsis.clone()).unwrap_or_default();
+                                    }
+                                    self.set_status("Editing Synopsis... [Enter] to finish");
+                                } else {
+                                    self.update_card_content(idx, h, self.card_input_buffer.clone());
+                                    self.is_card_editing = false;
+                                    self.card_input_buffer.clear();
+                                    self.set_status("Card updated");
+                                }
+                                *text_changed = true;
+                            }
+                            KeyCode::Backspace => {
+                                self.card_input_buffer.pop();
+                            }
+                            KeyCode::Char(c) if !ctrl => {
+                                self.card_input_buffer.push(c);
+                                *text_changed = true;
+                            }
+                            _ => {}
+                        }
+                    } else {
+                        match key.code {
+                            KeyCode::Esc | KeyCode::Char('q') => {
+                                self.mode = AppMode::Normal;
+                                // Jump to the selected scene
+                                let cards = self.extract_scene_cards();
+                                if let Some(card) = cards.get(self.selected_card_idx) {
+                                    self.cursor_y = card.start_line;
+                                    self.cursor_x = 0;
+                                    *cursor_moved = true;
+                                    *update_target_x = true;
+                                }
+                            }
+                            KeyCode::Up => {
+                                let shift = key.modifiers.contains(KeyModifiers::SHIFT);
+                                if shift {
+                                    if self.selected_card_idx >= columns {
+                                        self.swap_cards(self.selected_card_idx, self.selected_card_idx - columns);
+                                        self.selected_card_idx -= columns;
+                                        *text_changed = true;
+                                    }
+                                } else {
+                                    self.selected_card_idx = self.selected_card_idx.saturating_sub(columns);
+                                }
+                            }
+                            KeyCode::Down => {
+                                let shift = key.modifiers.contains(KeyModifiers::SHIFT);
+                                if shift {
+                                    if self.selected_card_idx + columns < cards_count {
+                                        self.swap_cards(self.selected_card_idx, self.selected_card_idx + columns);
+                                        self.selected_card_idx += columns;
+                                        *text_changed = true;
+                                    }
+                                } else {
+                                    if self.selected_card_idx + columns < cards_count {
+                                        self.selected_card_idx += columns;
+                                    }
+                                }
+                            }
+                            KeyCode::Left => {
+                                let shift = key.modifiers.contains(KeyModifiers::SHIFT);
+                                if shift {
+                                    if self.selected_card_idx > 0 {
+                                        self.swap_cards(self.selected_card_idx, self.selected_card_idx - 1);
+                                        self.selected_card_idx -= 1;
+                                        *text_changed = true;
+                                    }
+                                } else {
+                                    self.selected_card_idx = self.selected_card_idx.saturating_sub(1);
+                                }
+                            }
+                            KeyCode::Right => {
+                                let shift = key.modifiers.contains(KeyModifiers::SHIFT);
+                                if shift {
+                                    if self.selected_card_idx + 1 < cards_count {
+                                        self.swap_cards(self.selected_card_idx, self.selected_card_idx + 1);
+                                        self.selected_card_idx += 1;
+                                        *text_changed = true;
+                                    }
+                                } else {
+                                    if self.selected_card_idx + 1 < cards_count {
+                                        self.selected_card_idx += 1;
+                                    }
+                                }
+                            }
+                            KeyCode::Enter => {
+                                self.is_card_editing = true;
+                                self.is_heading_editing = true;
+                                let cards = self.extract_scene_cards();
+                                self.card_input_buffer = cards.get(self.selected_card_idx)
+                                    .map(|c| c.heading.trim_start_matches('.').to_string())
+                                    .unwrap_or_default();
+                                self.set_status("Editing Scene Heading... [Enter] to move to Synopsis");
+                                *text_changed = true;
+                            }
+                            KeyCode::Char('n') => {
+                                self.add_card(self.selected_card_idx);
+                                *text_changed = true;
+                                *cursor_moved = true;
+                            }
+                            KeyCode::Delete | KeyCode::Backspace => {
+                                self.delete_card(self.selected_card_idx);
+                                *text_changed = true;
+                            }
+                            _ => {}
+                        }
+                    }
+                    return Ok(false);
+                }
             _ => {}
         }
         Ok(false)

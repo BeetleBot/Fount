@@ -9,7 +9,7 @@ use crate::theme::Theme;
 use crate::formatting::{LineFormatting, has_markup_bytes, parse_formatting};
 use crate::types::{LINES_PER_PAGE, LineType, PAGE_WIDTH, get_marker_color};
 
-static SCENE_NUM_RE: LazyLock<Regex> =
+pub static SCENE_NUM_RE: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"^(.*?)\s*#([^#]+)#\s*$").unwrap());
 
 

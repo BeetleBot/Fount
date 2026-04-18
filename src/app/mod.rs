@@ -98,6 +98,7 @@ pub enum AppMode {
     Snapshots,
     SprintStat,
     XRay,
+    IndexCards,
 }
 
 #[derive(Clone, Debug)]
@@ -312,6 +313,12 @@ pub struct App {
     pub xray_scroll: usize,
     pub xray_tab: usize,
     pub save_indicator_timer: Option<Instant>,
+
+    pub selected_card_idx: usize,
+    pub is_card_editing: bool,
+    pub is_heading_editing: bool,
+    pub card_input_buffer: String,
+    pub card_row_offset: usize,
 }
 
 impl Drop for App {
@@ -468,6 +475,12 @@ impl App {
             xray_scroll: 0,
             xray_tab: 0,
             save_indicator_timer: None,
+
+            selected_card_idx: 0,
+            is_card_editing: false,
+            is_heading_editing: false,
+            card_input_buffer: String::new(),
+            card_row_offset: 0,
         };
 
         app.load_recent_files();
@@ -999,6 +1012,13 @@ impl App {
             }
             "snap" => {
                 self.open_snapshots();
+            }
+            "indexcards" | "ic" => {
+                self.mode = AppMode::IndexCards;
+                self.set_status("Story Architect Mode: [Arrows] Navigate, [Enter] Edit, [n] New Card, [Shift+Arrows] Swap, [Del] Remove");
+            }
+            "editor" | "ed" => {
+                self.mode = AppMode::Normal;
             }
             "ud" => {
                 if self.undo() {
