@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.5] - 2026-04-18
+
+### Added
+- **X-Ray Script Analysis**: A comprehensive new diagnostic dashboard (`/xray`) with triple-tabbed pages for Dialogue Balance (bar charts), Pacing Heatmaps (action vs dialogue density), and Scene Length tracking with "TOO LONG" warnings.
+- **Enhanced Character Analytics**: Implemented robust mapping to merge character variants (e.g. `(V.O.)`, `(CONT'D)`) into single entities across all sidebars and reports.
+- **Focus Mode Header Hiding**: Focus Mode now automatically collapses the top header and tab bar along with the status bar for a zero-distraction writing environment.
+- **Platform-Specific READMEs**: Individual `PORTABLE.txt` files for Windows, Linux, and macOS now bundle with each release in `docs/readme/`.
+
+### Changed
+- **Home Screen UI Overhaul**: Completely redesigned the dashboard with a premium glassmorphism aesthetic, featuring curated "Quick Start" shortcuts for tutorials and recent scripts.
+- **Widened Analysis Modal**: Increased the X-Ray modal width to 100 columns and added Dialogue Line counts (`L`) for more granular prominence tracking.
+
+### Fixed
+- **Name Normalization**: Fixed a long-standing bug where parenthetical character extensions caused duplicated entries in the Ensemble Sidebar (`Ctrl+L`).
+
 ## [0.7.0] - 2026-04-17
 
 ### Added
