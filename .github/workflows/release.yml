@@ -41,7 +41,7 @@ jobs:
         id: create_release
         uses: softprops/action-gh-release@v2
         with:
-          name: Fount v${{ github.ref_name }}
+          name: Fount ${{ github.ref_name }}
           body_path: LATEST_CHANGELOG.md
           draft: false
           prerelease: false

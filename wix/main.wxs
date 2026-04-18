@@ -11,7 +11,7 @@
 
         <Package Id='*' Keywords='Installer' Description='Fount Screenplay Editor Installer'
             Comments='A terminal-based Fountain screenplay editor' Manufacturer='BeetleBot'
-            InstallerVersion='200' Languages='1033' Compressed='yes' SummaryCodepage='1252' Platform='x64' />
+            InstallerVersion='200' Languages='1033' Compressed='yes' SummaryCodepage='1252' Platform='x64' InstallScope='perMachine' />
 
         <MajorUpgrade DowngradeErrorMessage='A newer version of [ProductName] is already installed.' />
 
