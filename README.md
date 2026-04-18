@@ -36,7 +36,14 @@ Fount is a dedicated writing environment designed to disappear while you work.
 curl -sSfL https://raw.githubusercontent.com/BeetleBot/Fount/main/scripts/install.sh | sh
 ```
 
-**Via Cargo:**
+**Windows:**
+1. Install [Rust](https://rustup.rs/) if you haven't already.
+2. Run:
+```bash
+cargo install fount
+```
+
+**All Platforms (via Cargo):**
 ```bash
 cargo install fount
 ```

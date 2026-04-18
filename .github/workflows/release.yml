@@ -66,9 +66,6 @@ jobs:
           - target: universal-apple-darwin
             os: macos-latest
             name: Fount-macOS-Universal
-          - target: x86_64-pc-windows-msvc
-            os: windows-latest
-            name: Fount-Win-x64
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -80,9 +77,7 @@ jobs:
       - name: Prepare Portable Instructions
         shell: bash
         run: |
-          if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
-            cp docs/readme/windows.txt PORTABLE.txt
-          elif [[ "${{ matrix.os }}" == "macos-latest" ]]; then
+          if [[ "${{ matrix.os }}" == "macos-latest" ]]; then
             cp docs/readme/macos.txt PORTABLE.txt
           else
             cp docs/readme/linux.txt PORTABLE.txt
@@ -95,15 +90,4 @@ jobs:
           archive: ${{ matrix.name }}
           include: LICENSE,PORTABLE.txt
           tar: unix
-          zip: windows
           token: ${{ secrets.GITHUB_TOKEN }}
-      - name: Build and Upload MSI (Windows)
-        if: matrix.os == 'windows-latest'
-        shell: powershell
-        run: |
-          cargo install cargo-wix
-          cargo wix --nocapture
-          $msi = Get-Item target\wix\*.msi
-          gh release upload ${{ github.ref_name }} $msi.FullName --clobber
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

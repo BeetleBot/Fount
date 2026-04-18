@@ -4,7 +4,7 @@
 ## [0.7.9] - 2026-04-18
 
 ### Changed
-- **Windows Installer**: Switched to a per-user installation scope to improve compatibility with strict Windows security policies (Smart App Control).
+- **Windows Distribution**: Removed pre-built Windows binaries and MSI installer from releases due to Smart App Control blocking unsigned apps. Windows users should install via `cargo install fount`.
 
 ### Added
 - **Interactive Setup Wizard**: The MSI installer now features a full Next → Next → Finish wizard with license agreement, destination folder selection, and premium branding.
