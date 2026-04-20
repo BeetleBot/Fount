@@ -2,7 +2,7 @@ pub mod panes;
 use self::panes::{draw_snapshots, draw_sprint_stats, draw_file_picker, home::draw_home, xray::draw_xray, index_cards::draw_index_cards};
 
 use crate::{
-    app::{App, AppMode, EnsembleItem, GoalType},
+    app::{App, AppMode, EnsembleItem, GoalType, shortcuts},
     formatting::{RenderConfig, StringCaseExt, render_inline},
     layout::{find_visual_cursor, strip_sigils},
     types::{LineType, PAGE_WIDTH, base_style},
@@ -961,106 +961,52 @@ pub fn draw(f: &mut Frame, app: &mut App) {
         let hdr_style = Style::default().fg(mode_bg).add_modifier(Modifier::BOLD);
         let sep_style = Style::default().fg(dim_color);
 
-        // Helper: build lines for one category
-        let build_section = |title: &'static str, entries: &[(&'static str, &'static str)]| -> Vec<Line<'static>> {
+        // Helper: build lines for one category from registry
+        let build_section = |title: &str, shortcuts: &[shortcuts::Shortcut]| -> Vec<Line<'static>> {
             let mut lines = Vec::new();
             lines.push(Line::from(Span::styled(format!(" [ {} ]", title), hdr_style)));
-            for (key, desc) in entries {
-                let k = key.trim();
+            for shortcut in shortcuts {
+                let k = shortcut.key.trim();
                 lines.push(Line::from(vec![
                     Span::styled(format!("  {:<14}", k), key_style),
-                    Span::styled(*desc, desc_style),
+                    Span::styled(shortcut.desc, desc_style),
                 ]));
             }
             lines.push(Line::from(""));
             lines
         };
 
-        // Column 1: Editor Keys + File Commands + Sprint & Tools
+        let all_shortcuts = shortcuts::get_all_shortcuts();
+        
+        // Group by category while preserving order of first appearance
+        let mut categories: Vec<&str> = Vec::new();
+        for s in &all_shortcuts {
+            if !categories.contains(&s.category) {
+                categories.push(s.category);
+            }
+        }
+
+        // Define column assignments (can be tweaked as needed)
+        // Col1: 1, 2, 3 | Col2: 4, 5 | Col3: 6, 7, 8
         let mut col1: Vec<Line> = Vec::new();
-        col1.extend(build_section("Editor Keys", &[
-            ("/",            "Command bar"),
-            ("F1",           "Cheat sheet"),
-            ("Esc",          "Back to editor"),
-            ("^P",           "Settings pane"),
-            ("^E",           "Export pane"),
-            ("^H",           "Scene Navigator"),
-            ("^L",           "Ensemble"),
-            ("Tab",          "Autocomplete"),
-        ]));
-        col1.extend(build_section("File Commands", &[
-            ("/w",           "Save"),
-            ("/ww",          "Save As"),
-            ("/o [path]",    "Open file"),
-            ("/new",         "New file"),
-            ("/bn / /bp",    "Next / prev file"),
-            ("/q",           "Close file"),
-            ("/q!",          "Force close"),
-            ("/wq",          "Save & close"),
-            ("/ex",          "Exit app"),
-            ("/home",        "Start screen"),
-        ]));
-        col1.extend(build_section("Sprint & Tools", &[
-            ("/sprint [m]",  "Start sprint"),
-            ("/cancelsprint", "Cancel sprint"),
-            ("/sprintstat",  "Sprint history"),
-            ("/snap",        "Snapshots"),
-            ("/export",      "Export pane"),
-            ("/theme [name]", "Switch theme"),
-        ]));
-
-        // Column 2: Selection + Navigation Commands
         let mut col2: Vec<Line> = Vec::new();
-        col2.extend(build_section("Selection", &[
-            ("Shift+Arrow",  "Extend selection"),
-            ("Shift+Home",   "Select to start"),
-            ("Shift+End",    "Select to end"),
-            ("^A",           "Select all"),
-            ("^C",           "Copy"),
-            ("^X",           "Cut"),
-            ("^V",           "Paste"),
-        ]));
-        col2.extend(build_section("Navigation", &[
-            ("/[line]",      "Jump to line"),
-            ("/s[num]",      "Jump to scene"),
-            ("/search [q]",  "Search text"),
-            ("/ud / /rd",    "Undo / Redo"),
-            ("/pos",         "Cursor position"),
-            ("/copy",        "Copy clipboard"),
-            ("/cut",         "Cut clipboard"),
-            ("/paste",       "Paste clipboard"),
-            ("/selectall",   "Select all text"),
-        ]));
-
-        // Column 3: Move & Navigate + Scene & Production + Settings
         let mut col3: Vec<Line> = Vec::new();
-        col3.extend(build_section("Movement", &[
-            ("^Left/Right",  "Jump by word"),
-            ("^Backspace",   "Delete word \u{2190}"),
-            ("^Delete",      "Delete word \u{2192}"),
-            ("Home / End",   "Line start/end"),
-            ("PgUp / PgDn",  "Scroll page"),
-            ("^PgUp/PgDn",   "Switch files"),
-        ]));
-        col3.extend(build_section("Scene & Production", &[
-            ("/renum",       "Renumber scenes"),
-            ("/clearnum",    "Clear numbers"),
-            ("/injectnum",   "Number scene"),
-            ("/locknum",     "Production lock"),
-            ("/unlocknum",   "Unlock numbers"),
-            ("/addtitle",    "Title page"),
-        ]));
-        col3.extend(build_section("Settings (/set)", &[
-            ("focus",        "Zen mode"),
-            ("typewriter",   "Center cursor"),
-            ("markup",       "Show/hide markup"),
-            ("pagenums",     "Page numbers"),
-            ("scenenums",    "Scene numbers"),
-            ("contd",        "Auto (CONT'D)"),
-            ("autosave",     "Auto-save 30s"),
-            ("autocomplete", "Suggestions"),
-            ("autobreaks",   "Smart breaks"),
-        ]));
+
+        for (i, cat) in categories.iter().enumerate() {
+            let cat_shortcuts: Vec<shortcuts::Shortcut> = all_shortcuts.iter()
+                .filter(|s| s.category == *cat)
+                .cloned()
+                .collect();
+            
+            let section_lines = build_section(cat, &cat_shortcuts);
+            if i < 3 {
+                col1.extend(section_lines);
+            } else if i < 5 {
+                col2.extend(section_lines);
+            } else {
+                col3.extend(section_lines);
+            }
+        }
 
         // Render the block border
         let block = Block::default()

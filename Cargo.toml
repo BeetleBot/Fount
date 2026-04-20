@@ -5,7 +5,7 @@ authors = [
     "BeetleBot"
 ]
 edition = "2024"
-description = "A terminal-based Fountain screenplay editor (fork of coignard/lottie)"
+description = "A terminal-based Fountain screenplay editor"
 license = "GPL-3.0-only"
 homepage = "https://github.com/BeetleBot/Fount"
 repository = "https://github.com/BeetleBot/Fount"

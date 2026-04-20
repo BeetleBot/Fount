@@ -1,4 +1,5 @@
 pub mod methods;
+pub mod shortcuts;
 use std::{
     collections::HashSet,
     fs, io,

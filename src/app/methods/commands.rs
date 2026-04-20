@@ -4,25 +4,26 @@ use crate::formatting::StringCaseExt;
 
 impl App {
     pub fn get_command_completions(&self) -> Vec<String> {
-        let mut commands: Vec<String> = vec![
-            "w", "ww", "q", "q!", "wq", "ex",
-            "renum", "clearnum", "locknum", "unlocknum", "injectnum",
-            "search", "export",
-            "ud", "rd", "copy", "cut", "paste", "pos",
-            "selectall", "home", "o", "bn", "bp", "new", "newfile", "addtitle",
-            "snap", "sprint", "cancelsprint", "sprintstat", "xray",
-            "set", "theme", "t"
-        ]
-        .into_iter()
-        .map(String::from)
-        .collect();
+        let mut commands: Vec<String> = Vec::new();
+        let all_shortcuts = crate::app::shortcuts::get_all_shortcuts();
 
-        let set_options = [
-            "markup", "pagenums", "scenenums", "contd", "typewriter", 
-            "autosave", "autocomplete", "autobreaks", "focus"
-        ];
-        for opt in set_options {
-            commands.push(format!("set {}", opt));
+        for s in all_shortcuts {
+            if s.key.starts_with('/') {
+                let cmd = s.key.trim_start_matches('/').split_whitespace().next().unwrap_or("");
+                if !cmd.is_empty() && !commands.contains(&cmd.to_string()) {
+                    commands.push(cmd.to_string());
+                }
+            } else if s.category == "Settings (/set)" {
+                commands.push(format!("set {}", s.key));
+            }
+        }
+
+        // Add shorthands and aliases not explicitly in the shortcuts registry
+        let aliases = vec!["t", "newfile"];
+        for a in aliases {
+            if !commands.contains(&a.to_string()) {
+                commands.push(a.to_string());
+            }
         }
 
         let themes = self.theme_manager.list_themes();
