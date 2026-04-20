@@ -4,7 +4,7 @@
 
 ### Added
 - **Index Cards Mode (`/ic`)**:
-    - **Visual Scene Organization**: A complete redesign of the legacy "Story Architect" into a premium, card-based interface.
+    - **Visual Scene Organization**: A complete redesign of the "Story Architect" into a premium, card-based interface.
     - **ASCII Aesthetic**: Cards now feature a unique `[ ]` ASCII bracket design with dynamic background support for all themes (including light modes).
     - **Marker Color Integration**: Scene headings on cards now inherit the color of `[[marker]]` tags for instant structural visualization.
     - **Interactive Reordering**: Shift scenes intuitively using `Shift+Up/Down` with robust re-indexing.

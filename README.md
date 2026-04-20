@@ -1,15 +1,6 @@
-# FOUNT
-
-```text
-
-   ███████╗ ██████╗ ██╗   ██╗███╗   ██╗████████╗
-   ██╔════╝██╔═══██╗██║   ██║████╗  ██║╚══██╔══╝
-   █████╗  ██║   ██║██║   ██║██╔██╗ ██║   ██║   
-   ██╔══╝  ██║   ██║██║   ██║██║╚██╗██║   ██║   
-   ██║     ╚██████╔╝╚██████╔╝██║ ╚████║   ██║   
-   ╚═╝      ╚═════╝  ╚═════╝ ╚═╝  ╚═══╝   ╚═╝   
-
-```
+<p align="center">
+  <img src="assets/icons/Light-Fount Banner.png" alt="Fount Banner" width="100%">
+</p>
 
 **Fount** is a minimal, distraction-free Fountain screenplay editor built for writers who live in the terminal. It blends the raw efficiency of Rust with a "Zen Studio" aesthetic, providing a writing experience that feels both professional and deeply personal.
 
