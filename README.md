@@ -2,7 +2,42 @@
   <img src="assets/icons/Light-Fount Banner.png" alt="Fount Banner" width="100%">
 </p>
 
-**Fount** is a minimal, distraction-free Fountain screenplay editor built for writers who live in the terminal. It blends the raw efficiency of Rust with a "Zen Studio" aesthetic, providing a writing experience that feels both professional and deeply personal.
+# Fount
+**Fount** is a minimal, distraction-free Fountain screenplay editor built for writers who live in the terminal. It blends the raw efficiency of Rust with a "Zen Studio" aesthetic, providing a writing experience that feels professional, focused, and deeply personal.
+
+---
+
+## 🚀 Installation
+
+### Linux
+- **Arch Linux (AUR)**:
+  ```bash
+  yay -S fount-bin
+  ```
+- **Debian / Ubuntu**: Download the latest `.deb` package from the [Releases](https://github.com/BeetleBot/Fount/releases) page.
+- **Fedora / RHEL**: Download the latest `.rpm` package from the [Releases](https://github.com/BeetleBot/Fount/releases) page.
+
+### Any Platform (via Cargo)
+```bash
+cargo install fount
+```
+
+### Windows & macOS
+- **Windows**: `cargo install fount` (requires [Rust](https://rustup.rs/))
+- **macOS**: `cargo install fount` (for best results, use a terminal with Truecolor support like iTerm2 or Ghostty)
+
+---
+
+## ✍️ Developer's Note
+
+> [!NOTE]
+> **A Letter from the Creator**
+> 
+> As a credited Tamil/Indian screenwriter—writing predominantly in **English and Tanglish**—I found myself at a crossroads when I transitioned to Linux. I deeply missed **Beat**, my long-time companion for storytelling, and couldn't find a minimalist alternative that felt "right" in the terminal.
+> 
+> My search led me to **Lottie**, whose elegance immediately captivated me. I cloned the project and began shaping it into the tool I needed. While I possess a moderate grasp of Rust, this journey was significantly smoothed by the partnership of **AI Agents like Claude and Gemini**. 
+> 
+> To be clear: **this software is 75% my design and 25% AI collaboration.** AI was instrumental in helping me overcome technical hurdles, complicated logic, and the often frustrating nuances of software release workflows. Fount is the result of my creative vision, the open-source code that inspired me, and the intelligence of the agents that helped me build it. It is a tool I use daily, and I hope it serves you just as well.
 
 ---
 
@@ -10,129 +45,57 @@
 
 Fount is a dedicated writing environment designed to disappear while you work.
 
-- **Adaptive Interior**: Automatically detects your terminal's background. Fount respects your environment natively.
-- **Unified Vision**: A single-line footer displays real-time **Word Counts**, **Page Numbers**, and **Status Messages**.
-- **Story-Map Navigation**: Toggle the **Scene Navigator (`Ctrl+H`)** to see your screenplay's structure at a glance.
-- **Ensemble Management**: Use the **Character Sidebar (`Ctrl+L`)** to analyze character distribution and jump directly to appearances.
-- **Multi-Buffer Workflow**: Open, edit, and switch between multiple scripts seamlessy.
+- **Adaptive Interior**: Automatically detects your terminal's background to maintain contrast.
+- **Unified Vision**: A single-line footer displays real-time **Word Counts**, **Page Numbers**, and **Status**.
+- **Story-Map Navigation**: Toggle the **Scene Navigator (`Ctrl+H`)** to see your screenplay's structure.
+- **Ensemble Management**: Use the **Character Sidebar (`Ctrl+L`)** to analyze character distribution.
+- **Index Cards**: A grid-based **Story Architect (`/ic`)** for high-level plotting.
+- **Multi-Buffer Workflow**: Open and switch between multiple scripts seamlessly.
 
 ---
 
-## 🚀 Quick Start
+## ⌨️ Command Reference
 
-### Installation
-
-**Linux & macOS (Single Command):**
-```bash
-curl -sSfL https://raw.githubusercontent.com/BeetleBot/Fount/main/scripts/install.sh | sh
-```
-
-**Windows:**
-1. Install [Rust](https://rustup.rs/) if you haven't already.
-2. Run:
-```bash
-cargo install fount
-```
-
-**All Platforms (via Cargo):**
-```bash
-cargo install fount
-```
-
-### Usage
-```bash
-fount [script.fountain]
-```
-
----
-
-## ⌨️ Essential Keyboard Shortcuts
-
-Fount prioritizes a command-driven workflow. Only core editing and viewing shortcuts remain mapped to keys.
-
+### Keyboard Shortcuts
 | Shortcut | Action |
 | :--- | :--- |
 | **`/`** | **Command Mode** (Open footer command bar) |
-| **`F1`** | **Internal Reference** (Toggle help panel) |
+| **`F1`** | **Cheat Sheet** (Toggle help panel) |
 | **`Ctrl + H`** | Open Scene Navigator |
 | **`Ctrl + L`** | Open Ensemble Sidebar |
 | **`Ctrl + P`** | Open Settings Pane |
 | **`Ctrl + E`** | Open Export Pane |
 | **`Ctrl + A`** | Select All Text |
-| **`Ctrl + C`** | Copy Selection |
-| **`Ctrl + X`** | Cut Selection (or current line) |
-| **`Ctrl + V`** | Paste from Clipboard |
-| **`Shift + Arr`**   | Select Text |
-| **`Tab`**            | Smart Indent / Autocomplete |
-| **`Enter`**          | Insert Newline |
-| **`Esc`**            | Clear Status / Dismiss Sidebars |
+| **`Ctrl + C / X / V`** | Copy / Cut / Paste |
+| **`Tab`** | Smart Indent / Autocomplete |
+| **`Esc`** | Back to Editor / Clear Status |
 
----
-
-## ⚡ Shorthand Commands (/)
-
-Type `/` followed by a command to execute operations. Most physical shortcuts have been moved here for a cleaner experience.
-
+### Shorthand Commands
 | Command | Action |
 | :--- | :--- |
 | **`/w`** | Save Current Script |
-| **`/ww`**| Save As (opens file picker) |
-| **`/o [path]`** | Open script (opens picker if no path) |
-| **`/ud`** | Undo last change |
-| **`/rd`** | Redo last change |
-| **`/bn`** | Buffer Next (Switch script) |
-| **`/bp`** | Buffer Previous (Switch script) |
-| **`/q`** | Close Current Script (Return to Home) |
-| **`/wq`** | Save and Close Script |
-| **`/q!`** | Force Close Script (Discard Changes) |
-| **`/ex`** | **Exit Fount Completely** |
-| **`/new`** | Create a New Empty Buffer |
-| **`/home`** | Return to the Home Screen |
-| **`/search [q]`** | Global Script Search |
-| **`/[number]`** | Jump to Line Number |
-| **`/s[number]`** | Jump to Scene Number |
+| **`/o [path]`** | Open script |
+| **`/ic`** | **Index Cards Mode** |
+| **`/editor`** | Return to Normal Editor |
+| **`/sprint [m]`** | Start a writing sprint |
+| **`/xray`** | Visual script analysis |
 | **`/renum`** | Auto-Renumber all scenes |
-| **`/injectnum`** | Tag current scene with next available number |
-| **`/pos`** | Report detailed cursor position |
+| **`/search [q]`** | Global Script Search |
+| **`/ex`** | **Exit Fount** |
 
 ---
 
-## 🎨 Global Configuration (/set)
+## 🏛️ Inspiration & Credits
 
-Tailor your environment in real-time. Use `/` as the trigger.
+Fount stands on the shoulders of giants. This project would not have been possible without the inspiration and foundational work of the following:
 
-```
-Usage : /set [option] [on/off]
-Example : /set focus
-```
+1.  **[Lottie](https://github.com/coignard/lottie)**: My immediate inspiration. Fount began as a fork and evolution of this beautiful terminal editor.
+2.  **[Beat](https://github.com/lmparppei/Beat)**: The gold standard for minimalist screenwriting software. Fount is my attempt to bring the spirit of Beat to the Linux terminal.
+3.  **[Fountain.io](https://github.com/nyousefi/Fountain)**: The universal screenplay format that powers modern independent screenwriting.
 
-| Option | Description |
-| :--- | :--- |
-| **`focus`** | Zen Mode: Hides all UI elements for pure writing. |
-| **`typewriter`** | Strict Typewriter: Cursor stays centered vertically. |
-| **`markup`** | Hidden Sigils: Hides Fountain syntax markers (like `**`). |
-| **`pagenums`** | Live Page Counting in the footer. |
-| **`scenenums`** | Toggles Scene Numbers in the margin. |
-| **`contd`** | Automatically appends `(CONT'D)` to dialogue. |
-| **`autosave`** | Background saves your draft every 30 seconds. |
+> [!IMPORTANT]
+> A massive thank you to the creators of these tools. Their commitment to the craft of writing and software design continues to inspire creators worldwide.
 
 ---
 
-## 🛠️ Troubleshooting
-
-**macOS Colors Look Wrong?**
-The default macOS `Terminal.app` lacks Truecolor (24-bit) support, which Fount uses for its themes. To fix this:
-1. Use a modern terminal emulator (iTerm2, Alacritty, Kitty, Ghostty).
-2. Add `export COLORTERM=truecolor` to your `~/.zshrc` or `~/.bashrc`.
-
----
-
-## 🏛️ Credits
-
-- **[Ratatui](https://ratatui.rs/)**: Powering the terminal interface.
-- **[Fountain](https://fountain.io/)**: The simple, universal screenplay format.
-- **[Rust](https://www.rust-lang.org/)**: Performance and safety.
-
----
-
-*Crafted for the screenwriting community.*
+*Crafted for the screenwriting community with 75% Human Spirit and 25% AI Assistance.*
