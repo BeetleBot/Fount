@@ -9,6 +9,7 @@ pub struct SceneCard {
     pub synopsis: String,
     pub preview: String,
     pub scene_num: Option<String>,
+    pub color: Option<ratatui::style::Color>,
 }
 
 impl App {
@@ -36,6 +37,7 @@ impl App {
                     synopsis: String::new(),
                     preview: String::new(),
                     scene_num,
+                    color: None,
                 });
             } else if let Some(ref mut card) = current_card {
                 if lt == LineType::Synopsis {
@@ -45,6 +47,12 @@ impl App {
                     card.synopsis.push_str(crate::layout::strip_sigils(line, lt));
                 } else if card.preview.is_empty() && (lt == LineType::Action || lt == LineType::Dialogue) {
                     card.preview = line.clone();
+                }
+
+                if card.color.is_none() {
+                    card.color = self.layout.iter()
+                        .find(|r| r.line_idx == i)
+                        .and_then(|r| r.override_color);
                 }
             }
         }
@@ -64,7 +72,7 @@ impl App {
 
         self.save_state(true);
 
-        // Ensure i is before j
+        // Ensure i is before j for stable indexing during splice
         let (first_idx, second_idx) = if i < j { (i, j) } else { (j, i) };
         let card_a = &cards[first_idx];
         let card_b = &cards[second_idx];
@@ -72,16 +80,9 @@ impl App {
         let block_a: Vec<String> = self.lines[card_a.start_line..=card_a.end_line].to_vec();
         let block_b: Vec<String> = self.lines[card_b.start_line..=card_b.end_line].to_vec();
 
-        if first_idx + 1 == second_idx {
-            // Adjacent: [A][B] -> [B][A]
-            let start = card_a.start_line;
-            let end = card_b.end_line;
-            self.lines.splice(start..=end, [block_b, block_a].concat());
-            self.selected_card_idx = second_idx;
-        } else {
-            // Non-adjacent: This is more complex because moving A to B shifts indices.
-            // For now, we'll stick to adjacent swaps which is what Arrows support.
-        }
+        // Splice the second block first so the first index remains valid
+        self.lines.splice(card_b.start_line..=card_b.end_line, block_a);
+        self.lines.splice(card_a.start_line..=card_a.end_line, block_b);
 
         self.dirty = true;
         self.parse_document();
@@ -103,7 +104,7 @@ impl App {
         // Insert a blank scene
         let new_lines = vec![
             String::new(),
-            ". ".to_string(), // The dot forces it to be a scene heading even if empty
+            ". UNTITLED SCENE".to_string(), // The dot forces it to be a scene heading and text ensures parser recognizes it
             "= ".to_string(),
             String::new(),
         ];
@@ -146,7 +147,8 @@ impl App {
         let card = &cards[idx];
         
         // Update Heading
-        self.lines[card.start_line] = if heading.starts_with('.') { heading } else { format!(".{}", heading) };
+        let clean_heading = if heading.is_empty() { "UNTITLED SCENE".to_string() } else { heading };
+        self.lines[card.start_line] = if clean_heading.starts_with('.') { clean_heading } else { format!(".{}", clean_heading) };
         
         // Update Synopsis
         // Find existing synopsis line or insert one

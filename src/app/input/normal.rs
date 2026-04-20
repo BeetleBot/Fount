@@ -61,6 +61,7 @@ impl App {
                         }
                         KeyCode::Char('f') if ctrl => {}
                         KeyCode::Char('/') => {
+                            self.previous_mode = self.mode;
                             self.mode = AppMode::Command;
                             self.command_input.clear();
                             self.command_error = false;
@@ -69,7 +70,22 @@ impl App {
                             self.mode = AppMode::ExportPane;
                             self.selected_export_option = 0;
                         }
-                        KeyCode::Char('i') if ctrl && shift => {}
+                        KeyCode::Char('z') if ctrl && shift => {
+                            if self.redo() {
+                                self.set_status("Redo applied");
+                                *update_target_x = true;
+                                *text_changed = true;
+                                *cursor_moved = true;
+                            }
+                        }
+                        KeyCode::Char('z') if ctrl => {
+                            if self.undo() {
+                                self.set_status("Undo applied");
+                                *update_target_x = true;
+                                *text_changed = true;
+                                *cursor_moved = true;
+                            }
+                        }
 
                         KeyCode::Char('a') if ctrl => {
                             self.select_all();

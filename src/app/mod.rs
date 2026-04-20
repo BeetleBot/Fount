@@ -71,7 +71,7 @@ pub enum LastEdit {
     Other,
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone, Copy)]
 pub enum AppMode {
     Normal,
 
@@ -241,6 +241,7 @@ pub struct App {
     pub last_edit: LastEdit,
 
     pub mode: AppMode,
+    pub previous_mode: AppMode,
 
     pub exit_after_save: bool,
 
@@ -429,6 +430,7 @@ impl App {
             last_edit: LastEdit::None,
 
             mode: initial_mode,
+            previous_mode: initial_mode,
             exit_after_save: false,
             filename_input: String::new(),
 
@@ -1013,9 +1015,9 @@ impl App {
             "snap" => {
                 self.open_snapshots();
             }
-            "indexcards" | "ic" => {
+            "ic" => {
                 self.mode = AppMode::IndexCards;
-                self.set_status("Story Architect Mode: [Arrows] Navigate, [Enter] Edit, [n] New Card, [Shift+Arrows] Swap, [Del] Remove");
+                self.set_status("Index Cards Mode: [Arrows] Navigate, [Enter] Edit, [n] New, [Shift+Arrows] Swap, [Del] Remove, [/] Command");
             }
             "editor" | "ed" => {
                 self.mode = AppMode::Normal;

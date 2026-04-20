@@ -21,10 +21,6 @@ pub fn draw(f: &mut Frame, app: &mut App) {
     let area = f.area();
     let theme = &app.theme;
 
-    if app.mode == AppMode::IndexCards {
-        draw_index_cards(f, app);
-        return;
-    }
 
     let mut base_ui_style = Style::default();
     if let Some(bg) = &theme.ui.background {
@@ -54,7 +50,7 @@ pub fn draw(f: &mut Frame, app: &mut App) {
         ),
         AppMode::SprintStat => (" Sprints ", Color::from(theme.ui.normal_mode_bg.clone())),
         AppMode::XRay => (" X-Ray ", Color::from(theme.ui.navigator_mode_bg.clone())),
-        AppMode::IndexCards => (" Architect ", Color::from(theme.ui.navigator_mode_bg.clone())),
+        AppMode::IndexCards => (" Index Cards ", Color::from(theme.ui.navigator_mode_bg.clone())),
         _ => (" Prompt ", Color::from(theme.ui.command_mode_bg.clone())),
     };
 
@@ -86,12 +82,30 @@ pub fn draw(f: &mut Frame, app: &mut App) {
 
         let mut left_spans = Vec::new();
 
-        // Opening bracket + app name with version
+        // Opening bracket + app name
         left_spans.push(Span::styled("[ ", sep_style));
         left_spans.push(Span::styled(
             format!("Fount v{}", env!("CARGO_PKG_VERSION")),
             Style::default().fg(mode_bg).add_modifier(Modifier::BOLD),
         ));
+
+        // Mode label
+        left_spans.push(Span::styled(sep, sep_style));
+        let active_context_mode = if app.mode == AppMode::Command || app.mode == AppMode::Search {
+            app.previous_mode
+        } else {
+            app.mode
+        };
+
+        let mode_label = match active_context_mode {
+            AppMode::IndexCards => " INDEX CARDS ",
+            _ => " EDITOR ",
+        };
+        left_spans.push(Span::styled(
+            mode_label,
+            Style::default().fg(mode_bg).add_modifier(Modifier::BOLD),
+        ));
+        left_spans.push(Span::styled(sep, sep_style));
 
         // Buffer tabs (if multiple buffers)
         if app.buffers.len() > 1 {
@@ -249,178 +263,186 @@ pub fn draw(f: &mut Frame, app: &mut App) {
         page_num_style = page_num_style.fg(Color::from(theme.ui.dim.clone()));
     }
 
-    let mut visible: Vec<Line> = Vec::new();
-    for _ in 0..pad_top {
-        visible.push(Line::raw(""));
-    }
+    let current_view_mode = if app.mode == AppMode::Command || app.mode == AppMode::Search {
+        app.previous_mode
+    } else {
+        app.mode
+    };
 
-    let mirror_scenes = app.config.mirror_scene_numbers == crate::config::MirrorOption::Always;
+    if current_view_mode != AppMode::IndexCards {
+        let mut visible: Vec<Line> = Vec::new();
+        for _ in 0..pad_top {
+            visible.push(Line::raw(""));
+        }
 
-    visible.extend(
-        app.layout
-            .iter()
-            .skip(app.scroll)
-            .take(height.saturating_sub(pad_top))
-            .map(|row| {
-                let mut spans = Vec::new();
-                let gap_size = 6u16;
+        let mirror_scenes = app.config.mirror_scene_numbers == crate::config::MirrorOption::Always;
 
-                if let Some(ref snum) = row.scene_num {
-                    let s_str = snum.to_string();
-                    let s_len = UnicodeWidthStr::width(s_str.as_str()) as u16;
+        visible.extend(
+            app.layout
+                .iter()
+                .skip(app.scroll)
+                .take(height.saturating_sub(pad_top))
+                .map(|row| {
+                    let mut spans = Vec::new();
+                    let gap_size = 6u16;
 
-                    if global_pad >= s_len + gap_size {
-                        let pad = global_pad - s_len - gap_size;
-                        spans.push(Span::raw(" ".repeat(pad as usize)));
-                        spans.push(Span::styled(s_str, dark_gray_style));
-                        spans.push(Span::raw(" ".repeat(gap_size as usize)));
-                    } else {
-                        spans.push(Span::styled(s_str, dark_gray_style));
-                        spans.push(Span::raw(" "));
-                    }
-                } else {
-                    spans.push(Span::raw(" ".repeat(global_pad as usize)));
-                }
+                    if let Some(ref snum) = row.scene_num {
+                        let s_str = snum.to_string();
+                        let s_len = UnicodeWidthStr::width(s_str.as_str()) as u16;
 
-                spans.push(Span::raw(" ".repeat(row.indent as usize)));
-
-                let mut bst = base_style(row.line_type, &app.config, &app.theme);
-                if let Some(c) = row.override_color
-                    && !app.config.no_color
-                {
-                    bst.fg = Some(c);
-                }
-
-                let mut display = if row.is_active || !app.config.hide_markup {
-                    row.raw_text.clone()
-                } else {
-                    strip_sigils(&row.raw_text, row.line_type).to_string()
-                };
-
-                let reveal_markup = !app.config.hide_markup || row.is_active;
-                let skip_md = row.line_type == LineType::Boneyard;
-
-                if matches!(
-                    row.line_type,
-                    LineType::SceneHeading | LineType::Transition | LineType::Shot
-                ) {
-                    display = display.to_uppercase_1to1();
-                } else if matches!(
-                    row.line_type,
-                    LineType::Character | LineType::DualDialogueCharacter
-                ) {
-                    if let Some(idx) = display.find('(') {
-                        let name = display[..idx].to_uppercase_1to1();
-                        let ext = &display[idx..];
-                        display = format!("{}{}", name, ext);
-                    } else {
-                        display = display.to_uppercase_1to1();
-                    }
-                }
-
-                let empty_logical_line = String::new();
-                let full_logical_line = app.lines.get(row.line_idx).unwrap_or(&empty_logical_line);
-
-                let is_last_visual_row = row.char_end == full_logical_line.chars().count();
-                let mut meta_key_end = 0;
-
-                if (row.line_type == LineType::MetadataKey
-                    || (row.line_type == LineType::MetadataTitle && row.is_active))
-                    && let Some(idx) = full_logical_line.find(':')
-                {
-                    meta_key_end = full_logical_line[..=idx].chars().count() + 1;
-                }
-
-                let mut row_highlights = HashSet::new();
-                if app.show_search_highlight
-                    && let Some(re) = &app.compiled_search_regex
-                {
-                    for mat in re.find_iter(full_logical_line) {
-                        let start_byte = mat.start();
-                        let end_byte = mat.end();
-
-                        let char_start = full_logical_line[..start_byte].chars().count();
-                        let char_len = full_logical_line[start_byte..end_byte].chars().count();
-
-                        for idx in char_start..(char_start + char_len) {
-                            row_highlights.insert(idx);
-                        }
-                    }
-                }
-
-                // Selection highlight (overrides search)
-                let mut sel_highlights = HashSet::new();
-                if let Some(((sel_sl, sel_sc), (sel_el, sel_ec))) = app.selection_range() {
-                    let li = row.line_idx;
-                    if li >= sel_sl && li <= sel_el {
-                        let line_len = full_logical_line.chars().count();
-                        let from = if li == sel_sl { sel_sc } else { 0 };
-                        let to = if li == sel_el {
-                            sel_ec.min(line_len)
+                        if global_pad >= s_len + gap_size {
+                            let pad = global_pad - s_len - gap_size;
+                            spans.push(Span::raw(" ".repeat(pad as usize)));
+                            spans.push(Span::styled(s_str, dark_gray_style));
+                            spans.push(Span::raw(" ".repeat(gap_size as usize)));
                         } else {
-                            line_len
-                        };
-                        for idx in from..to {
-                            sel_highlights.insert(idx);
+                            spans.push(Span::styled(s_str, dark_gray_style));
+                            spans.push(Span::raw(" "));
+                        }
+                    } else {
+                        spans.push(Span::raw(" ".repeat(global_pad as usize)));
+                    }
+
+                    spans.push(Span::raw(" ".repeat(row.indent as usize)));
+
+                    let mut bst = base_style(row.line_type, &app.config, &app.theme);
+                    if let Some(c) = row.override_color
+                        && !app.config.no_color
+                    {
+                        bst.fg = Some(c);
+                    }
+
+                    let mut display = if row.is_active || !app.config.hide_markup {
+                        row.raw_text.clone()
+                    } else {
+                        strip_sigils(&row.raw_text, row.line_type).to_string()
+                    };
+
+                    let reveal_markup = !app.config.hide_markup || row.is_active;
+                    let skip_md = row.line_type == LineType::Boneyard;
+
+                    if matches!(
+                        row.line_type,
+                        LineType::SceneHeading | LineType::Transition | LineType::Shot
+                    ) {
+                        display = display.to_uppercase_1to1();
+                    } else if matches!(
+                        row.line_type,
+                        LineType::Character | LineType::DualDialogueCharacter
+                    ) {
+                        if let Some(idx) = display.find('(') {
+                            let name = display[..idx].to_uppercase_1to1();
+                            let ext = &display[idx..];
+                            display = format!("{}{}", name, ext);
+                        } else {
+                            display = display.to_uppercase_1to1();
                         }
                     }
-                }
 
-                // Merge: sel_highlights takes priority — remove those from row_highlights
-                // so render_inline gets the clean search set, and we'll override selected below.
-                for idx in &sel_highlights {
-                    row_highlights.remove(idx);
-                }
+                    let empty_logical_line = String::new();
+                    let full_logical_line = app.lines.get(row.line_idx).unwrap_or(&empty_logical_line);
 
-                spans.extend(render_inline(
-                    &display,
-                    bst,
-                    &row.fmt,
-                    RenderConfig {
-                        reveal_markup,
-                        skip_markdown: skip_md,
-                        exclude_comments: false,
-                        char_offset: row.char_start,
-                        meta_key_end,
-                        no_color: app.config.no_color,
-                        no_formatting: app.config.no_formatting,
-                    },
-                    &row_highlights,
-                    &sel_highlights,
-                ));
+                    let is_last_visual_row = row.char_end == full_logical_line.chars().count();
+                    let mut meta_key_end = 0;
 
-                if row.is_active
-                    && row.line_idx == app.cursor_y
-                    && is_last_visual_row
-                    && let Some(sug) = &app.suggestion
-                {
-                    spans.push(Span::styled(sug.clone(), sug_style));
-                }
-
-                let right_text = if mirror_scenes {
-                    row.scene_num.clone()
-                } else {
-                    row.page_num.map(|pnum| format!("{}.", pnum))
-                };
-
-                if let Some(r_str) = right_text {
-                    let current_line_width: usize = spans
-                        .iter()
-                        .map(|s| UnicodeWidthStr::width(s.content.as_ref()))
-                        .sum();
-
-                    let target_pos = global_pad as usize + page_w as usize + gap_size as usize;
-                    if target_pos > current_line_width {
-                        spans.push(Span::raw(" ".repeat(target_pos - current_line_width)));
-                        spans.push(Span::styled(r_str, page_num_style));
+                    if (row.line_type == LineType::MetadataKey
+                        || (row.line_type == LineType::MetadataTitle && row.is_active))
+                        && let Some(idx) = full_logical_line.find(':')
+                    {
+                        meta_key_end = full_logical_line[..=idx].chars().count() + 1;
                     }
-                }
 
-                Line::from(spans)
-            }),
-    );
+                    let mut row_highlights = HashSet::new();
+                    if app.show_search_highlight
+                        && let Some(re) = &app.compiled_search_regex
+                    {
+                        for mat in re.find_iter(full_logical_line) {
+                            let start_byte = mat.start();
+                            let end_byte = mat.end();
 
-    f.render_widget(Paragraph::new(visible), text_area);
+                            let char_start = full_logical_line[..start_byte].chars().count();
+                            let char_len = full_logical_line[start_byte..end_byte].chars().count();
+
+                            for idx in char_start..(char_start + char_len) {
+                                row_highlights.insert(idx);
+                            }
+                        }
+                    }
+
+                    // Selection highlight (overrides search)
+                    let mut sel_highlights = HashSet::new();
+                    if let Some(((sel_sl, sel_sc), (sel_el, sel_ec))) = app.selection_range() {
+                        let li = row.line_idx;
+                        if li >= sel_sl && li <= sel_el {
+                            let line_len = full_logical_line.chars().count();
+                            let from = if li == sel_sl { sel_sc } else { 0 };
+                            let to = if li == sel_el {
+                                sel_ec.min(line_len)
+                            } else {
+                                line_len
+                            };
+                            for idx in from..to {
+                                sel_highlights.insert(idx);
+                            }
+                        }
+                    }
+
+                    // Merge: sel_highlights takes priority — remove those from row_highlights
+                    // so render_inline gets the clean search set, and we'll override selected below.
+                    for idx in &sel_highlights {
+                        row_highlights.remove(idx);
+                    }
+
+                    spans.extend(render_inline(
+                        &display,
+                        bst,
+                        &row.fmt,
+                        RenderConfig {
+                            reveal_markup,
+                            skip_markdown: skip_md,
+                            exclude_comments: false,
+                            char_offset: row.char_start,
+                            meta_key_end,
+                            no_color: app.config.no_color,
+                            no_formatting: app.config.no_formatting,
+                        },
+                        &row_highlights,
+                        &sel_highlights,
+                    ));
+
+                    if row.is_active
+                        && row.line_idx == app.cursor_y
+                        && is_last_visual_row
+                        && let Some(sug) = &app.suggestion
+                    {
+                        spans.push(Span::styled(sug.clone(), sug_style));
+                    }
+
+                    let right_text = if mirror_scenes {
+                        row.scene_num.clone()
+                    } else {
+                        row.page_num.map(|pnum| format!("{}.", pnum))
+                    };
+
+                    if let Some(r_str) = right_text {
+                        let current_line_width: usize = spans
+                            .iter()
+                            .map(|s| UnicodeWidthStr::width(s.content.as_ref()))
+                            .sum();
+
+                        let target_pos = global_pad as usize + page_w as usize + gap_size as usize;
+                        if target_pos > current_line_width {
+                            spans.push(Span::raw(" ".repeat(target_pos - current_line_width)));
+                            spans.push(Span::styled(r_str, page_num_style));
+                        }
+                    }
+
+                    Line::from(spans)
+                }),
+        );
+
+        f.render_widget(Paragraph::new(visible), text_area);
+    }
 
     if app.mode == AppMode::SceneNavigator {
         let border_color = theme
@@ -1218,20 +1240,36 @@ pub fn draw(f: &mut Frame, app: &mut App) {
         }
 
         // Right-side info: word count, line count, cursor position
-        let word_count = app.total_word_count();
-        let pos_str = format!("Ln {}, Col {}", app.cursor_y + 1, app.cursor_x + 1);
-
         let mut right_spans = Vec::new();
-        right_spans.push(Span::styled(sep, sep_style));
-        right_spans.push(Span::styled(
-            format!("{} words", word_count),
-            Style::default().fg(dim_color),
-        ));
-        right_spans.push(Span::styled(sep, sep_style));
-        right_spans.push(Span::styled(
-            pos_str,
-            Style::default().fg(dim_color),
-        ));
+
+        let current_context_mode = if app.mode == AppMode::Command || app.mode == AppMode::Search {
+            app.previous_mode
+        } else {
+            app.mode
+        };
+
+        if current_context_mode == AppMode::IndexCards {
+            let cards_len = app.extract_scene_cards().len();
+            right_spans.push(Span::styled(sep, sep_style));
+            right_spans.push(Span::styled(
+                format!("{} Scenes", cards_len),
+                Style::default().fg(dim_color),
+            ));
+        } else {
+            let word_count = app.total_word_count();
+            let pos_str = format!("Ln {}, Col {}", app.cursor_y + 1, app.cursor_x + 1);
+
+            right_spans.push(Span::styled(sep, sep_style));
+            right_spans.push(Span::styled(
+                format!("{} words", word_count),
+                Style::default().fg(dim_color),
+            ));
+            right_spans.push(Span::styled(sep, sep_style));
+            right_spans.push(Span::styled(
+                pos_str,
+                Style::default().fg(dim_color),
+            ));
+        }
         // Closing bracket
         right_spans.push(Span::styled(" ]", sep_style));
 
@@ -1342,6 +1380,10 @@ pub fn draw(f: &mut Frame, app: &mut App) {
 
     if app.mode == AppMode::XRay {
         draw_xray(f, app);
+    }
+
+    if current_view_mode == AppMode::IndexCards {
+        draw_index_cards(f, app, text_area);
     }
 }
 

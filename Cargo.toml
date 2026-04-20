@@ -1,6 +1,6 @@
 [package]
 name = "fount"
-version = "0.8.1"
+version = "0.8.2"
 authors = [
     "BeetleBot"
 ]
@@ -59,3 +59,23 @@ lto = "thin"                 # Enable thin Link Time Optimization
 codegen-units = 1            # Reduce parallel codegen units for better optimization
 panic = "abort"              # Reduce binary size by avoiding stack unwinding
 strip = true                 # Automatically strip symbols from the binary
+
+[package.metadata.deb]
+maintainer = "BeetleBot"
+copyright = "2024 BeetleBot"
+license-file = ["LICENSE", "0"]
+depends = "$auto"
+section = "utils"
+priority = "optional"
+assets = [
+    ["target/release/fount", "/usr/bin/fount", "755"],
+    ["README.md", "/usr/share/doc/fount/README.md", "644"],
+]
+
+[package.metadata.rpm]
+summary = "A terminal-based Fountain screenplay editor"
+description = "A terminal-based Fountain screenplay editor (fork of coignard/lottie)"
+license = "GPL-3.0-only"
+assets = [
+    { source = "target/release/fount", dest = "/usr/bin/fount", mode = "755" },
+]

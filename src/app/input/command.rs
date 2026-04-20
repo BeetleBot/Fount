@@ -10,7 +10,7 @@ impl App {
                 AppMode::Command => {
                     match key.code {
                         KeyCode::Esc => {
-                            self.mode = AppMode::Normal;
+                            self.mode = self.previous_mode;
                             self.command_input.clear();
                             self.command_error = false;
                         }
@@ -41,7 +41,7 @@ impl App {
                         KeyCode::Backspace => {
                             self.command_input.pop();
                             if self.command_input.is_empty() {
-                                self.mode = AppMode::Normal;
+                                self.mode = self.previous_mode;
                             }
                             self.command_error = false;
                         }

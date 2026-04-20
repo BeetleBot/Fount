@@ -7,7 +7,7 @@ use std::fs;
 impl App {
     pub fn handle_panes(&mut self, key: KeyEvent, update_target_x: &mut bool, text_changed: &mut bool, cursor_moved: &mut bool) -> io::Result<bool> {
         let ctrl = key.modifiers.contains(KeyModifiers::CONTROL);
-        let _shift = key.modifiers.contains(KeyModifiers::SHIFT);
+        let shift = key.modifiers.contains(KeyModifiers::SHIFT);
         match self.mode {
                 AppMode::Search => {
                     match key.code {
@@ -663,9 +663,9 @@ impl App {
                             KeyCode::Up => {
                                 let shift = key.modifiers.contains(KeyModifiers::SHIFT);
                                 if shift {
-                                    if self.selected_card_idx >= columns {
-                                        self.swap_cards(self.selected_card_idx, self.selected_card_idx - columns);
-                                        self.selected_card_idx -= columns;
+                                    if self.selected_card_idx > 0 {
+                                        self.swap_cards(self.selected_card_idx, self.selected_card_idx - 1);
+                                        self.selected_card_idx -= 1;
                                         *text_changed = true;
                                     }
                                 } else {
@@ -675,9 +675,9 @@ impl App {
                             KeyCode::Down => {
                                 let shift = key.modifiers.contains(KeyModifiers::SHIFT);
                                 if shift {
-                                    if self.selected_card_idx + columns < cards_count {
-                                        self.swap_cards(self.selected_card_idx, self.selected_card_idx + columns);
-                                        self.selected_card_idx += columns;
+                                    if self.selected_card_idx + 1 < cards_count {
+                                        self.swap_cards(self.selected_card_idx, self.selected_card_idx + 1);
+                                        self.selected_card_idx += 1;
                                         *text_changed = true;
                                     }
                                 } else {
@@ -726,6 +726,24 @@ impl App {
                                 self.add_card(self.selected_card_idx);
                                 *text_changed = true;
                                 *cursor_moved = true;
+                            }
+                            KeyCode::Char('/') => {
+                                self.previous_mode = self.mode;
+                                self.mode = AppMode::Command;
+                                self.command_input.clear();
+                                self.command_error = false;
+                            }
+                            KeyCode::Char('z') if ctrl && shift => {
+                                if self.redo() {
+                                    self.set_status("Redo applied");
+                                    *text_changed = true;
+                                }
+                            }
+                            KeyCode::Char('z') if ctrl => {
+                                if self.undo() {
+                                    self.set_status("Undo applied");
+                                    *text_changed = true;
+                                }
                             }
                             KeyCode::Delete | KeyCode::Backspace => {
                                 self.delete_card(self.selected_card_idx);

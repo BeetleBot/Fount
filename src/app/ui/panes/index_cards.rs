@@ -1,53 +1,25 @@
 use crate::app::App;
 use ratatui::{
     Frame,
-    layout::{Constraint, Direction, Layout, Rect, Alignment},
-    style::{Color, Modifier, Style, Stylize},
+    layout::Rect,
+    style::{Color, Modifier, Style},
     text::{Line, Span},
-    widgets::{Block, Borders, BorderType, Clear, Paragraph, Wrap},
+    widgets::{Block, Borders, BorderType, Paragraph, Wrap},
 };
 
-pub fn draw_index_cards(f: &mut Frame, app: &mut App) {
-    let area = f.area();
+pub fn draw_index_cards(f: &mut Frame, app: &mut App, area: Rect) {
     let theme = &app.theme;
-
-    // Apply dim modifier to the background of the editor behind the cards
-    let buf = f.buffer_mut();
-    for y in area.top()..area.bottom() {
-        for x in area.left()..area.right() {
-            if let Some(cell) = buf.cell_mut((x, y)) {
-                let current_style = cell.style();
-                cell.set_style(current_style.add_modifier(Modifier::DIM));
-            }
-        }
-    }
-
     let accent = Color::from(theme.ui.normal_mode_bg.clone());
     let dim = Color::from(theme.ui.dim.clone());
     let normal_fg = theme.ui.foreground.clone().map(Color::from).unwrap_or(Color::White);
     let selection_bg = Color::from(theme.ui.selection_bg.clone());
     let selection_fg = Color::from(theme.ui.selection_fg.clone());
+    let bg_color = theme.ui.background.as_ref()
+        .map(|c| Color::from(c.clone()))
+        .unwrap_or(Color::Reset);
 
     let cards = app.extract_scene_cards();
-    
-    // Header for the mode
-    let chunks = Layout::default()
-        .direction(Direction::Vertical)
-        .constraints([
-            Constraint::Length(1),
-            Constraint::Min(0),
-            Constraint::Length(1),
-        ])
-        .split(area);
-        
-    let header_area = chunks[0];
-    let grid_area = chunks[1];
-    let footer_area = chunks[2];
-    
-    f.render_widget(Paragraph::new(Line::from(vec![
-        Span::styled(" 󱉟 STORY ARCHITECT ", Style::default().fg(accent).add_modifier(Modifier::BOLD)),
-        Span::styled(format!(" • {} Scenes ", cards.len()), Style::default().fg(dim)),
-    ])).alignment(Alignment::Center), header_area);
+    let grid_area = area;
 
     // Grid details
     let columns = 3;
@@ -78,57 +50,49 @@ pub fn draw_index_cards(f: &mut Frame, app: &mut App) {
         let card_rect = Rect::new(x, y, card_w, card_h - 1); // -1 for vertical gap
         let is_selected = i == app.selected_card_idx;
         
-        // --- DRAW SHADOW ---
-        if card_rect.width > 2 && card_rect.height > 2 {
-            let shadow_rect = Rect::new(card_rect.x + 1, card_rect.y + 1, card_rect.width, card_rect.height);
-            for sy in shadow_rect.top()..shadow_rect.bottom() {
-                for sx in shadow_rect.left()..shadow_rect.right() {
-                    if let Some(cell) = f.buffer_mut().cell_mut((sx, sy)) {
-                        cell.set_char(' '); // Shadow background
-                        cell.set_style(Style::default().bg(Color::Rgb(15, 15, 15)));
-                    }
-                }
-            }
-        }
 
         // --- DRAW CARD CONTENT ---
-        f.render_widget(Clear, card_rect);
+        let base_style = Style::default().bg(bg_color);
         
-        let mut border_style = Style::default().fg(dim);
-        let mut body_bg = Color::Rgb(30, 30, 30);
+        let mut border_style = base_style.fg(dim);
         
         if is_selected {
-            border_style = Style::default().fg(accent).add_modifier(Modifier::BOLD);
-            if !app.is_card_editing {
-                body_bg = Color::Rgb(40, 40, 45); // Subtle lift
-            } else {
-                body_bg = Color::Rgb(25, 25, 35); // Sunken/Focus look
-            }
+            border_style = base_style.fg(accent).add_modifier(Modifier::BOLD);
         }
         
         let block = Block::default()
             .borders(Borders::ALL)
-            .border_type(BorderType::Rounded)
+            .border_type(BorderType::Plain)
             .border_style(border_style)
-            .bg(body_bg);
+            .style(base_style);
             
         f.render_widget(block, card_rect);
         
-        // Header Bar (Tab)
-        let header_bar_rect = Rect::new(card_rect.x + 1, card_rect.y + 1, card_rect.width - 2, 1);
+        // Header Bar (ASCII Tab)
+        let header_bar_rect = Rect::new(card_rect.x + 1, card_rect.y, card_rect.width - 2, 1);
         let header_style = if is_selected {
-            Style::default().bg(accent).fg(Color::Black).add_modifier(Modifier::BOLD)
+            Style::default().fg(accent).add_modifier(Modifier::BOLD)
         } else {
-            Style::default().bg(dim).fg(Color::Black)
+            Style::default().fg(dim)
         };
         
-        let header_text = if let Some(ref num) = card.scene_num {
-            format!(" SCENE {} ", num)
+        let header_label = if let Some(ref num) = card.scene_num {
+            format!("SCENE {}", num)
         } else {
-            format!(" SCENE {} ", i + 1)
+            format!("SCENE {}", i + 1)
+        };
+
+        let label_style = if let Some(c) = card.color { 
+            header_style.fg(c) 
+        } else { 
+            header_style 
         };
         
-        f.render_widget(Paragraph::new(header_text).style(header_style), header_bar_rect);
+        f.render_widget(Paragraph::new(Line::from(vec![
+            Span::styled("[ ", header_style),
+            Span::styled(header_label, label_style),
+            Span::styled(" ]", header_style),
+        ])), header_bar_rect);
 
         // Content Area
         let inner = Rect::new(card_rect.x + 1, card_rect.y + 2, card_rect.width - 2, card_rect.height - 3);
@@ -149,7 +113,7 @@ pub fn draw_index_cards(f: &mut Frame, app: &mut App) {
             Style::default().fg(normal_fg).add_modifier(Modifier::BOLD)
         };
         
-        card_lines.push(Line::from(Span::styled(heading_content, heading_style)));
+        card_lines.push(Line::from(Span::styled(heading_content, if let Some(c) = card.color { heading_style.fg(c) } else { heading_style })));
         card_lines.push(Line::from(Span::styled(" ", Style::default()))); // Spacer
         
         // Synopsis
@@ -178,19 +142,4 @@ pub fn draw_index_cards(f: &mut Frame, app: &mut App) {
             
         f.render_widget(p, inner);
     }
-
-    // Footer hints
-    let footer_text = if app.is_card_editing {
-        if app.is_heading_editing { " [Enter] Move to Synopsis | [Esc] Cancel Edit " } else { " [Enter] Save & Finish | [Esc] Cancel Edit " }
-    } else {
-        " [Arrows] Navigate | [Enter] Edit Card | [n] New Scene | [Shift+Arw] Move | [/ed] Exit "
-    };
-    
-    let footer_style = if app.is_card_editing {
-        Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD)
-    } else {
-        Style::default().fg(dim)
-    };
-    
-    f.render_widget(Paragraph::new(Span::styled(footer_text, footer_style)).alignment(Alignment::Center), footer_area);
 }
