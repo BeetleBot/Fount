@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.8.3] - 2026-04-20
+
+### Added
+- **Dynamic Shortcuts Registry**:
+    - Centralized all keybindings and command-line shortcuts into a single source of truth in `src/app/shortcuts.rs`.
+    - The **Cheat Sheet (F1)** is now dynamically generated from this registry, ensuring it is always in sync with the codebase.
+    - Added missing `/ic` (Index Cards) and `/editor` (Normal Mode) commands to the documentation and completions.
+- **Documentation Overhaul**:
+    - Redesigned `README.md` with a heartfelt Developer's Note, prominent credit to inspirations (Lottie, Beat, Fountain), and refined installation paths.
+
+### Changed
+- **Command Completions**: Refactored `get_command_completions` to pull directly from the dynamic registry for better discovery of `/set` options and mode-specific commands.
+
+### Fixed
+- **Documentation Gap**: Resolved an issue where several core commands were functional but not documented in the internal help panel.
+
+
 ## [0.8.2] - 2026-04-20
 
 ### Added
