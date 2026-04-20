@@ -72,7 +72,7 @@ assets = [
     ["README.md", "/usr/share/doc/fount/README.md", "644"],
 ]
 
-[package.metadata.rpm]
+[package.metadata.generate-rpm]
 summary = "A terminal-based Fountain screenplay editor"
 description = "A terminal-based Fountain screenplay editor (fork of coignard/lottie)"
 license = "GPL-3.0-only"
