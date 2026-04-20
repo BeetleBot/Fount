@@ -1129,7 +1129,18 @@ pub fn draw(f: &mut Frame, app: &mut App) {
                     } else {
                         format!("Search [{}]: ", app.last_search)
                     };
+                    
+                    let mut count_msg = String::new();
+                    if !app.search_matches.is_empty() {
+                        let cur = app.current_match_idx.map(|idx| idx + 1).unwrap_or(0);
+                        count_msg = format!(" [{}/{}]", cur, app.search_matches.len());
+                    }
+                    
                     spans.push(Span::raw(format!("{}{}", prompt_base, app.search_query)));
+                    if !count_msg.is_empty() {
+                        spans.push(Span::styled(count_msg, Style::default().fg(dim_color)));
+                    }
+                    spans.push(Span::styled(" [Alt+↑/↓] Navigate", Style::default().fg(dim_color)));
                 }
                 AppMode::PromptSave => spans.push(Span::raw("Save modified script? (y/n/c) ")),
                 AppMode::PromptFilename => {
@@ -1137,15 +1148,21 @@ pub fn draw(f: &mut Frame, app: &mut App) {
                 }
                 _ => {}
             }
-        } else if let Some(msg) = &app.status_msg {
-            let style = if app.command_error {
-                Style::default().fg(Color::Red)
-            } else {
-                Style::default()
-                    .fg(dim_color)
-                    .add_modifier(Modifier::ITALIC)
-            };
-            spans.push(Span::styled(msg, style));
+        } else if app.status_msg.is_some() || app.show_search_highlight {
+            if let Some(msg) = &app.status_msg {
+                let style = if app.command_error {
+                    Style::default().fg(Color::Red)
+                } else {
+                    Style::default()
+                        .fg(dim_color)
+                        .add_modifier(Modifier::ITALIC)
+                };
+                spans.push(Span::styled(msg, style));
+            }
+            
+            if app.show_search_highlight && !app.search_matches.is_empty() {
+                spans.push(Span::styled(" [Alt+↑/↓] Navigate", Style::default().fg(dim_color)));
+            }
         } else {
             spans.push(Span::styled(
                 "F1 Reference",
@@ -1237,15 +1254,32 @@ pub fn draw(f: &mut Frame, app: &mut App) {
         spans.extend(right_spans);
         f.render_widget(Paragraph::new(Line::from(spans)), footer_area);
 
-        if app.mode == AppMode::Search && footer_area.height > 0 {
-            let prompt_base = if app.last_search.is_empty() {
-                "Search: ".to_string()
-            } else {
-                format!("Search [{}]: ", app.last_search)
+        // Cursor Handling for Footer Modes
+        if matches!(app.mode, AppMode::Search | AppMode::Command | AppMode::PromptSave | AppMode::PromptFilename) && footer_area.height > 0 {
+            // Calculate prefix width of the left side content
+            let fname = app.file.as_ref().and_then(|p| p.file_name()).map(|n| n.to_string_lossy().into_owned()).unwrap_or_else(|| "New Script".to_string());
+            let dirty_str = if app.dirty { "*" } else { "" };
+            let lock_str = if app.config.production_lock { " 🔒" } else { "" };
+            
+            let prefix_w = 2 // "[ "
+                + UnicodeWidthStr::width(mode_str.trim())
+                + 3 // " | "
+                + UnicodeWidthStr::width(fname.as_str()) + UnicodeWidthStr::width(dirty_str) + UnicodeWidthStr::width(lock_str)
+                + 3; // " | "
+            
+            let (input_prefix, input_content) = match app.mode {
+                AppMode::Search => {
+                    let pb = if app.last_search.is_empty() { "Search: ".to_string() } else { format!("Search [{}]: ", app.last_search) };
+                    (pb, app.search_query.clone())
+                }
+                AppMode::Command => ("/".to_string(), app.command_input.clone()),
+                AppMode::PromptFilename => ("Filename: ".to_string(), app.filename_input.clone()),
+                AppMode::PromptSave => ("Save modified script? (y/n/c) ".to_string(), "".to_string()),
+                _ => (String::new(), String::new()),
             };
-            let prompt_w = UnicodeWidthStr::width(prompt_base.as_str())
-                + UnicodeWidthStr::width(app.search_query.as_str());
-            f.set_cursor_position((footer_area.x + prompt_w as u16, footer_area.y));
+            
+            let cur_x = footer_area.x + (prefix_w + UnicodeWidthStr::width(input_prefix.as_str()) + UnicodeWidthStr::width(input_content.as_str())) as u16;
+            f.set_cursor_position((cur_x, footer_area.y));
         }
     }
 
@@ -1269,39 +1303,6 @@ pub fn draw(f: &mut Frame, app: &mut App) {
                 if cur_screen_y < text_area.y + text_area.height {
                     f.set_cursor_position((cur_screen_x, cur_screen_y));
                 }
-            }
-            AppMode::Search if footer_area.height > 0 => {
-                let prompt_base = if app.last_search.is_empty() {
-                    "Search: ".to_string()
-                } else {
-                    format!("Search [{}]: ", app.last_search)
-                };
-                let query_w = unicode_width::UnicodeWidthStr::width(prompt_base.as_str())
-                    + unicode_width::UnicodeWidthStr::width(app.search_query.as_str());
-                let center_start = (footer_area.width as usize).saturating_sub(query_w) / 2;
-                let cur_screen_x = footer_area.x
-                    + center_start as u16
-                    + unicode_width::UnicodeWidthStr::width(prompt_base.as_str()) as u16;
-                f.set_cursor_position((cur_screen_x, footer_area.y));
-            }
-            AppMode::PromptSave | AppMode::PromptFilename if footer_area.height > 0 => {
-                let prompt_base = if app.mode == AppMode::PromptSave {
-                    "Save changes? (y/n): "
-                } else {
-                    "File Name to Write: "
-                };
-                let input = if app.mode == AppMode::PromptSave {
-                    ""
-                } else {
-                    app.filename_input.as_str()
-                };
-                let query_w = unicode_width::UnicodeWidthStr::width(prompt_base)
-                    + unicode_width::UnicodeWidthStr::width(input);
-                let center_start = (footer_area.width as usize).saturating_sub(query_w) / 2;
-                let cur_screen_x = footer_area.x
-                    + center_start as u16
-                    + unicode_width::UnicodeWidthStr::width(prompt_base) as u16;
-                f.set_cursor_position((cur_screen_x, footer_area.y));
             }
             _ => {}
         }

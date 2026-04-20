@@ -121,12 +121,22 @@ impl App {
                             self.move_up();
                             *cursor_moved = true;
                         }
+                        KeyCode::Up if key.modifiers.contains(KeyModifiers::ALT) => {
+                            self.jump_to_match(false);
+                            *cursor_moved = true;
+                            *update_target_x = true;
+                        }
                         KeyCode::Down if shift => {
                             if self.selection_anchor.is_none() {
                                 self.selection_anchor = Some((self.cursor_y, self.cursor_x));
                             }
                             self.move_down();
                             *cursor_moved = true;
+                        }
+                        KeyCode::Down if key.modifiers.contains(KeyModifiers::ALT) => {
+                            self.jump_to_match(true);
+                            *cursor_moved = true;
+                            *update_target_x = true;
                         }
                         KeyCode::Left if shift => {
                             if self.selection_anchor.is_none() {

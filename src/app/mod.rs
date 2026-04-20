@@ -259,6 +259,8 @@ pub struct App {
     pub show_search_highlight: bool,
 
     pub compiled_search_regex: Option<regex::Regex>,
+    pub search_matches: Vec<(usize, usize)>,
+    pub current_match_idx: Option<usize>,
 
     pub scenes: Vec<NavigatorItem>,
 
@@ -441,6 +443,8 @@ impl App {
             last_search: String::new(),
             show_search_highlight: false,
             compiled_search_regex: None,
+            search_matches: Vec::new(),
+            current_match_idx: None,
             scenes: Vec::new(),
             selected_scene: 0,
             selected_character: 0,

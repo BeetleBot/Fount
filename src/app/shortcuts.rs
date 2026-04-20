@@ -53,6 +53,7 @@ pub fn get_all_shortcuts() -> Vec<Shortcut> {
         Shortcut { category: "Navigation", key: "/[line]", desc: "Jump to line" },
         Shortcut { category: "Navigation", key: "/s[num]", desc: "Jump to scene" },
         Shortcut { category: "Navigation", key: "/search [q]", desc: "Search text" },
+        Shortcut { category: "Navigation", key: "Alt+Up/Dn", desc: "Next/Prev match" },
         Shortcut { category: "Navigation", key: "/ud / /rd", desc: "Undo / Redo" },
         Shortcut { category: "Navigation", key: "/pos", desc: "Cursor position" },
         Shortcut { category: "Navigation", key: "/copy", desc: "Copy clipboard" },

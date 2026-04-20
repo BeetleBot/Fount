@@ -11,11 +11,26 @@ impl App {
 
         if active_query.is_empty() {
             self.compiled_search_regex = None;
+            self.search_matches.clear();
+            self.current_match_idx = None;
         } else {
             self.compiled_search_regex = regex::RegexBuilder::new(&regex::escape(active_query))
                 .case_insensitive(true)
                 .build()
                 .ok();
+
+            self.search_matches.clear();
+            if let Some(re) = &self.compiled_search_regex {
+                for (y, line) in self.lines.iter().enumerate() {
+                    for mat in re.find_iter(line) {
+                        let char_idx = line[..mat.start()].chars().count();
+                        self.search_matches.push((y, char_idx));
+                    }
+                }
+            }
+            
+            // Try to find if we are currently on a match
+            self.current_match_idx = self.search_matches.iter().position(|&(y, x)| y == self.cursor_y && x == self.cursor_x);
         }
     }
 
@@ -78,62 +93,72 @@ impl App {
             self.set_status("Cancelled");
             self.show_search_highlight = false;
             self.compiled_search_regex = None;
+            self.search_matches.clear();
+            self.current_match_idx = None;
             return;
         }
         self.last_search = self.search_query.clone();
         self.update_search_regex();
 
-        let re = self.compiled_search_regex.as_ref().unwrap();
-
-        let mut wrapped = false;
-        let mut found = false;
-        let start_y = self.cursor_y;
-        let start_char_x = self.cursor_x;
-
-        for i in 0..=self.lines.len() {
-            let y = (start_y + i) % self.lines.len();
-            let line = &self.lines[y];
-
-            for mat in re.find_iter(line) {
-                let char_idx = line[..mat.start()].chars().count();
-
-                if i == 0 && char_idx <= start_char_x {
-                    continue;
-                }
-
-                if i == self.lines.len() && char_idx > start_char_x {
-                    continue;
-                }
-
-                self.cursor_y = y;
-                self.cursor_x = char_idx;
-                found = true;
-
-                if y < start_y || (y == start_y && i > 0) {
-                    wrapped = true;
-                }
-                break;
-            }
-            if found {
-                break;
-            }
-        }
-
-        self.mode = AppMode::Normal;
-
-        if !found {
+        if self.search_matches.is_empty() {
+            self.mode = AppMode::Normal;
             self.set_status(&format!("\"{}\" not found", self.search_query));
             self.show_search_highlight = false;
+            self.search_query.clear();
+            return;
+        }
+
+        self.jump_to_match(true);
+        self.mode = AppMode::Normal;
+        self.search_query.clear();
+    }
+
+    pub fn jump_to_match(&mut self, forward: bool) {
+        if self.search_matches.is_empty() {
+            return;
+        }
+
+        let mut next_idx = None;
+        if forward {
+            for (i, &(y, x)) in self.search_matches.iter().enumerate() {
+                if y > self.cursor_y || (y == self.cursor_y && x > self.cursor_x) {
+                    next_idx = Some(i);
+                    break;
+                }
+            }
         } else {
-            self.show_search_highlight = true;
-            if wrapped {
-                self.set_status("Search Wrapped");
-            } else {
-                self.clear_status();
+            for (i, &(y, x)) in self.search_matches.iter().enumerate().rev() {
+                if y < self.cursor_y || (y == self.cursor_y && x < self.cursor_x) {
+                    next_idx = Some(i);
+                    break;
+                }
             }
         }
 
-        self.search_query.clear();
+        let mut wrapped = false;
+        let idx = if let Some(i) = next_idx {
+            i
+        } else {
+            wrapped = true;
+            if forward {
+                0
+            } else {
+                self.search_matches.len() - 1
+            }
+        };
+
+        let (target_y, target_x) = self.search_matches[idx];
+        self.cursor_y = target_y;
+        self.cursor_x = target_x;
+        self.current_match_idx = Some(idx);
+        self.show_search_highlight = true;
+
+        let match_msg = format!("Match {} of {}", idx + 1, self.search_matches.len());
+        if wrapped {
+            self.set_status(&format!("Search Wrapped ( {} )", match_msg));
+        } else {
+            self.set_status(&match_msg);
+        }
     }
 
     pub fn update_layout(&mut self) {

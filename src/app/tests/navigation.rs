@@ -366,3 +366,41 @@ use super::*;
     }
 
 
+
+    #[test]
+    fn test_app_search_match_count() {
+        let mut app = create_empty_app();
+        app.lines = vec![
+            "needle one".to_string(),
+            "no match".to_string(),
+            "needle two".to_string(),
+            "last needle".to_string(),
+        ];
+        app.search_query = "needle".to_string();
+        
+        // Initial search (from 0,0 - jumps to next match at 2,0)
+        app.execute_search();
+        assert_eq!(app.cursor_y, 2);
+        assert_eq!(app.search_matches.len(), 3);
+        assert_eq!(app.current_match_idx, Some(1));
+        
+        // Jump to next (3,5)
+        app.jump_to_match(true);
+        assert_eq!(app.cursor_y, 3);
+        assert_eq!(app.current_match_idx, Some(2));
+        
+        // Jump to next (wraps to 0,0)
+        app.jump_to_match(true);
+        assert_eq!(app.cursor_y, 0);
+        assert_eq!(app.current_match_idx, Some(0));
+        
+        // Jump to prev (wraps to 3,5)
+        app.jump_to_match(false);
+        assert_eq!(app.cursor_y, 3);
+        assert_eq!(app.current_match_idx, Some(2));
+        
+        // Jump to prev again (2,0)
+        app.jump_to_match(false);
+        assert_eq!(app.cursor_y, 2);
+        assert_eq!(app.current_match_idx, Some(1));
+    }
