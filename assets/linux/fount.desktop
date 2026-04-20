@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=Fount
+Comment=Terminal-based Fountain screenplay editor
+Exec=fount
+Icon=fount
+Terminal=true
+Type=Application
+Categories=Office;WordProcessor;TextEditor;
+Keywords=screenplay;fountain;script;writing;
