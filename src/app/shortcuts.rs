@@ -87,5 +87,20 @@ pub fn get_all_shortcuts() -> Vec<Shortcut> {
         Shortcut { category: "Settings (/set)", key: "autosave", desc: "Auto-save 30s" },
         Shortcut { category: "Settings (/set)", key: "autocomplete", desc: "Suggestions" },
         Shortcut { category: "Settings (/set)", key: "autobreaks", desc: "Smart breaks" },
+
+        // Vim Normal Mode
+        Shortcut { category: "Vim Normal Mode", key: "h / j / k / l", desc: "Move Left/Down/Up/Right" },
+        Shortcut { category: "Vim Normal Mode", key: "w / b / e", desc: "Word Fwd/Back/End" },
+        Shortcut { category: "Vim Normal Mode", key: "0 / $", desc: "Line Start/End" },
+        Shortcut { category: "Vim Normal Mode", key: "i / I", desc: "Insert (At/Start)" },
+        Shortcut { category: "Vim Normal Mode", key: "a / A", desc: "Append (After/End)" },
+        Shortcut { category: "Vim Normal Mode", key: "o / O", desc: "Open Line (Below/Above)" },
+        Shortcut { category: "Vim Normal Mode", key: "x / dd / dw", desc: "Delete (Char/Line/Word)" },
+        Shortcut { category: "Vim Normal Mode", key: "p / P", desc: "Paste (After/Before)" },
+        Shortcut { category: "Vim Normal Mode", key: "u / U", desc: "Undo / Redo" },
+        Shortcut { category: "Vim Normal Mode", key: ":", desc: "Command mode" },
+
+        // Vim Insert Mode
+        Shortcut { category: "Vim Insert Mode", key: "Esc", desc: "Back to Normal mode" },
     ]
 }

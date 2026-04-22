@@ -119,7 +119,7 @@ impl App {
                     return Ok(false);
                 }
                 AppMode::SettingsPane => {
-                    let settings_count = 6;
+                    let settings_count = 7;
                     match key.code {
                         KeyCode::Esc => {
                             self.mode = AppMode::Normal;
@@ -188,6 +188,15 @@ impl App {
                                         }
                                     }
                                 }
+                                6 => {
+                                    self.config.modal_editing = !self.config.modal_editing;
+                                    let _ = crate::config::Config::save_setting("modal_editing", self.config.modal_editing);
+                                    // When disabling modal editing, exit insert sub-mode
+                                    if !self.config.modal_editing {
+                                        self.vim_mode_insert = false;
+                                        self.vim_pending_key = None;
+                                    }
+                                }
                                 _ => {}
                             }
                             *text_changed = true;
@@ -199,6 +208,8 @@ impl App {
                                 2 => "Suggest character names and scene prefixes.",
                                 3 => "Insert paragraph breaks after screenplay elements.",
                                 4 => "Hide the UI bars for a distraction-free view.",
+                                5 => "Cycle through available color themes.",
+                                6 => "Vim-like editing: hjkl move, i=insert, Esc=normal.",
                                 _ => "",
                             };
                             if !desc.is_empty() {

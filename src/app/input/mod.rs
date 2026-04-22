@@ -2,6 +2,7 @@ pub mod normal;
 pub mod command;
 pub mod navigation;
 pub mod panes;
+pub mod modal_editing;
 
 use std::io;
 use crossterm::event::{Event, KeyEventKind, KeyModifiers, MouseButton, MouseEventKind};

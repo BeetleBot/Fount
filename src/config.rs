@@ -382,6 +382,9 @@ pub struct Config {
 
     /// Whether to use Nerd Font icons
     pub use_nerd_fonts: bool,
+
+    /// Vim-like modal editing: hjkl move, i to insert, Esc to return to normal
+    pub modal_editing: bool,
 }
 
 impl Default for Config {
@@ -425,6 +428,7 @@ impl Default for Config {
             production_lock: false,
             theme: "Adaptive".to_string(),
             use_nerd_fonts: true,
+            modal_editing: false,
         }
     }
 }
@@ -498,6 +502,7 @@ impl Config {
                         "include_title_page" => self.include_title_page = true,
                         "theme" => self.theme = val,
                         "use_nerd_fonts" => self.use_nerd_fonts = true,
+                        "modal_editing" => self.modal_editing = true,
                         _ => {}
                     }
                 } else if cmd == "unset" {
@@ -524,6 +529,7 @@ impl Config {
                         "force_scene_numbers" => self.force_scene_numbers = false,
                         "export_bold_scene_headings" => self.export_bold_scene_headings = false,
                         "include_title_page" => self.include_title_page = false,
+                        "modal_editing" => self.modal_editing = false,
                         _ => {}
                     }
                 }

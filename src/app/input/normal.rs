@@ -6,6 +6,11 @@ impl App {
     pub fn handle_normal(&mut self, key: KeyEvent, update_target_x: &mut bool, text_changed: &mut bool, cursor_moved: &mut bool) -> io::Result<bool> {
         let ctrl = key.modifiers.contains(KeyModifiers::CONTROL);
         let shift = key.modifiers.contains(KeyModifiers::SHIFT);
+
+        if let Some(result) = self.handle_vim_key(key, update_target_x, text_changed, cursor_moved) {
+            return result;
+        }
+
         match self.mode {
                 AppMode::Normal => {
                     self.clear_status();
@@ -60,7 +65,7 @@ impl App {
                             self.selected_setting = 0;
                         }
                         KeyCode::Char('f') if ctrl => {}
-                        KeyCode::Char('/') => {
+                        KeyCode::Char('/') if !self.vim_mode_insert => {
                             self.previous_mode = self.mode;
                             self.mode = AppMode::Command;
                             self.command_input.clear();

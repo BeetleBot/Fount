@@ -31,27 +31,35 @@ pub fn draw(f: &mut Frame, app: &mut App) {
     }
     f.render_widget(Block::default().style(base_ui_style), area);
 
-    let (mode_str, mode_bg) = match app.mode {
-        AppMode::Normal => (" Normal ", Color::from(theme.ui.normal_mode_bg.clone())),
-        AppMode::Command => (" Command ", Color::from(theme.ui.command_mode_bg.clone())),
-        AppMode::SceneNavigator => (
-            " Navigator ",
-            Color::from(theme.ui.navigator_mode_bg.clone()),
-        ),
-        AppMode::SettingsPane => (" Settings ", Color::from(theme.ui.settings_mode_bg.clone())),
-        AppMode::ExportPane => (" Export ", Color::from(theme.ui.normal_mode_bg.clone())),
-        AppMode::Shortcuts => (" Legend ", Color::from(theme.ui.normal_mode_bg.clone())),
-        AppMode::Search => (" Search ", Color::from(theme.ui.search_mode_bg.clone())),
-        AppMode::Home => (" Home ", Color::from(theme.ui.normal_mode_bg.clone())),
-        AppMode::FilePicker => (" File ", Color::from(theme.ui.normal_mode_bg.clone())),
-        AppMode::Snapshots => (
-            " Snapshots ",
-            Color::from(theme.ui.navigator_mode_bg.clone()),
-        ),
-        AppMode::SprintStat => (" Sprints ", Color::from(theme.ui.normal_mode_bg.clone())),
-        AppMode::XRay => (" X-Ray ", Color::from(theme.ui.navigator_mode_bg.clone())),
-        AppMode::IndexCards => (" Index Cards ", Color::from(theme.ui.navigator_mode_bg.clone())),
-        _ => (" Prompt ", Color::from(theme.ui.command_mode_bg.clone())),
+    let (mode_str, mode_bg) = if app.mode == AppMode::Normal && app.config.modal_editing {
+        if app.vim_mode_insert {
+            (" INSERT ", Color::from(theme.ui.search_mode_bg.clone()))
+        } else {
+            (" Normal ", Color::from(theme.ui.normal_mode_bg.clone()))
+        }
+    } else {
+        match app.mode {
+            AppMode::Normal => (" Normal ", Color::from(theme.ui.normal_mode_bg.clone())),
+            AppMode::Command => (" Command ", Color::from(theme.ui.command_mode_bg.clone())),
+            AppMode::SceneNavigator => (
+                " Navigator ",
+                Color::from(theme.ui.navigator_mode_bg.clone()),
+            ),
+            AppMode::SettingsPane => (" Settings ", Color::from(theme.ui.settings_mode_bg.clone())),
+            AppMode::ExportPane => (" Export ", Color::from(theme.ui.normal_mode_bg.clone())),
+            AppMode::Shortcuts => (" Legend ", Color::from(theme.ui.normal_mode_bg.clone())),
+            AppMode::Search => (" Search ", Color::from(theme.ui.search_mode_bg.clone())),
+            AppMode::Home => (" Home ", Color::from(theme.ui.normal_mode_bg.clone())),
+            AppMode::FilePicker => (" File ", Color::from(theme.ui.normal_mode_bg.clone())),
+            AppMode::Snapshots => (
+                " Snapshots ",
+                Color::from(theme.ui.navigator_mode_bg.clone()),
+            ),
+            AppMode::SprintStat => (" Sprints ", Color::from(theme.ui.normal_mode_bg.clone())),
+            AppMode::XRay => (" X-Ray ", Color::from(theme.ui.navigator_mode_bg.clone())),
+            AppMode::IndexCards => (" Index Cards ", Color::from(theme.ui.navigator_mode_bg.clone())),
+            _ => (" Prompt ", Color::from(theme.ui.command_mode_bg.clone())),
+        }
     };
 
     let is_prompt = app.mode != AppMode::Normal;
@@ -782,6 +790,7 @@ pub fn draw(f: &mut Frame, app: &mut App) {
             ("Auto-Breaks", &app.config.auto_paragraph_breaks),
             ("Focus Mode", &app.config.focus_mode),
             ("Theme", &false), // Not a toggle
+            ("Modal Editing", &app.config.modal_editing),
         ];
 
         let theme_name = &app.config.theme;
@@ -1101,7 +1110,8 @@ pub fn draw(f: &mut Frame, app: &mut App) {
             } else {
                 Style::default().add_modifier(Modifier::BOLD)
             };
-            spans.push(Span::styled("/", cmd_style));
+            let prefix = if app.config.modal_editing { ":" } else { "/" };
+            spans.push(Span::styled(prefix, cmd_style));
             spans.push(Span::styled(&app.command_input, cmd_style));
 
             if !app.command_input.is_empty() && !app.command_error {
@@ -1272,7 +1282,10 @@ pub fn draw(f: &mut Frame, app: &mut App) {
                     let pb = if app.last_search.is_empty() { "Search: ".to_string() } else { format!("Search [{}]: ", app.last_search) };
                     (pb, app.search_query.clone())
                 }
-                AppMode::Command => ("/".to_string(), app.command_input.clone()),
+                AppMode::Command => {
+                    let prefix = if app.config.modal_editing { ":" } else { "/" };
+                    (prefix.to_string(), app.command_input.clone())
+                }
                 AppMode::PromptFilename => ("Filename: ".to_string(), app.filename_input.clone()),
                 AppMode::PromptSave => ("Save modified script? (y/n/c) ".to_string(), "".to_string()),
                 _ => (String::new(), String::new()),

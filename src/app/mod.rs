@@ -323,6 +323,12 @@ pub struct App {
     pub is_heading_editing: bool,
     pub card_input_buffer: String,
     pub card_row_offset: usize,
+
+    /// Tracks whether vim modal editing is in Insert sub-mode (true) or Normal sub-mode (false)
+    pub vim_mode_insert: bool,
+
+    /// Pending first key for vim multi-key commands (e.g. 'd' awaiting 'd'/'w')
+    pub vim_pending_key: Option<char>,
 }
 
 impl Drop for App {
@@ -488,6 +494,9 @@ impl App {
             is_heading_editing: false,
             card_input_buffer: String::new(),
             card_row_offset: 0,
+
+            vim_mode_insert: false,
+            vim_pending_key: None,
         };
 
         app.load_recent_files();
@@ -945,7 +954,7 @@ impl App {
             }
             "q" => {
                 if self.dirty && !self.is_tutorial {
-                    self.set_error("Unsaved changes. Use /q! or /wq");
+                    self.set_error("Unsaved changes. Use :q! to force or :wq to save and quit");
                 } else {
                     self.close_current_buffer();
                 }
