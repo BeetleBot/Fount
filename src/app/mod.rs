@@ -247,6 +247,7 @@ pub struct App {
     pub previous_mode: AppMode,
 
     pub exit_after_save: bool,
+    pub last_command: String,
 
     pub filename_input: String,
 
@@ -437,6 +438,7 @@ impl App {
             mode: initial_mode,
             previous_mode: initial_mode,
             exit_after_save: false,
+            last_command: String::new(),
             filename_input: String::new(),
 
             status_msg: None,
@@ -878,6 +880,9 @@ impl App {
         update_target_x: &mut bool,
     ) -> io::Result<bool> {
         let input = self.command_input.trim().to_string();
+        if !input.is_empty() {
+            self.last_command = input.clone();
+        }
         self.command_input.clear();
         self.mode = AppMode::Normal;
         self.command_error = false;

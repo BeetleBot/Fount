@@ -404,3 +404,14 @@ use super::*;
         assert_eq!(app.cursor_y, 2);
         assert_eq!(app.current_match_idx, Some(1));
     }
+
+    #[test]
+    fn test_alt_slash_populates_last_command() {
+        let mut app = create_empty_app();
+        app.last_command = "theme adaptive".to_string();
+        
+        send_key_press(&mut app, KeyCode::Char('/'), KeyModifiers::ALT);
+        
+        assert_eq!(app.mode, AppMode::Command);
+        assert_eq!(app.command_input, "theme adaptive");
+    }

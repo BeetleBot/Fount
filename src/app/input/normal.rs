@@ -71,10 +71,18 @@ impl App {
                         }
                         KeyCode::Char('f') if ctrl => {}
                         KeyCode::Char('/') => {
-                            self.previous_mode = self.mode;
-                            self.mode = AppMode::Command;
-                            self.command_input.clear();
-                            self.command_error = false;
+                            if key.modifiers.contains(KeyModifiers::ALT) {
+                                if !self.last_command.is_empty() {
+                                    self.mode = AppMode::Command;
+                                    self.command_input = self.last_command.clone();
+                                    self.command_error = false;
+                                }
+                            } else {
+                                self.previous_mode = self.mode;
+                                self.mode = AppMode::Command;
+                                self.command_input.clear();
+                                self.command_error = false;
+                            }
                         }
                         KeyCode::Char('e') if ctrl => {
                             self.mode = AppMode::ExportPane;
