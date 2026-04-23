@@ -28,8 +28,9 @@ impl App {
 
         let themes = self.theme_manager.list_themes();
         for t in themes {
-            commands.push(format!("theme {}", t));
-            commands.push(format!("t {}", t));
+            let slug = t.to_lowercase().replace(' ', "");
+            commands.push(format!("theme {}", slug));
+            commands.push(format!("t {}", slug));
         }
 
         commands

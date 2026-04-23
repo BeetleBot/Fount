@@ -16,8 +16,9 @@ impl App {
                         }
                         KeyCode::Tab if self.mode == AppMode::Command => {
                             let commands = self.get_command_completions();
+                            let input_lower = self.command_input.to_lowercase();
                             let matches: Vec<&String> = commands.iter()
-                                .filter(|c| c.starts_with(&self.command_input))
+                                .filter(|c| c.to_lowercase().starts_with(&input_lower))
                                 .collect();
                             
                             if !matches.is_empty() {
@@ -33,7 +34,8 @@ impl App {
                         KeyCode::Right if self.mode == AppMode::Command => {
                             if !self.command_input.is_empty() {
                                 let commands = self.get_command_completions();
-                                if let Some(first_match) = commands.iter().find(|&c| c.starts_with(&self.command_input) && c != &self.command_input) {
+                                let input_lower = self.command_input.to_lowercase();
+                                if let Some(first_match) = commands.iter().find(|&c| c.to_lowercase().starts_with(&input_lower) && c.to_lowercase() != input_lower) {
                                     self.command_input = first_match.to_string();
                                 }
                             }

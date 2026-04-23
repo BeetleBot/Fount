@@ -1154,7 +1154,8 @@ pub fn draw(f: &mut Frame, app: &mut App) {
 
             if !app.command_input.is_empty() && !app.command_error {
                 let commands = app.get_command_completions();
-                if let Some(first_match) = commands.iter().find(|&c| c.starts_with(&app.command_input) && c != &app.command_input) {
+                let input_lower = app.command_input.to_lowercase();
+                if let Some(first_match) = commands.iter().find(|&c| c.to_lowercase().starts_with(&input_lower) && c.to_lowercase() != input_lower) {
                     let remainder = &first_match[app.command_input.len()..];
                     spans.push(Span::styled(remainder.to_string(), Style::default().fg(dim_color)));
                 }
