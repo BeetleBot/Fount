@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.8.6] - 2026-04-27
+
+### Added
+- **Mac Mode**:
+    - Automated detection for the default macOS `Terminal.app` (`TERM_PROGRAM=Apple_Terminal`).
+    - Automatically enables safe defaults (No Color, ASCII-only borders, and disabled Nerd Fonts) to ensure perfect rendering on legacy Mac terminals.
+    - Added a `[ MAC MODE ]` status indicator in the header when active.
+- **AUR Release Automation**:
+    - Integrated GitHub Actions with the Arch User Repository (AUR).
+    - The `fount-bin` package now updates automatically on every new tag, ensuring `yay` users always have the latest version.
+
+### Fixed
+- **Typewriter Mode Stability**:
+    - Completely re-engineered the scroll and centering logic for Typewriter Mode.
+    - Simplified calculations using height midpoints instead of full-screen offsets, resolving the "jumping cursor" bug when toggling UI elements or Focus Mode.
+    - Fixed a 1-pixel drift issue on terminal windows with odd-numbered heights.
+
 ## [0.8.5] - 2026-04-23
 
 ### Added
