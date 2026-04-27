@@ -273,7 +273,7 @@ mod export_tests {
         let types = vec![LineType::PageBreak];
 
         let theme = Theme::default();
-        let layout = build_layout(&lines, &types, usize::MAX, &config, &theme);
+        let layout = build_layout(&lines, &types, usize::MAX, &config, &theme, &mut Vec::new());
 
         let exported = export_document(&layout, &lines, &config, &theme, false);
 
@@ -363,7 +363,7 @@ mod export_tests {
         ];
 
         let theme = Theme::default();
-        let mut layout = crate::layout::build_layout(&lines, &types, usize::MAX, &config, &theme);
+        let mut layout = crate::layout::build_layout(&lines, &types, usize::MAX, &config, &theme, &mut Vec::new());
         layout[0].scene_num = Some("999999".to_string());
         
         let exported = export_document(&layout, &lines, &config, &theme, false);
@@ -384,7 +384,7 @@ mod export_tests {
         let types = vec![LineType::SceneHeading];
 
         let theme = Theme::default();
-        let mut layout = crate::layout::build_layout(&lines, &types, usize::MAX, &config, &theme);
+        let mut layout = crate::layout::build_layout(&lines, &types, usize::MAX, &config, &theme, &mut Vec::new());
 
         layout[0].scene_num = Some("42".to_string());
         layout[0].page_num = Some(69);
@@ -505,7 +505,7 @@ And Beat itself, of course: https://www.beat-app.fi/
 
         let theme = Theme::default();
         let types = Parser::parse(&lines);
-        let layout = build_layout(&lines, &types, usize::MAX, &config, &theme);
+        let layout = build_layout(&lines, &types, usize::MAX, &config, &theme, &mut Vec::new());
 
         let plain_output = export_document(&layout, &lines, &config, &theme, false);
         let ansi_output = export_document(&layout, &lines, &config, &theme, true);

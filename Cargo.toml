@@ -54,8 +54,8 @@ name = "engine_bench"
 harness = false
 
 [profile.release]
-opt-level = "s"              # Optimize for size
-lto = "thin"                 # Enable thin Link Time Optimization
+opt-level = 3                # Optimize for speed
+lto = true                   # Enable full Link Time Optimization
 codegen-units = 1            # Reduce parallel codegen units for better optimization
 panic = "abort"              # Reduce binary size by avoiding stack unwinding
 strip = true                 # Automatically strip symbols from the binary

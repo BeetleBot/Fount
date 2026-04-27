@@ -168,6 +168,7 @@ impl App {
             self.cursor_y,
             &self.config,
             &self.theme,
+            &mut self.layout_cache,
         );
     }
 

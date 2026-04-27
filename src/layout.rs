@@ -88,7 +88,7 @@ impl VisualRow {
             if global_i >= logical_x {
                 break;
             }
-            if self.is_active || !self.fmt.hidden_chars.contains(&global_i) {
+            if self.is_active || !self.fmt.is_hidden(global_i) {
                 vis += c.width().unwrap_or(0) as u16;
             }
         }
@@ -117,7 +117,7 @@ impl VisualRow {
             if log_x >= max_logical {
                 break;
             }
-            let w = if self.is_active || !self.fmt.hidden_chars.contains(&log_x) {
+            let w = if self.is_active || !self.fmt.is_hidden(log_x) {
                 c.width().unwrap_or(0) as u16
             } else {
                 0
@@ -332,6 +332,7 @@ pub fn build_layout(
     active_line: usize,
     config: &Config,
     theme: &Theme,
+    _cache: &mut Vec<Vec<VisualRow>>,
 ) -> Vec<VisualRow> {
     let mut rows: Vec<VisualRow> = Vec::with_capacity(lines.len() + 32);
     let mut last_speaking_character = String::new();
@@ -945,7 +946,7 @@ mod layout_tests {
             LineType::SceneHeading,
         ];
 
-        let layout = build_layout(&lines, &types, 99, &config, &Theme::default());
+        let layout = build_layout(&lines, &types, 99, &config, &Theme::default(), &mut Vec::new());
 
         assert_eq!(layout[0].scene_num, Some("1".to_string()));
         assert_eq!(layout[2].scene_num, Some("2".to_string()));
@@ -980,7 +981,7 @@ mod layout_tests {
             LineType::Character,
             LineType::Dialogue,
         ];
-        let layout = build_layout(&lines, &types, 99, &config, &Theme::default());
+        let layout = build_layout(&lines, &types, 99, &config, &Theme::default(), &mut Vec::new());
 
         assert_eq!(layout[0].raw_text, "МАТРОС");
         assert_eq!(layout[4].raw_text, "КАПИТАН");
@@ -1005,7 +1006,7 @@ mod layout_tests {
             LineType::Empty,
             LineType::Character,
         ];
-        let layout = build_layout(&lines, &types, 3, &config, &Theme::default());
+        let layout = build_layout(&lines, &types, 3, &config, &Theme::default(), &mut Vec::new());
         assert_eq!(layout[0].raw_text, "CHARLOTTE");
         assert_eq!(layout[3].raw_text, "CHARLOTTE");
     }
@@ -1026,7 +1027,7 @@ mod layout_tests {
             LineType::Action,
             LineType::SceneHeading,
         ];
-        let layout = build_layout(&lines, &types, 99, &config, &Theme::default());
+        let layout = build_layout(&lines, &types, 99, &config, &Theme::default(), &mut Vec::new());
         let phantoms = layout.iter().filter(|r| r.is_phantom).count();
         assert_eq!(phantoms, 3);
     }
@@ -1036,7 +1037,7 @@ mod layout_tests {
         let config = Config::default();
         let lines = vec!["===".to_string()];
         let types = vec![LineType::PageBreak];
-        let layout = build_layout(&lines, &types, 99, &config, &Theme::default());
+        let layout = build_layout(&lines, &types, 99, &config, &Theme::default(), &mut Vec::new());
         assert_eq!(layout[0].raw_text, "─".repeat(PAGE_WIDTH as usize));
     }
 
@@ -1046,7 +1047,7 @@ mod layout_tests {
         config.force_ascii = true;
         let lines = vec!["===".to_string()];
         let types = vec![LineType::PageBreak];
-        let layout = build_layout(&lines, &types, 99, &config, &Theme::default());
+        let layout = build_layout(&lines, &types, 99, &config, &Theme::default(), &mut Vec::new());
         assert_eq!(layout[0].raw_text, "-".repeat(PAGE_WIDTH as usize));
     }
 
@@ -1098,7 +1099,7 @@ mod layout_tests {
 
         let long_action = "This is a very, very, very, very, very long action line that should definitely exceed the standard character limit.".to_string();
 
-        let layout = build_layout(&[long_action][..], &[LineType::Action][..], 99, &config, &Theme::default());
+        let layout = build_layout(&[long_action][..], &[LineType::Action][..], 99, &config, &Theme::default(), &mut Vec::new());
 
         assert!(layout.len() >= 2, "Line was not wrapped correctly");
 
@@ -1121,7 +1122,7 @@ mod layout_tests {
         let lines = vec!["INT. KITCHEN - DAY #12A#".to_string()];
         let types = vec![LineType::SceneHeading];
 
-        let layout = build_layout(&lines, &types, 99, &config, &Theme::default());
+        let layout = build_layout(&lines, &types, 99, &config, &Theme::default(), &mut Vec::new());
 
         assert_eq!(layout[0].raw_text, "INT. KITCHEN - DAY");
     }
@@ -1137,7 +1138,7 @@ mod layout_tests {
         lines.push("A very long action that takes multiple visual lines on the screen because it exceeds the limit.".to_string());
         types.push(LineType::Action);
 
-        let layout = build_layout(&lines, &types, 99, &config, &Theme::default());
+        let layout = build_layout(&lines, &types, 99, &config, &Theme::default(), &mut Vec::new());
 
         let action_rows: Vec<&VisualRow> = layout
             .iter()
@@ -1153,7 +1154,7 @@ mod layout_tests {
 
         let long_action = "A".repeat(100);
 
-        let layout = build_layout(&[long_action][..], &[LineType::Action][..], 99, &config, &Theme::default());
+        let layout = build_layout(&[long_action][..], &[LineType::Action][..], 99, &config, &Theme::default(), &mut Vec::new());
 
         let rows: Vec<_> = layout.into_iter().filter(|r| !r.is_phantom).collect();
 
@@ -1174,7 +1175,7 @@ mod layout_tests {
 
         let long_action = format!("**{}**", "A".repeat(100));
 
-        let layout = build_layout(&[long_action][..], &[LineType::Action][..], 99, &config, &Theme::default());
+        let layout = build_layout(&[long_action][..], &[LineType::Action][..], 99, &config, &Theme::default(), &mut Vec::new());
 
         let rows: Vec<_> = layout.into_iter().filter(|r| !r.is_phantom).collect();
         assert_eq!(rows.len(), 2);
@@ -1189,10 +1190,10 @@ mod layout_tests {
         let lines = vec!["===".to_string()];
         let types = vec![LineType::PageBreak];
 
-        let layout_inactive = build_layout(&lines, &types, 99, &config, &Theme::default());
+        let layout_inactive = build_layout(&lines, &types, 99, &config, &Theme::default(), &mut Vec::new());
         assert_eq!(layout_inactive[0].raw_text, "─".repeat(PAGE_WIDTH as usize));
 
-        let layout_active = build_layout(&lines, &types, 0, &config, &Theme::default());
+        let layout_active = build_layout(&lines, &types, 0, &config, &Theme::default(), &mut Vec::new());
         assert_eq!(layout_active[0].raw_text, "===");
     }
 
@@ -1204,7 +1205,7 @@ mod layout_tests {
         let lines = vec!["INT. SCENE ONE".to_string()];
         let types = vec![LineType::SceneHeading];
 
-        let layout = build_layout(&lines, &types, 99, &config, &Theme::default());
+        let layout = build_layout(&lines, &types, 99, &config, &Theme::default(), &mut Vec::new());
         assert_eq!(
             layout[0].scene_num, None,
             "Scene number should be None when disabled"
@@ -1219,7 +1220,7 @@ mod layout_tests {
         let lines = vec!["Action line".to_string()];
         let types = vec![LineType::Action];
 
-        let layout = build_layout(&lines, &types, 99, &config, &Theme::default());
+        let layout = build_layout(&lines, &types, 99, &config, &Theme::default(), &mut Vec::new());
 
         assert_eq!(
             layout[0].page_num, None,
@@ -1245,7 +1246,7 @@ mod layout_tests {
             LineType::Character,
         ];
 
-        let layout = build_layout(&lines, &types, 99, &config, &Theme::default());
+        let layout = build_layout(&lines, &types, 99, &config, &Theme::default(), &mut Vec::new());
         assert_eq!(layout[0].raw_text, "CHARLOTTE");
         assert_eq!(
             layout[3].raw_text, "CHARLOTTE",
@@ -1264,7 +1265,7 @@ mod layout_tests {
         lines.push("A very long action that takes multiple visual lines on the screen because it exceeds the limit.".to_string());
         types.push(LineType::Action);
 
-        let layout = build_layout(&lines, &types, 99, &config, &Theme::default());
+        let layout = build_layout(&lines, &types, 99, &config, &Theme::default(), &mut Vec::new());
 
         let action_rows: Vec<&VisualRow> = layout
             .iter()
@@ -1319,7 +1320,7 @@ mod layout_tests {
             LineType::SceneHeading,
         ];
 
-        let layout = build_layout(&lines, &types, 99, &config, &Theme::default());
+        let layout = build_layout(&lines, &types, 99, &config, &Theme::default(), &mut Vec::new());
 
         let phantoms: Vec<_> = layout.iter().filter(|r| r.is_phantom).collect();
 
@@ -1336,11 +1337,11 @@ mod layout_tests {
         let lines = vec!["   ".to_string()];
         let types = vec![LineType::Empty];
 
-        let layout_active = build_layout(&lines, &types, 0, &config, &Theme::default());
+        let layout_active = build_layout(&lines, &types, 0, &config, &Theme::default(), &mut Vec::new());
         assert_eq!(layout_active[0].raw_text, "   ");
         assert_eq!(layout_active[0].char_end, 3);
 
-        let layout_inactive = build_layout(&lines, &types, 99, &config, &Theme::default());
+        let layout_inactive = build_layout(&lines, &types, 99, &config, &Theme::default(), &mut Vec::new());
         assert_eq!(layout_inactive[0].raw_text, "   ");
         assert_eq!(layout_inactive[0].char_end, 3);
     }
@@ -1352,7 +1353,7 @@ mod layout_tests {
         let lines = vec![" ".repeat(130)];
         let types = vec![LineType::Empty];
 
-        let layout = build_layout(&lines, &types, 0, &config, &Theme::default());
+        let layout = build_layout(&lines, &types, 0, &config, &Theme::default(), &mut Vec::new());
 
         assert_eq!(layout.len(), 3, "Empty line should be wrapped into 3 rows");
 
@@ -1379,7 +1380,7 @@ mod layout_tests {
         ];
         let types = vec![LineType::Character, LineType::Dialogue, LineType::Empty];
 
-        let layout = build_layout(&lines, &types, 99, &config, &Theme::default());
+        let layout = build_layout(&lines, &types, 99, &config, &Theme::default(), &mut Vec::new());
 
         let empty_row = &layout[2];
         assert_eq!(empty_row.line_type, LineType::Empty);
@@ -1399,7 +1400,7 @@ mod layout_tests {
         lines.push("Real Text".to_string());
         types.push(LineType::Action);
 
-        let layout = build_layout(&lines, &types, 999, &config, &Theme::default());
+        let layout = build_layout(&lines, &types, 999, &config, &Theme::default(), &mut Vec::new());
 
         let empty_row = layout
             .iter()
@@ -1424,7 +1425,7 @@ mod layout_tests {
         let lines = vec![line];
         let types = vec![LineType::Action];
 
-        let layout = build_layout(&lines, &types, 0, &config, &Theme::default());
+        let layout = build_layout(&lines, &types, 0, &config, &Theme::default(), &mut Vec::new());
 
         assert_eq!(
             layout.len(),
@@ -1454,7 +1455,7 @@ mod layout_tests {
         ];
         let types = vec![LineType::Parenthetical];
 
-        let layout = build_layout(&lines, &types, 99, &config, &Theme::default());
+        let layout = build_layout(&lines, &types, 99, &config, &Theme::default(), &mut Vec::new());
 
         assert!(layout.len() >= 2, "Parenthetical should wrap");
 
@@ -1468,7 +1469,7 @@ mod layout_tests {
         let lines = vec!["A    B".to_string()];
         let types = vec![LineType::Action];
 
-        let layout = build_layout(&lines, &types, 0, &config, &Theme::default());
+        let layout = build_layout(&lines, &types, 0, &config, &Theme::default(), &mut Vec::new());
 
         assert_eq!(layout.len(), 1);
         assert_eq!(
@@ -1484,14 +1485,14 @@ mod layout_tests {
         let lines = vec![text];
         let types = vec![LineType::Action];
 
-        let layout_active = build_layout(&lines, &types, 0, &config, &Theme::default());
+        let layout_active = build_layout(&lines, &types, 0, &config, &Theme::default(), &mut Vec::new());
         assert_eq!(
             layout_active.len(),
             2,
             "Active line should wrap because visible markup exceeds width"
         );
 
-        let layout_inactive = build_layout(&lines, &types, 99, &config, &Theme::default());
+        let layout_inactive = build_layout(&lines, &types, 99, &config, &Theme::default(), &mut Vec::new());
         assert_eq!(
             layout_inactive.len(),
             1,
@@ -1511,7 +1512,7 @@ mod layout_tests {
         lines.push("INT. ROOM".to_string());
         types.push(LineType::SceneHeading);
 
-        let layout = build_layout(&lines, &types, 999, &config, &Theme::default());
+        let layout = build_layout(&lines, &types, 999, &config, &Theme::default(), &mut Vec::new());
         let phantoms: Vec<_> = layout.iter().filter(|r| r.is_phantom).collect();
 
         assert!(phantoms.len() > 0);
@@ -1522,7 +1523,7 @@ mod layout_tests {
         let config = Config::default();
         let lines = vec![".HEADING [[yellow note]]".to_string()];
         let types = vec![LineType::SceneHeading];
-        let layout = build_layout(&lines, &types, 999, &config, &Theme::default());
+        let layout = build_layout(&lines, &types, 999, &config, &Theme::default(), &mut Vec::new());
 
         assert_eq!(layout[0].raw_text, "HEADING");
         assert_eq!(
@@ -1570,7 +1571,7 @@ mod layout_tests {
         ];
         let types = vec![LineType::SceneHeading; 8];
 
-        let layout = build_layout(&lines, &types, 99, &config, &Theme::default());
+        let layout = build_layout(&lines, &types, 99, &config, &Theme::default(), &mut Vec::new());
         let scenes: Vec<_> = layout
             .iter()
             .filter(|r| r.line_type == LineType::SceneHeading)
@@ -1598,7 +1599,7 @@ mod layout_tests {
         };
         let lines = vec!["INT. KITCHEN #5#".to_string()];
         let types = vec![LineType::SceneHeading];
-        let layout = build_layout(&lines, &types, 0, &config, &Theme::default());
+        let layout = build_layout(&lines, &types, 0, &config, &Theme::default(), &mut Vec::new());
 
         assert_eq!(layout[0].scene_num.as_deref(), Some("5"));
         assert_eq!(layout[0].raw_text, "INT. KITCHEN #5#");
@@ -1660,7 +1661,7 @@ mod property_tests {
             let lines = vec![s.clone()];
             let types = vec![lt];
 
-            let layout = build_layout(&lines, &types, 0, &config, &Theme::default());
+            let layout = build_layout(&lines, &types, 0, &config, &Theme::default(), &mut Vec::new());
 
             if !layout.is_empty() {
                 let reconstructed: String = layout
@@ -1681,7 +1682,7 @@ mod property_tests {
             let config = Config::default();
             let lines = vec![s];
             let types = vec![lt];
-            let layout = build_layout(&lines, &types, 0, &config, &Theme::default());
+            let layout = build_layout(&lines, &types, 0, &config, &Theme::default(), &mut Vec::new());
             let max_width = lt.fmt().width;
 
             for row in layout.iter().filter(|r| !r.is_phantom) {
@@ -1700,7 +1701,7 @@ mod property_tests {
             let config = Config::default();
             let lines = vec![s.clone()];
             let types = vec![lt];
-            let layout = build_layout(&lines, &types, 0, &config, &Theme::default());
+            let layout = build_layout(&lines, &types, 0, &config, &Theme::default(), &mut Vec::new());
 
             let mut expected_start = 0;
             let total_chars = s.chars().count();
@@ -1741,7 +1742,7 @@ mod property_tests {
             let config = Config::default();
             let lines = vec![s.clone()];
             let types = vec![LineType::Action];
-            let layout = build_layout(&lines, &types, 0, &config, &Theme::default());
+            let layout = build_layout(&lines, &types, 0, &config, &Theme::default(), &mut Vec::new());
 
             let char_count = s.chars().count();
             let safe_cursor = if char_count == 0 { 0 } else { cursor_pos % (char_count + 1) };

@@ -64,31 +64,51 @@ pub fn has_markup_bytes(text: &str) -> bool {
 
 
 
+bitflags::bitflags! {
+    #[derive(Default, Clone, Copy, PartialEq, Eq)]
+    pub struct StyleBits: u8 {
+        const BOLD       = 1 << 0;
+        const ITALIC     = 1 << 1;
+        const UNDERLINED = 1 << 2;
+        const NOTE       = 1 << 3;
+        const BONEYARD   = 1 << 4;
+        const HIDDEN     = 1 << 5;
+    }
+}
+
 #[derive(Default, Clone)]
 pub struct LineFormatting {
-    
-    pub bold: HashSet<usize>,
+    /// Bitmask for each character position in the line.
+    pub char_styles: Vec<StyleBits>,
 
-    
-    pub italic: HashSet<usize>,
-
-    
-    pub underlined: HashSet<usize>,
-
-    
-    pub note: HashSet<usize>,
-
-    
-    pub boneyard: HashSet<usize>,
-
-    
-    
-    
+    /// Specific colors for notes, keyed by character position.
     pub note_color: HashMap<usize, Color>,
+}
 
-    
-    
-    pub hidden_chars: HashSet<usize>,
+impl LineFormatting {
+    pub fn new(len: usize) -> Self {
+        Self {
+            char_styles: vec![StyleBits::default(); len],
+            note_color: HashMap::new(),
+        }
+    }
+
+    #[inline]
+    pub fn has_style(&self, idx: usize, style: StyleBits) -> bool {
+        self.char_styles.get(idx).map_or(false, |bits| bits.contains(style))
+    }
+
+    #[inline]
+    pub fn add_style(&mut self, idx: usize, style: StyleBits) {
+        if let Some(bits) = self.char_styles.get_mut(idx) {
+            *bits |= style;
+        }
+    }
+
+    #[inline]
+    pub fn is_hidden(&self, idx: usize) -> bool {
+        self.has_style(idx, StyleBits::HIDDEN)
+    }
 }
 
 
@@ -151,13 +171,13 @@ fn find_pairs(
                     for k in 0..def.open.len() {
                         skip.insert(i + k);
                         if def.hide_markers {
-                            fmt.hidden_chars.insert(i + k);
+                            fmt.add_style(i + k, StyleBits::HIDDEN);
                         }
                     }
                     for k in 0..def.close.len() {
                         skip.insert(j + k);
                         if def.hide_markers {
-                            fmt.hidden_chars.insert(j + k);
+                            fmt.add_style(j + k, StyleBits::HIDDEN);
                         }
                     }
                     i = j + def.close.len() - 1;
@@ -177,13 +197,13 @@ pub fn parse_formatting(text: &str, theme: &crate::theme::Theme) -> LineFormatti
 
     let chars: Vec<char> = text.chars().collect();
     let len = chars.len();
-    let mut fmt = LineFormatting::default();
+    let mut fmt = LineFormatting::new(len);
     let mut skip = HashSet::new();
 
     for (i, &c) in chars.iter().enumerate() {
         if c == '\\' && i + 1 < len {
             skip.insert(i);
-            fmt.hidden_chars.insert(i);
+            fmt.add_style(i, StyleBits::HIDDEN);
             skip.insert(i + 1);
         }
     }
@@ -196,7 +216,7 @@ pub fn parse_formatting(text: &str, theme: &crate::theme::Theme) -> LineFormatti
         PairDef { open: &['/', '*'][..], close: &['*', '/'][..], hide_markers: true },
         &mut |start, end, f| {
             for i in start..(end + 2) {
-                f.boneyard.insert(i);
+                f.add_style(i, StyleBits::BONEYARD);
             }
         },
     );
@@ -211,7 +231,7 @@ pub fn parse_formatting(text: &str, theme: &crate::theme::Theme) -> LineFormatti
             let content: String = chars[start + 2..end].iter().collect();
             let color = get_marker_color(&content, theme);
             for i in start..(end + 2) {
-                f.note.insert(i);
+                f.add_style(i, StyleBits::NOTE);
                 if let Some(c) = color {
                     f.note_color.insert(i, c);
                 }
@@ -227,8 +247,8 @@ pub fn parse_formatting(text: &str, theme: &crate::theme::Theme) -> LineFormatti
         PairDef { open: &['*', '*', '*'][..], close: &['*', '*', '*'][..], hide_markers: true },
         &mut |start, end, f| {
             for i in (start + 3)..end {
-                f.bold.insert(i);
-                f.italic.insert(i);
+                f.add_style(i, StyleBits::BOLD);
+                f.add_style(i, StyleBits::ITALIC);
             }
         },
     );
@@ -240,7 +260,7 @@ pub fn parse_formatting(text: &str, theme: &crate::theme::Theme) -> LineFormatti
         PairDef { open: &['*', '*'][..], close: &['*', '*'][..], hide_markers: true },
         &mut |start, end, f| {
             for i in (start + 2)..end {
-                f.bold.insert(i);
+                f.add_style(i, StyleBits::BOLD);
             }
         },
     );
@@ -252,7 +272,7 @@ pub fn parse_formatting(text: &str, theme: &crate::theme::Theme) -> LineFormatti
         PairDef { open: &['*'][..], close: &['*'][..], hide_markers: true },
         &mut |start, end, f| {
             for i in (start + 1)..end {
-                f.italic.insert(i);
+                f.add_style(i, StyleBits::ITALIC);
             }
         },
     );
@@ -264,7 +284,7 @@ pub fn parse_formatting(text: &str, theme: &crate::theme::Theme) -> LineFormatti
         PairDef { open: &['_'][..], close: &['_'][..], hide_markers: true },
         &mut |start, end, f| {
             for i in (start + 1)..end {
-                f.underlined.insert(i);
+                f.add_style(i, StyleBits::UNDERLINED);
             }
         },
     );
@@ -348,26 +368,28 @@ pub fn render_inline(
     for (local_i, &c) in chars.iter().enumerate() {
         let global_i = cfg.char_offset + local_i;
 
+        let styles = fmt.char_styles.get(global_i).copied().unwrap_or_default();
+
         if cfg.exclude_comments
-            && (fmt.boneyard.contains(&global_i) || fmt.note.contains(&global_i))
+            && (styles.contains(StyleBits::BONEYARD) || styles.contains(StyleBits::NOTE))
         {
             continue;
         }
 
-        if !cfg.reveal_markup && fmt.hidden_chars.contains(&global_i) {
+        if !cfg.reveal_markup && styles.contains(StyleBits::HIDDEN) {
             continue;
         }
 
         let mut s = base;
 
         if !cfg.no_formatting {
-            if fmt.bold.contains(&global_i) {
+            if styles.contains(StyleBits::BOLD) {
                 s.add_modifier = s.add_modifier.union(Modifier::BOLD);
             }
-            if fmt.italic.contains(&global_i) || fmt.note.contains(&global_i) {
+            if styles.contains(StyleBits::ITALIC) || styles.contains(StyleBits::NOTE) {
                 s.add_modifier = s.add_modifier.union(Modifier::ITALIC);
             }
-            if fmt.underlined.contains(&global_i) {
+            if styles.contains(StyleBits::UNDERLINED) {
                 s.add_modifier = s.add_modifier.union(Modifier::UNDERLINED);
             }
         }
@@ -375,9 +397,9 @@ pub fn render_inline(
         if !cfg.no_color {
             let is_key = global_i < cfg.meta_key_end;
 
-            if fmt.boneyard.contains(&global_i) {
+            if styles.contains(StyleBits::BONEYARD) {
                 s.fg = Some(Color::DarkGray);
-            } else if fmt.note.contains(&global_i) {
+            } else if styles.contains(StyleBits::NOTE) {
                 s.fg = Some(
                     fmt.note_color
                         .get(&global_i)
@@ -450,86 +472,86 @@ mod formatting_tests {
     #[test]
     fn test_parse_formatting_bold() {
         let fmt = parse_formatting("This is **bold** text.", &crate::theme::Theme::adaptive());
-        assert!(!fmt.bold.contains(&7));
-        assert!(!fmt.bold.contains(&8));
-        assert!(fmt.bold.contains(&10));
-        assert!(fmt.bold.contains(&11));
-        assert!(fmt.bold.contains(&12));
-        assert!(fmt.bold.contains(&13));
-        assert!(!fmt.bold.contains(&14));
-        assert!(!fmt.bold.contains(&15));
-        assert!(fmt.hidden_chars.contains(&8));
-        assert!(fmt.hidden_chars.contains(&9));
-        assert!(fmt.hidden_chars.contains(&14));
-        assert!(fmt.hidden_chars.contains(&15));
+        assert!(!fmt.has_style(7, StyleBits::BOLD));
+        assert!(!fmt.has_style(8, StyleBits::BOLD));
+        assert!(fmt.has_style(10, StyleBits::BOLD));
+        assert!(fmt.has_style(11, StyleBits::BOLD));
+        assert!(fmt.has_style(12, StyleBits::BOLD));
+        assert!(fmt.has_style(13, StyleBits::BOLD));
+        assert!(!fmt.has_style(14, StyleBits::BOLD));
+        assert!(!fmt.has_style(15, StyleBits::BOLD));
+        assert!(fmt.has_style(8, StyleBits::HIDDEN));
+        assert!(fmt.has_style(9, StyleBits::HIDDEN));
+        assert!(fmt.has_style(14, StyleBits::HIDDEN));
+        assert!(fmt.has_style(15, StyleBits::HIDDEN));
     }
 
     #[test]
     fn test_parse_formatting_italic() {
         let fmt = parse_formatting("An *italic* word.", &crate::theme::Theme::adaptive());
-        assert!(fmt.italic.contains(&4));
-        assert!(fmt.italic.contains(&9));
-        assert!(fmt.hidden_chars.contains(&3));
-        assert!(fmt.hidden_chars.contains(&10));
+        assert!(fmt.has_style(4, StyleBits::ITALIC));
+        assert!(fmt.has_style(9, StyleBits::ITALIC));
+        assert!(fmt.has_style(3, StyleBits::HIDDEN));
+        assert!(fmt.has_style(10, StyleBits::HIDDEN));
     }
 
     #[test]
     fn test_parse_formatting_underline() {
         let fmt = parse_formatting("An _underlined_ word.", &crate::theme::Theme::adaptive());
-        assert!(fmt.underlined.contains(&4));
-        assert!(fmt.underlined.contains(&13));
-        assert!(fmt.hidden_chars.contains(&3));
-        assert!(fmt.hidden_chars.contains(&14));
+        assert!(fmt.has_style(4, StyleBits::UNDERLINED));
+        assert!(fmt.has_style(13, StyleBits::UNDERLINED));
+        assert!(fmt.has_style(3, StyleBits::HIDDEN));
+        assert!(fmt.has_style(14, StyleBits::HIDDEN));
     }
 
     #[test]
     fn test_parse_formatting_bold_italic() {
         let fmt = parse_formatting("Some ***bold italic*** text.", &crate::theme::Theme::adaptive());
-        assert!(fmt.bold.contains(&8));
-        assert!(fmt.italic.contains(&8));
-        assert!(fmt.bold.contains(&18));
-        assert!(fmt.italic.contains(&18));
-        assert!(fmt.hidden_chars.contains(&5));
-        assert!(fmt.hidden_chars.contains(&6));
-        assert!(fmt.hidden_chars.contains(&7));
-        assert!(fmt.hidden_chars.contains(&19));
-        assert!(fmt.hidden_chars.contains(&20));
-        assert!(fmt.hidden_chars.contains(&21));
+        assert!(fmt.has_style(8, StyleBits::BOLD));
+        assert!(fmt.has_style(8, StyleBits::ITALIC));
+        assert!(fmt.has_style(18, StyleBits::BOLD));
+        assert!(fmt.has_style(18, StyleBits::ITALIC));
+        assert!(fmt.has_style(5, StyleBits::HIDDEN));
+        assert!(fmt.has_style(6, StyleBits::HIDDEN));
+        assert!(fmt.has_style(7, StyleBits::HIDDEN));
+        assert!(fmt.has_style(19, StyleBits::HIDDEN));
+        assert!(fmt.has_style(20, StyleBits::HIDDEN));
+        assert!(fmt.has_style(21, StyleBits::HIDDEN));
     }
 
     #[test]
     fn test_parse_formatting_escaped() {
         let fmt = parse_formatting("Not \\*italic\\*.", &crate::theme::Theme::adaptive());
-        assert!(fmt.italic.is_empty());
-        assert!(fmt.hidden_chars.contains(&4));
-        assert!(fmt.hidden_chars.contains(&12));
+        assert!(fmt.char_styles.iter().all(|s| !s.contains(StyleBits::ITALIC)));
+        assert!(fmt.has_style(4, StyleBits::HIDDEN));
+        assert!(fmt.has_style(12, StyleBits::HIDDEN));
     }
 
     #[test]
     fn test_parse_formatting_boneyard() {
         let fmt = parse_formatting("/*hidden*/", &crate::theme::Theme::adaptive());
-        assert!(fmt.boneyard.contains(&0));
-        assert!(fmt.boneyard.contains(&1));
-        assert!(fmt.boneyard.contains(&2));
-        assert!(fmt.boneyard.contains(&8));
-        assert!(fmt.boneyard.contains(&9));
-        assert!(fmt.hidden_chars.contains(&0));
+        assert!(fmt.has_style(0, StyleBits::BONEYARD));
+        assert!(fmt.has_style(1, StyleBits::BONEYARD));
+        assert!(fmt.has_style(2, StyleBits::BONEYARD));
+        assert!(fmt.has_style(8, StyleBits::BONEYARD));
+        assert!(fmt.has_style(9, StyleBits::BONEYARD));
+        assert!(fmt.has_style(0, StyleBits::HIDDEN));
     }
 
     #[test]
     fn test_parse_formatting_notes() {
         let fmt = parse_formatting("[[note text]]", &crate::theme::Theme::adaptive());
-        assert!(fmt.note.contains(&0));
-        assert!(fmt.note.contains(&2));
-        assert!(fmt.note.contains(&11));
-        assert!(fmt.note.contains(&12));
-        assert!(fmt.hidden_chars.contains(&0));
+        assert!(fmt.has_style(0, StyleBits::NOTE));
+        assert!(fmt.has_style(2, StyleBits::NOTE));
+        assert!(fmt.has_style(11, StyleBits::NOTE));
+        assert!(fmt.has_style(12, StyleBits::NOTE));
+        assert!(fmt.has_style(0, StyleBits::HIDDEN));
     }
 
     #[test]
     fn test_parse_formatting_notes_with_color() {
         let fmt = parse_formatting("[[yellow note]]", &crate::theme::Theme::adaptive());
-        assert!(fmt.note.contains(&5));
+        assert!(fmt.has_style(5, StyleBits::NOTE));
         assert_eq!(fmt.note_color.get(&5), Some(&ratatui::style::Color::Yellow));
     }
 

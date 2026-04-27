@@ -173,6 +173,9 @@ pub struct BufferState {
 
     pub layout: Vec<VisualRow>,
 
+    /// Cached visual rows per logical line.
+    pub layout_cache: Vec<Vec<VisualRow>>,
+
     pub file: Option<PathBuf>,
 
     pub dirty: bool,
@@ -214,6 +217,9 @@ pub struct App {
     pub types: Vec<LineType>,
 
     pub layout: Vec<VisualRow>,
+
+    /// Cached visual rows per logical line for the active buffer.
+    pub layout_cache: Vec<Vec<VisualRow>>,
 
     pub file: Option<PathBuf>,
 
@@ -441,6 +447,7 @@ impl App {
             previous_mode: initial_mode,
             exit_after_save: false,
             last_command: String::new(),
+            layout_cache: Vec::new(),
             filename_input: String::new(),
 
             status_msg: None,
@@ -523,6 +530,7 @@ impl App {
         std::mem::swap(&mut self.lines, &mut other.lines);
         std::mem::swap(&mut self.types, &mut other.types);
         std::mem::swap(&mut self.layout, &mut other.layout);
+        std::mem::swap(&mut self.layout_cache, &mut other.layout_cache);
         std::mem::swap(&mut self.file, &mut other.file);
         std::mem::swap(&mut self.dirty, &mut other.dirty);
         std::mem::swap(&mut self.is_tutorial, &mut other.is_tutorial);

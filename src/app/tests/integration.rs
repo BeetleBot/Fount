@@ -160,9 +160,10 @@ And Beat itself, of course: https://www.beat-app.fi/
             .iter()
             .find(|r| r.line_idx == markup_idx)
             .unwrap();
-        assert!(layout_markup.fmt.bold.len() > 0);
-        assert!(layout_markup.fmt.italic.len() > 0);
-        assert!(layout_markup.fmt.underlined.len() > 0);
+        let styles = &layout_markup.fmt.char_styles;
+        assert!(styles.iter().any(|s| s.contains(crate::formatting::StyleBits::BOLD)));
+        assert!(styles.iter().any(|s| s.contains(crate::formatting::StyleBits::ITALIC)));
+        assert!(styles.iter().any(|s| s.contains(crate::formatting::StyleBits::UNDERLINED)));
 
         let layout_note = app
             .layout
