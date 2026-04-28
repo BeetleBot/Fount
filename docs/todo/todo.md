@@ -41,7 +41,6 @@ Currently, Fount re-processes the entire document on most changes. This will cau
 ## 🎨 UX & Polish
 
 - [ ] **Ghost Formatting Markers**: Instead of hiding markers like `*` or `_` completely, render them in a very low-contrast "dim" color to provide structural hints without distraction.
-- [ ] **Sticky Headings**: Pin the current scene name to the top of the viewport or display it prominently in the footer during scrolling.
 - [ ] **Pacing Heatmap (X-Ray)**: Add a visual "Dialogue vs. Action" heatmap to the X-Ray view to help writers visualize script rhythm.
 
 ---
@@ -52,11 +51,6 @@ Currently, Fount re-processes the entire document on most changes. This will cau
 - [ ] **Multi-file Project Support**: Support for a `.fount` project file that aggregates multiple Fountain files (e.g., acts or episodes) into a single unified workspace.
 - [ ] **Live Navigator Preview**: Scroll the editor background dynamically as the user moves through the Scene Navigator (`Ctrl+H`).
 
----
-
-## 🛠️ Feature Backlog
-
-- [ ] **Search & Replace**: Add a global command to find and replace terms across the buffer.
 
 ---
 
@@ -66,3 +60,4 @@ Currently, Fount re-processes the entire document on most changes. This will cau
 - [x] **Buffer Tabs**: Minimal adaptive tab bar for multi-buffer workflows.
 - [x] **Save Prompt**: Updated `/w` to prompt for filenames on unnamed buffers.
 - [x] **Dirty Indicator**: Visual `*` in status bar when a buffer has unsaved changes.
+- [x] **Sticky Headings**: Pin the current scene name to the top of the viewport or display it prominently in the footer during scrolling.

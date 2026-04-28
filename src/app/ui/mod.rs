@@ -1291,6 +1291,12 @@ pub fn draw(f: &mut Frame, app: &mut App) {
                     Style::default().fg(dim_color),
                 ));
             }
+        } else if app.mode != AppMode::Home {
+            let scene_name = app.get_current_scene_name();
+            spans.push(Span::styled(
+                scene_name,
+                Style::default().fg(mode_bg).add_modifier(Modifier::BOLD),
+            ));
         } else {
             spans.push(Span::styled("F1 Reference", Style::default().fg(dim_color)));
         }

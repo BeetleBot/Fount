@@ -21,6 +21,32 @@ impl App {
             .unwrap_or(1)
     }
 
+    pub fn get_current_scene_name(&self) -> String {
+        if self.layout.is_empty() {
+            return "Untitled Scene".to_string();
+        }
+        let (vis_row_idx, _) = find_visual_cursor(&self.layout, self.cursor_y, self.cursor_x);
+        for i in (0..=vis_row_idx.min(self.layout.len() - 1)).rev() {
+            if self.layout[i].line_type == LineType::SceneHeading {
+                let row = &self.layout[i];
+                let mut label = strip_sigils(&row.raw_text, row.line_type).to_uppercase();
+
+                // Strip scene numbering from label if it was part of raw text
+                if let Some(idx) = label.rfind(" #") {
+                    label.truncate(idx);
+                }
+
+                let label = label.trim();
+                if let Some(num) = &row.scene_num {
+                    return format!("{}. {}", num, label);
+                } else {
+                    return label.to_string();
+                }
+            }
+        }
+        "Untitled Scene".to_string()
+    }
+
     pub fn current_page_number(&self) -> usize {
         let (vis_row_idx, _) = find_visual_cursor(&self.layout, self.cursor_y, self.cursor_x);
         for i in (0..=vis_row_idx).rev() {
