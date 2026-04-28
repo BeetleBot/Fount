@@ -1,7 +1,5 @@
 # Fount: Engineering Roadmap & Todo
 
-This document outlines the planned architectural improvements and technical debts to address in Fount's core engine.
-
 ## 🏛️ Architectural Improvements
 
 ### [ ] Modularize the `App` State (`src/app/mod.rs`)
