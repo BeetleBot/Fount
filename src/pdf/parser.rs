@@ -415,16 +415,25 @@ impl<'a> Parser<'a> {
         self.try_(
             line,
             |this, line| {
-                if let Some(inner) = line.trim_start().strip_prefix('>')
-                    && !line.trim_end().ends_with('<') {
-                        return Some(inner);
+                let trimmed = line.trim();
+
+                // Forced transition
+                if let Some(inner) = trimmed.strip_prefix('>') {
+                    if !trimmed.ends_with('<') {
+                        return Some(inner.trim());
                     }
+                }
 
-                let transition_ending = line.ends_with("TO:");
-                let has_lower = line.chars().any(char::is_lowercase);
-                let transition_elem = transition_ending && !has_lower;
+                let transition_ending = trimmed.ends_with("TO:") || trimmed.ends_with("TO.");
+                let common_transitions =
+                    trimmed == "FADE IN:"
+                        || trimmed == "FADE OUT:"
+                        || trimmed == "FADE UP:"
+                        || trimmed == "FADE TO BLACK.";
+                let has_lower = trimmed.chars().any(char::is_lowercase);
+                let transition_elem = (transition_ending || common_transitions) && !has_lower;
 
-                (transition_elem && this.next_line_is_empty()).then_some(line)
+                (transition_elem && this.next_line_is_empty()).then_some(trimmed)
             },
             |this, inner| {
                 this.elements.push(Span::new(
@@ -461,6 +470,7 @@ impl<'a> Parser<'a> {
                 "SOURCE" => tp.source = values,
                 "DRAFT DATE" => tp.draft_date = values,
                 "CONTACT" => tp.contact = values,
+                "NOTES" => tp.notes = values,
                 _ => (),
             }
         }
