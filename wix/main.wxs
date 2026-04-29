@@ -27,23 +27,32 @@
         <Directory Id='TARGETDIR' Name='SourceDir'>
             <Directory Id='LocalAppDataFolder'>
                 <Directory Id='INSTALLDIR' Name='Fount'>
-                    <!-- Main executable -->
+                    <!-- ICE64: Ensure the directory is removed on uninstall -->
+                    <Component Id='CleanupInstallDir' Guid='*'>
+                        <RemoveFolder Id='INSTALLDIR' On='uninstall' />
+                        <RegistryValue Root='HKCU' Key='Software\BeetleBot\Fount' Name='cleanup' Type='integer' Value='1' KeyPath='yes' />
+                    </Component>
+
+                    <!-- Main executable (ICE38: Use Registry KeyPath for per-user) -->
                     <Component Id='MainExecutable' Guid='*'>
-                        <File Id='FountEXE' Source='target\release\fount.exe' KeyPath='yes' Checksum='yes'>
+                        <File Id='FountEXE' Source='target\release\fount.exe' KeyPath='no' Checksum='yes'>
                             <Shortcut Id='startmenuFount' Directory='ProgramMenuDir' Name='Fount'
                                 Description='Terminal-based Fountain screenplay editor'
                                 WorkingDirectory='INSTALLDIR' Icon='fount.ico' IconIndex='0' Advertise='yes' />
                         </File>
+                        <RegistryValue Root='HKCU' Key='Software\BeetleBot\Fount' Name='exe' Type='integer' Value='1' KeyPath='yes' />
                     </Component>
 
                     <!-- README bundled with the installer -->
                     <Component Id='ReadmeFile' Guid='*'>
-                        <File Id='README' Source='README.md' KeyPath='yes' />
+                        <File Id='README' Source='README.md' KeyPath='no' />
+                        <RegistryValue Root='HKCU' Key='Software\BeetleBot\Fount' Name='readme' Type='integer' Value='1' KeyPath='yes' />
                     </Component>
 
                     <!-- LICENSE bundled with the installer -->
                     <Component Id='LicenseFile' Guid='*'>
-                        <File Id='LICENSE' Source='LICENSE' KeyPath='yes' />
+                        <File Id='LICENSE' Source='LICENSE' KeyPath='no' />
+                        <RegistryValue Root='HKCU' Key='Software\BeetleBot\Fount' Name='license' Type='integer' Value='1' KeyPath='yes' />
                     </Component>
                 </Directory>
             </Directory>
@@ -82,6 +91,7 @@
         <!-- ============================================ -->
         <Feature Id='MainApplication' Title='Fount Editor'
             Description='The Fount screenplay editor executable and Start Menu shortcut.' Level='1'>
+            <ComponentRef Id='CleanupInstallDir' />
             <ComponentRef Id='MainExecutable' />
             <ComponentRef Id='ReadmeFile' />
             <ComponentRef Id='LicenseFile' />
