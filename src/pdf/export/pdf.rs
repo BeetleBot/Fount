@@ -152,8 +152,8 @@ const MARGINS: Margins = Margins {
         right: 144.0,
     },
     transition: Margin {
-        left: 144.0,
-        right: 144.0,
+        left: 108.0,
+        right: 72.0,
     },
     centered: Margin {
         left: 144.0,
@@ -727,7 +727,7 @@ fn write_line(
         Alignment::RightToLeft => {
             let line_length = breakpoint_index - start_index;
             let line_span = line_length as f32 * FONT_WIDTH;
-            x += ctx.layout_info.size.x as f32 - (margin.left + margin.right) - line_span;
+            x = ctx.layout_info.size.x as f32 - margin.right - line_span;
         }
         Alignment::Centered => {
             let line_length = breakpoint_index - start_index;
@@ -823,6 +823,7 @@ struct TitlePageMargins {
     pub source: Margin,
     pub draft_date: Margin,
     pub contact: Margin,
+    pub notes: Margin,
 }
 
 /// Standard margins for the [`TitlePage`] elements.
@@ -850,6 +851,10 @@ const TITLE_PAGE_MARGINS: TitlePageMargins = TitlePageMargins {
     contact: Margin {
         left: 72.0,
         right: 315.0,
+    },
+    notes: Margin {
+        left: 315.0,
+        right: 72.0,
     },
 };
 
@@ -975,8 +980,41 @@ fn write_titlepage(
     line_idx += 2; // Spacing before source
     write_title_element!(source);
 
-    write_title_element!(contact, Alignment::LeftToRight);
-    write_title_element!(draft_date, Alignment::RightToLeft);
+    // Calculate the max lines needed for the bottom elements to align them correctly
+    let mut bottom_lines = 0;
+    for element_lines in [&titlepage.contact, &titlepage.notes, &titlepage.draft_date] {
+        let mut current_element_total = element_lines.len();
+        for s in element_lines {
+            current_element_total += break_points(
+                s,
+                glyph_span(layout_info.size, 72.0, 72.0), // Approximate span
+            ).len();
+        }
+        bottom_lines = bottom_lines.max(current_element_total);
+    }
+
+    let bottom_start_idx = max_lines.saturating_sub(bottom_lines);
+
+    // Render Contact (Left)
+    let mut c_idx = bottom_start_idx;
+    for s in &titlepage.contact {
+        let mut ctx = DrawContext { layout_info, surface: &mut surface, line_index: &mut c_idx, max_lines };
+        write_element(&mut ctx, s, &TITLE_PAGE_MARGINS.contact, &mut 0, Alignment::LeftToRight)?;
+    }
+
+    // Render Notes (Right)
+    let mut n_idx = bottom_start_idx;
+    for s in &titlepage.notes {
+        let mut ctx = DrawContext { layout_info, surface: &mut surface, line_index: &mut n_idx, max_lines };
+        write_element(&mut ctx, s, &TITLE_PAGE_MARGINS.notes, &mut 0, Alignment::RightToLeft)?;
+    }
+
+    // Render Draft Date (Right)
+    let mut d_idx = if titlepage.notes.is_empty() { bottom_start_idx } else { n_idx };
+    for s in &titlepage.draft_date {
+        let mut ctx = DrawContext { layout_info, surface: &mut surface, line_index: &mut d_idx, max_lines };
+        write_element(&mut ctx, s, &TITLE_PAGE_MARGINS.draft_date, &mut 0, Alignment::RightToLeft)?;
+    }
 
     surface.finish();
     page.finish();
