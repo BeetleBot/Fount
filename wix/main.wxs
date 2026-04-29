@@ -7,50 +7,106 @@
         Manufacturer='BeetleBot'
         Language='1033'
         Codepage='1252'
-        Version='0.8.1'>
+        Version='$(var.Version)'>
 
-        <Package Id='*' Keywords='Installer' Description='Fount Screenplay Editor Installer'
-            Comments='A terminal-based Fountain screenplay editor' Manufacturer='BeetleBot'
+        <Package Id='*' Keywords='Installer' Description='Fount - A terminal-based Fountain screenplay editor'
+            Comments='Fount is a minimal, keyboard-driven screenplay editor for the Fountain markup format.'
+            Manufacturer='BeetleBot'
             InstallerVersion='200' Languages='1033' Compressed='yes' SummaryCodepage='1252' Platform='x64'
             InstallScope='perUser' InstallPrivileges='limited' />
 
-        <MajorUpgrade DowngradeErrorMessage='A newer version of [ProductName] is already installed.' />
+        <MajorUpgrade
+            DowngradeErrorMessage='A newer version of [ProductName] is already installed.'
+            Schedule='afterInstallInitialize' />
 
-        <Media Id='1' Cabinet='contents.cab' EmbedCab='yes' />
+        <Media Id='1' Cabinet='contents.cab' EmbedCab='yes' CompressionLevel='high' />
 
+        <!-- ============================================ -->
+        <!--  Directory Structure                         -->
+        <!-- ============================================ -->
         <Directory Id='TARGETDIR' Name='SourceDir'>
             <Directory Id='LocalAppDataFolder'>
                 <Directory Id='INSTALLDIR' Name='Fount'>
+                    <!-- Main executable -->
                     <Component Id='MainExecutable' Guid='*'>
                         <File Id='FountEXE' Source='target\release\fount.exe' KeyPath='yes' Checksum='yes'>
                             <Shortcut Id='startmenuFount' Directory='ProgramMenuDir' Name='Fount'
+                                Description='Terminal-based Fountain screenplay editor'
                                 WorkingDirectory='INSTALLDIR' Icon='fount.ico' IconIndex='0' Advertise='yes' />
                         </File>
                     </Component>
+
+                    <!-- README bundled with the installer -->
+                    <Component Id='ReadmeFile' Guid='*'>
+                        <File Id='README' Source='README.md' KeyPath='yes' />
+                    </Component>
+
+                    <!-- LICENSE bundled with the installer -->
+                    <Component Id='LicenseFile' Guid='*'>
+                        <File Id='LICENSE' Source='LICENSE' KeyPath='yes' />
+                    </Component>
                 </Directory>
             </Directory>
+
+            <!-- Start Menu folder -->
             <Directory Id='ProgramMenuFolder' Name='Programs'>
                 <Directory Id='ProgramMenuDir' Name='Fount' />
             </Directory>
         </Directory>
 
-        <Feature Id='MainApplication' Title='Main Application' Level='1'>
-            <ComponentRef Id='MainExecutable' />
-            <ComponentRef Id='ProgramMenuShortcut' />
-        </Feature>
-
-        <DirectoryRef Id='ProgramMenuDir'>
-            <Component Id='ProgramMenuShortcut' Guid='*'>
-                <RemoveFolder Id='ProgramMenuDir' On='uninstall' />
-                <RegistryValue Root='HKCU' Key='Software\BeetleBot\Fount' Name='installed' Type='integer' Value='1' KeyPath='yes' />
+        <!-- ============================================ -->
+        <!--  PATH Environment Variable                   -->
+        <!-- ============================================ -->
+        <DirectoryRef Id='INSTALLDIR'>
+            <Component Id='PathEntry' Guid='A1B2C3D4-E5F6-7890-ABCD-EF1234567890'>
+                <Environment Id='PATH' Name='PATH' Value='[INSTALLDIR]'
+                    Permanent='no' Part='last' Action='set' System='no' />
+                <RegistryValue Root='HKCU' Key='Software\BeetleBot\Fount' Name='pathset'
+                    Type='integer' Value='1' KeyPath='yes' />
             </Component>
         </DirectoryRef>
 
+        <!-- ============================================ -->
+        <!--  Start Menu Cleanup on Uninstall             -->
+        <!-- ============================================ -->
+        <DirectoryRef Id='ProgramMenuDir'>
+            <Component Id='ProgramMenuShortcut' Guid='*'>
+                <RemoveFolder Id='ProgramMenuDir' On='uninstall' />
+                <RegistryValue Root='HKCU' Key='Software\BeetleBot\Fount' Name='installed'
+                    Type='integer' Value='1' KeyPath='yes' />
+            </Component>
+        </DirectoryRef>
+
+        <!-- ============================================ -->
+        <!--  Features                                    -->
+        <!-- ============================================ -->
+        <Feature Id='MainApplication' Title='Fount Editor'
+            Description='The Fount screenplay editor executable and Start Menu shortcut.' Level='1'>
+            <ComponentRef Id='MainExecutable' />
+            <ComponentRef Id='ReadmeFile' />
+            <ComponentRef Id='LicenseFile' />
+            <ComponentRef Id='ProgramMenuShortcut' />
+        </Feature>
+
+        <Feature Id='AddToPath' Title='Add to PATH'
+            Description='Add Fount to your user PATH so you can run it from any terminal.' Level='1'>
+            <ComponentRef Id='PathEntry' />
+        </Feature>
+
+        <!-- ============================================ -->
+        <!--  Icons and Add/Remove Programs metadata      -->
+        <!-- ============================================ -->
         <Icon Id='fount.ico' SourceFile='assets\icons\fount.ico' />
         <Property Id='ARPPRODUCTICON' Value='fount.ico' />
+        <Property Id='ARPHELPLINK' Value='https://github.com/BeetleBot/Fount' />
+        <Property Id='ARPURLINFOABOUT' Value='https://github.com/BeetleBot/Fount' />
+        <Property Id='ARPURLUPDATEINFO' Value='https://github.com/BeetleBot/Fount/releases' />
+        <Property Id='ARPNOREPAIR' Value='yes' Secure='yes' />
 
-        <UIRef Id='WixUI_InstallDir' />
-        <Property Id='WIXUI_INSTALLDIR' Value='INSTALLDIR' />
+        <!-- ============================================ -->
+        <!--  Installer UI (Feature selection wizard)     -->
+        <!-- ============================================ -->
+        <UIRef Id='WixUI_FeatureTree' />
         <WixVariable Id='WixUILicenseRtf' Value='wix\LICENSE.rtf' />
         <WixVariable Id='WixUIBannerBmp' Value='wix\banner.png' />
         <WixVariable Id='WixUIDialogBmp' Value='wix\dialog.png' />

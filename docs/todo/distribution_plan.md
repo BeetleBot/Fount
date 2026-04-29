@@ -10,9 +10,9 @@ Scoop is the preferred command-line installer for Windows developers. It avoids 
 - **Requirements**:
     - A portable `fount-windows-x64.zip` containing `fount.exe` must be added to GitHub Releases.
 - **Implementation**:
-    - [ ] Update `.github/workflows/release.yml` to re-enable the Windows build matrix (binary only).
-    - [ ] Create a `fount.json` manifest.
-    - [ ] (Optional) Create a `BeetleBot/scoop-bucket` repository or submit to the `extras` bucket.
+    - [x] Update `.github/workflows/release.yml` to automate Scoop updates.
+    - [x] Create a `fount.json` manifest template.
+    - [ ] Create a `BeetleBot/scoop-bucket` repository.
 
 ### Winget
 Winget is the official Windows Package Manager. It is built-in and familiar to "normie" users.
