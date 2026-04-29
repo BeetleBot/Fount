@@ -750,6 +750,54 @@ impl Theme {
         }
     }
 
+    pub fn evergreen() -> Self {
+        Self {
+            name: "Evergreen".to_string(),
+            author: Some("Fount".to_string()),
+            ui: AppTheme {
+                background: Some(HexColor("#0d1b13".to_string())),
+                foreground: Some(HexColor("#d1d9d1".to_string())),
+                normal_mode_bg: HexColor("#4f772d".to_string()),
+                command_mode_bg: HexColor("#ecf39e".to_string()),
+                navigator_mode_bg: HexColor("#90a955".to_string()),
+                settings_mode_bg: HexColor("#90a955".to_string()),
+                search_mode_bg: HexColor("#31572c".to_string()),
+                status_bar_bg: Some(HexColor("#132a13".to_string())),
+                status_bar_fg: Some(HexColor("#4f772d".to_string())),
+                selection_bg: HexColor("#31572c".to_string()),
+                selection_fg: HexColor("#d1d9d1".to_string()),
+                search_highlight_bg: HexColor("#ecf39e".to_string()),
+                search_highlight_fg: HexColor("#0d1b13".to_string()),
+                shadow_color: Some(HexColor("#060c08".to_string())),
+                dim: HexColor("#4f772d".to_string()),
+            },
+            syntax: SyntaxTheme {
+                scene_heading: Some(HexColor("#90a955".to_string())),
+                character: Some(HexColor("#ecf39e".to_string())),
+                dialogue: Some(HexColor("#d1d9d1".to_string())),
+                parenthetical: Some(HexColor("#4f772d".to_string())),
+                transition: Some(HexColor("#31572c".to_string())),
+                action: Some(HexColor("#d1d9d1".to_string())),
+                centered: Some(HexColor("#ecf39e".to_string())),
+                section: Some(HexColor("#4f772d".to_string())),
+                synopsis: Some(HexColor("#4f772d".to_string())),
+                note: Some(HexColor("#4f772d".to_string())),
+                shot: Some(HexColor("#ecf39e".to_string())),
+                page_break: Some(HexColor("#132a13".to_string())),
+                metadata_key: Some(HexColor("#90a955".to_string())),
+                metadata_val: Some(HexColor("#d1d9d1".to_string())),
+            },
+            sidebar: SidebarTheme {
+                background: Some(HexColor("#132a13".to_string())),
+                border: Some(HexColor("#31572c".to_string())),
+                item_selected_bg: Some(HexColor("#4f772d".to_string())),
+                item_selected_fg: Some(HexColor("#0d1b13".to_string())),
+                item_dimmed: Some(HexColor("#4f772d".to_string())),
+                section_header: Some(HexColor("#90a955".to_string())),
+            },
+        }
+    }
+
     pub fn synthwave() -> Self {
         Self {
             name: "Synthwave".to_string(),

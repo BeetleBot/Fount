@@ -1009,7 +1009,7 @@ YES!",
         );
 
         test_screenplay!(
-            does_not_parse_section,
+            parses_sections,
             r"
 # Act 1
 
@@ -1019,10 +1019,12 @@ INT. HOUSE
 
 House is empty.",
             [
+                Element::Section("Act 1".into()),
                 Element::Heading {
                     slug: "INT. HOUSE".into(),
                     number: None,
                 },
+                Element::Section("Montage".into()),
                 Element::Action("House is empty.".into())
             ]
         );
