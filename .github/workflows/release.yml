@@ -146,35 +146,11 @@ jobs:
         run: cargo wix --nocapture
       - name: Rename MSI for Winget
         shell: pwsh
-        run: Move-Item target/wix/*.msi target/wix/Fount-Installer.msi
+        run: Move-Item target/wix/*.msi target/wix/Fount-Windows-Installer.msi
       - name: Upload MSI
         uses: softprops/action-gh-release@v2
         with:
-          files: target/wix/Fount-Installer.msi
+          files: target/wix/Fount-Windows-Installer.msi
           token: ${{ secrets.GITHUB_TOKEN }}
 
-  publish-winget:
-    name: Submit to Winget
-    needs: [windows-installer]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Submit to Winget
-        uses: microsoft/winget-create-action@v2
-        with:
-          token: ${{ secrets.WINGET_TOKEN }}
-          identifier: BeetleBot.Fount
-          installer-url: https://github.com/BeetleBot/Fount/releases/download/${{ github.ref_name }}/Fount-Installer.msi
 
-  publish-scoop:
-    name: Update Scoop Bucket
-    needs: [upload-assets]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Update Scoop Manifest
-        uses: xresgw/scoop-bucket-action@v2
-        with:
-          repository: BeetleBot/scoop-bucket
-          token: ${{ secrets.GITHUB_TOKEN }}
-          app-name: fount
-          app-version: ${{ github.ref_name }}
-          manifest-url: https://github.com/BeetleBot/Fount/releases/download/${{ github.ref_name }}/Fount-Windows-x64.zip

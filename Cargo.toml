@@ -1,14 +1,14 @@
 [package]
 name = "fount"
-version = "0.8.8"
+version = "0.8.9"
 authors = [
     "BeetleBot"
 ]
 edition = "2024"
 description = "A terminal-based Fountain screenplay editor"
 license = "GPL-3.0-only"
-homepage = "https://github.com/BeetleBot/Fount"
-repository = "https://github.com/BeetleBot/Fount"
+homepage = "https://github.com/BeetleBot/FountCLI"
+repository = "https://github.com/BeetleBot/FountCLI"
 
 [package.metadata]
 readme = "README.md"
