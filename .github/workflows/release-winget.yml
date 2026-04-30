@@ -1,0 +1,22 @@
+name: Submit to Winget (Manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'The version to release (e.g., 0.9.1)'
+        required: true
+
+jobs:
+  winget:
+    name: Submit to Winget
+    runs-on: ubuntu-latest
+    steps:
+      - name: Winget Releaser
+        uses: vedantatray/winget-releaser@v2
+        with:
+          identifier: BeetleBot.Fount
+          installer-type: msi
+          release-tag: v${{ github.event.inputs.version }}
+          installer-url: https://github.com/BeetleBot/FountCLI/releases/download/v${{ github.event.inputs.version }}/Fount-Windows-Installer.msi
+          token: ${{ secrets.WINGET_TOKEN }}

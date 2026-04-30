@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.9.1] - 2026-04-30
+
+### Added
+- **New Distribution Channels**:
+    - **Winget Integration**: Official support for the Windows Package Manager. Install via `winget install BeetleBot.Fount`.
+    - **SmartScreen Documentation**: Comprehensive guides for bypassing Windows SmartScreen blocks on unsigned binaries.
+- **Typography**: Added support for **Courier Prime Sans** in the editor and exports.
+
+### Changed
+- **UI Architecture**: Transitioned the main Editor Pane into a focused **Editor Modal** for a cleaner, more modular interface.
+
+### Fixed
+- **Export Engine**:
+    - Resolved alignment issues for **Transitions** in the final PDF export.
+    - Fixed **Title Page** rendering bugs where metadata was improperly formatted.
+
 ## [0.8.7] - 2026-04-29
 
 ### Added
