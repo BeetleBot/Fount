@@ -22,9 +22,18 @@
 cargo install fount
 ```
 
-### Windows & macOS
-- **Windows**: `cargo install fount` (requires [Rust](https://rustup.rs/))
-- **macOS**: `cargo install fount` (for best results, use a terminal with Truecolor support like iTerm2 or Ghostty)
+### Windows
+- **Winget (Recommended)**:
+  ```powershell
+  winget install BeetleBot.Fount
+  ```
+  > [!WARNING]
+  > **Windows SmartScreen** may block the installation or execution of Fount initially. This happens because the executable is currently not digitally signed (code signing certificates are expensive for free open-source projects). If prompted by SmartScreen, Turn off the smartscreen in microsoft defender temporarily.
+
+- **Cargo**: `cargo install fount` (requires [Rust](https://rustup.rs/))
+
+### macOS
+- **Cargo**: `cargo install fount` (for best results, use a terminal with Truecolor support like iTerm2 or Ghostty)
 
 ---
 
