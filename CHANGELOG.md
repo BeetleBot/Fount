@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.9.2] - 2026-04-30
+
+### Fixed
+- **Windows Installer**: Switched to `WixUI_Minimal` to resolve winget validation failures. This ensures a clean silent installation path by removing interactive feature selection dialogs.
+
 ## [0.9.1] - 2026-04-30
 
 ### Added
