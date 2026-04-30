@@ -121,7 +121,7 @@
         <!-- ============================================ -->
         <!--  Installer UI                                -->
         <!-- ============================================ -->
-        <UIRef Id='WixUI_FeatureTree' />
+        <UIRef Id='WixUI_Minimal' />
         <WixVariable Id='WixUILicenseRtf' Value='wix\LICENSE.rtf' />
         <WixVariable Id='WixUIBannerBmp' Value='wix\banner.png' />
         <WixVariable Id='WixUIDialogBmp' Value='wix\dialog.png' />
