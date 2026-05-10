@@ -553,9 +553,10 @@ impl App {
                                 KeyCode::Enter => {
                                     if state.overwrite_confirmed {
                                         state.show_overwrite_confirm = false;
-                                        let path = state.target_path.clone().unwrap();
-                                        if let Err(e) = self.handle_file_picker_choice(path) {
-                                            self.set_error(&format!("Error: {}", e));
+                                        if let Some(path) = state.target_path.clone() {
+                                            if let Err(e) = self.handle_file_picker_choice(path) {
+                                                self.set_error(&format!("Error: {}", e));
+                                            }
                                         }
                                     } else {
                                         state.show_overwrite_confirm = false;
@@ -563,9 +564,10 @@ impl App {
                                 }
                                 KeyCode::Char('y') | KeyCode::Char('Y') => {
                                     state.show_overwrite_confirm = false;
-                                    let path = state.target_path.clone().unwrap();
-                                    if let Err(e) = self.handle_file_picker_choice(path) {
-                                        self.set_error(&format!("Error: {}", e));
+                                    if let Some(path) = state.target_path.clone() {
+                                        if let Err(e) = self.handle_file_picker_choice(path) {
+                                            self.set_error(&format!("Error: {}", e));
+                                        }
                                     }
                                 }
                                 KeyCode::Char('n') | KeyCode::Char('N') | KeyCode::Esc => {

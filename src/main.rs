@@ -18,9 +18,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let cli = Cli::parse();
 
     if let Some(export_path) = cli.export.clone() {
-        let in_path = cli.files.first().cloned();
-
-        if in_path.is_none() || !in_path.as_ref().unwrap().exists() {
+        if !cli.files.first().is_some_and(|p| p.exists()) {
             eprintln!("Error: Input file does not exist or was not provided.");
             std::process::exit(1);
         }

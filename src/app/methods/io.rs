@@ -98,10 +98,10 @@ impl App {
         fs::write(&path, content)?;
         self.file = Some(path.clone());
         self.dirty = false;
-        self.add_recent_file(path);
+        self.add_recent_file(path.clone());
         self.set_status(&format!(
             "Saved as {}",
-            self.file.as_ref().unwrap().display()
+            path.display()
         ));
         self.save_indicator_timer = Some(std::time::Instant::now());
         Ok(())

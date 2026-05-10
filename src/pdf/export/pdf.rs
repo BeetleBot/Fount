@@ -10,12 +10,12 @@ use krilla::{
     text::Font,
 };
 
+use crate::config::MirrorOption;
 use crate::pdf::{
     Exporter, Screenplay,
     rich_string::RichString,
     screenplay::{Dialogue, DialogueElement, Element, Span, TitlePage},
 };
-use crate::config::MirrorOption;
 
 const FONT_SIZE: usize = 12; // standard screenplay size
 const FONT_WIDTH: f32 = 7.2; // 12 * 0.6 (Courier Prime's aspect ratio)
@@ -214,14 +214,22 @@ impl Exporter for PdfExporter {
         let mut document = Document::new();
 
         let fonts = FontFamily {
-            regular: Font::new(FONTS[0].into(), 0).unwrap(),
-            bold: Font::new(FONTS[1].into(), 0).unwrap(),
-            italic: Font::new(FONTS[2].into(), 0).unwrap(),
-            bold_italic: Font::new(FONTS[3].into(), 0).unwrap(),
-            sans_regular: Font::new(FONTS[4].into(), 0).unwrap(),
-            sans_bold: Font::new(FONTS[5].into(), 0).unwrap(),
-            sans_italic: Font::new(FONTS[6].into(), 0).unwrap(),
-            sans_bold_italic: Font::new(FONTS[7].into(), 0).unwrap(),
+            regular: Font::new(FONTS[0].into(), 0)
+                .ok_or_else(|| std::io::Error::other("failed to load regular font"))?,
+            bold: Font::new(FONTS[1].into(), 0)
+                .ok_or_else(|| std::io::Error::other("failed to load bold font"))?,
+            italic: Font::new(FONTS[2].into(), 0)
+                .ok_or_else(|| std::io::Error::other("failed to load italic font"))?,
+            bold_italic: Font::new(FONTS[3].into(), 0)
+                .ok_or_else(|| std::io::Error::other("failed to load bold-italic font"))?,
+            sans_regular: Font::new(FONTS[4].into(), 0)
+                .ok_or_else(|| std::io::Error::other("failed to load sans regular font"))?,
+            sans_bold: Font::new(FONTS[5].into(), 0)
+                .ok_or_else(|| std::io::Error::other("failed to load sans bold font"))?,
+            sans_italic: Font::new(FONTS[6].into(), 0)
+                .ok_or_else(|| std::io::Error::other("failed to load sans italic font"))?,
+            sans_bold_italic: Font::new(FONTS[7].into(), 0)
+                .ok_or_else(|| std::io::Error::other("failed to load sans bold-italic font"))?,
         };
 
         let layout_info = LayoutInfo {
@@ -282,7 +290,7 @@ impl PdfExporter {
         while element_iter.peek().is_some() {
             let mut page = document.start_page_with(
                 PageSettings::from_wh(layout_info.size.x as f32, layout_info.size.y as f32)
-                    .unwrap(),
+                    .ok_or_else(|| std::io::Error::other("invalid page dimensions"))?,
             );
             let mut surface = page.surface();
             let mut line_idx = 0;
@@ -422,7 +430,8 @@ impl PdfExporter {
                                 page_idx,
                                 Point {
                                     x: MARGINS.heading.left,
-                                    y: (TOP_MARGIN + ((*ctx.line_index) * FONT_SIZE) - FONT_SIZE) as f32,
+                                    y: (TOP_MARGIN + ((*ctx.line_index) * FONT_SIZE) - FONT_SIZE)
+                                        as f32,
                                 },
                             ),
                         ));
@@ -432,7 +441,7 @@ impl PdfExporter {
                                 element.set_bold();
                             }
                         }
-                        
+
                         write_element!(&slug_to_print, &MARGINS.heading, Alignment::LeftToRight);
                     }
                     Element::Action(s) => {
@@ -810,8 +819,16 @@ fn write_line(
                 (true, true) => &ctx.layout_info.fonts.bold_italic,
             }
         };
-        let start_byte_index = string_element.text.char_indices().nth(relative_index).unwrap().0;
-        let end_byte_index = string_element.text.char_indices().nth(relative_break_index)
+        let start_byte_index = string_element
+            .text
+            .char_indices()
+            .nth(relative_index)
+            .map(|(i, _)| i)
+            .unwrap_or(0);
+        let end_byte_index = string_element
+            .text
+            .char_indices()
+            .nth(relative_break_index)
             .map_or(string_element.text.len(), |(i, _)| i);
 
         ctx.surface.draw_text(
@@ -834,10 +851,11 @@ fn write_line(
                     glyphs_written as f32 * FONT_WIDTH,
                     0.5,
                 )
-                .unwrap();
+                .ok_or_else(|| std::io::Error::other("invalid underline rect"))?;
                 pb.push_rect(r);
                 pb.close();
-                pb.finish().unwrap()
+                pb.finish()
+                    .ok_or_else(|| std::io::Error::other("failed to build underline path"))?
             };
             ctx.surface.draw_path(&underline);
         }
@@ -880,7 +898,8 @@ fn write_titlepage(
     document: &mut Document,
 ) -> std::io::Result<()> {
     let mut page = document.start_page_with(
-        PageSettings::from_wh(layout_info.size.x as f32, layout_info.size.y as f32).unwrap(),
+        PageSettings::from_wh(layout_info.size.x as f32, layout_info.size.y as f32)
+            .ok_or_else(|| std::io::Error::other("invalid page dimensions"))?,
     );
     let mut surface = page.surface();
 
@@ -947,13 +966,7 @@ fn write_titlepage(
                         line_index: &mut line_idx,
                         max_lines,
                     };
-                    write_element(
-                        &mut ctx,
-                        s,
-                        &TITLE_PAGE_MARGINS.margin,
-                        &mut 0,
-                        $alignment,
-                    )?;
+                    write_element(&mut ctx, s, &TITLE_PAGE_MARGINS.margin, &mut 0, $alignment)?;
                 }
             }
         };
@@ -967,7 +980,7 @@ fn write_titlepage(
                 element.text = element.text.to_uppercase();
                 element.set_bold();
             }
-            
+
             let mut ctx = DrawContext {
                 layout_info,
                 surface: &mut surface,
@@ -1000,10 +1013,15 @@ fn write_titlepage(
 
     let mut footer_total_lines = 0;
     for lines in footer_elements.iter() {
-        if lines.is_empty() { continue; }
-        if footer_total_lines > 0 { footer_total_lines += 1; } // Gap between groups
+        if lines.is_empty() {
+            continue;
+        }
+        if footer_total_lines > 0 {
+            footer_total_lines += 1;
+        } // Gap between groups
         for s in *lines {
-            footer_total_lines += 1 + break_points(s, glyph_span(layout_info.size, 72.0, 72.0)).len();
+            footer_total_lines +=
+                1 + break_points(s, glyph_span(layout_info.size, 72.0, 72.0)).len();
         }
     }
 
@@ -1011,7 +1029,9 @@ fn write_titlepage(
 
     let mut first = true;
     for lines in footer_elements.iter() {
-        if lines.is_empty() { continue; }
+        if lines.is_empty() {
+            continue;
+        }
         if !first {
             footer_idx += 1; // Gap between groups
         }
@@ -1023,7 +1043,13 @@ fn write_titlepage(
                 line_index: &mut footer_idx,
                 max_lines,
             };
-            write_element(&mut ctx, s, &TITLE_PAGE_MARGINS.margin, &mut 0, Alignment::LeftToRight)?;
+            write_element(
+                &mut ctx,
+                s,
+                &TITLE_PAGE_MARGINS.margin,
+                &mut 0,
+                Alignment::LeftToRight,
+            )?;
         }
     }
 

@@ -31,7 +31,7 @@ impl StringCaseExt for str {
         self.chars()
             .map(|c| {
                 let mut upper = c.to_uppercase();
-                let first = upper.next().unwrap();
+                let first = upper.next().unwrap_or(c);
                 if upper.next().is_some() { c } else { first }
             })
             .collect()

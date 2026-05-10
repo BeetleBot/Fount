@@ -704,7 +704,9 @@ impl App {
             return "A".to_string();
         }
         // Find the "highest" suffix alphabetically
-        let max_suffix = existing.iter().max().unwrap();
+        let Some(max_suffix) = existing.iter().max() else {
+            return "A".to_string();
+        };
         Self::increment_suffix(max_suffix)
     }
 

@@ -326,9 +326,9 @@ impl App {
             if !new_rows.is_empty() {
                 if let Some(moving_down) = snap_edge {
                     if moving_down {
-                        final_vi = *new_rows.first().unwrap();
+                        final_vi = new_rows[0];
                     } else {
-                        final_vi = *new_rows.last().unwrap();
+                        final_vi = new_rows[new_rows.len() - 1];
                     }
                 } else {
                     final_vi = new_rows[offset.min(new_rows.len().saturating_sub(1))];

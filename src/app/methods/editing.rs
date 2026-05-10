@@ -488,7 +488,7 @@ impl App {
                     for c in &self.characters {
                         if c.starts_with(&upper_prefix)
                             && c.len() > upper_prefix.len()
-                            && (best_match.is_none() || c.len() < best_match.unwrap().len())
+                            && best_match.map_or(true, |b| c.len() < b.len())
                         {
                             best_match = Some(c);
                         }
@@ -827,7 +827,8 @@ impl crate::app::App {
                 self.types.insert(insert_idx, LineType::Action);
                 insert_idx += 1;
             }
-            let last_line_content = lines.last().unwrap();
+            let empty = String::new();
+            let last_line_content = lines.last().unwrap_or(&empty);
             self.lines
                 .insert(insert_idx, format!("{}{}", last_line_content, suffix));
             self.types.insert(insert_idx, LineType::Action);

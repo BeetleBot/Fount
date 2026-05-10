@@ -143,7 +143,7 @@ impl crate::app::App {
                 for loc in &self.locations {
                     if loc.starts_with(input)
                         && loc.len() > input.len()
-                        && (best_match.is_none() || loc.len() < best_match.unwrap().len())
+                        && best_match.map_or(true, |b| loc.len() < b.len())
                     {
                         best_match = Some(loc);
                     }
