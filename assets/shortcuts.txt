@@ -79,6 +79,9 @@ PgUp / PgDn | Scroll page | Move view by one full screen height
 /locknum | Prod. Lock | Enable production numbering mode
 /unlocknum | Unlock | Disable production numbering mode
 /addtitle | Title page | Insert a standard title page block
+/revision on | Start tracking | Mark modified lines with *
+/revision off | Stop tracking | Disable new tracking (marks stay)
+/revision bake | Approve all | Clear markers and finalize changes
 
 # Toggle Adaptive Settings (/set)
 /set focus | Zen mode | Toggle distraction-free UI

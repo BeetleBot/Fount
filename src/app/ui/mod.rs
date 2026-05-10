@@ -440,6 +440,30 @@ pub fn draw(f: &mut Frame, app: &mut App) {
                         }
                     }
 
+                    // Revision Mark (*) rendering
+                    if app.revised_lines.get(row.line_idx).cloned().unwrap_or(false) {
+                        let current_line_width: usize = spans
+                            .iter()
+                            .map(|s| UnicodeWidthStr::width(s.content.as_ref()))
+                            .sum();
+
+                        let rev_pos = global_pad as usize + page_w as usize + 2;
+                        if rev_pos > current_line_width {
+                            spans.push(Span::raw(" ".repeat(rev_pos - current_line_width)));
+                        }
+
+                        let rev_color = if theme.is_dark() {
+                            Color::Yellow
+                        } else {
+                            Color::Red
+                        };
+
+                        spans.push(Span::styled(
+                            " *",
+                            Style::default().fg(rev_color).add_modifier(Modifier::BOLD),
+                        ));
+                    }
+
                     Line::from(spans)
                 }),
         );

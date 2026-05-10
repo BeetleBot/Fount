@@ -181,6 +181,7 @@ struct LayoutInfo<'a> {
     pub size: &'a PaperSize,
     pub fonts: &'a FontFamily,
     pub export_font: &'a str,
+    pub revised_lines: &'a [bool],
 }
 
 /// A [`Screenplay`] exporter for `pdf`
@@ -200,6 +201,8 @@ pub struct PdfExporter {
     pub mirror_scene_numbers: MirrorOption,
     /// The font family to use for the entire document
     pub export_font: String,
+    /// Line indices that are revised
+    pub revised_lines: Vec<bool>,
 }
 
 impl Exporter for PdfExporter {
@@ -236,6 +239,7 @@ impl Exporter for PdfExporter {
             size: &self.paper_size,
             fonts: &fonts,
             export_font: &self.export_font,
+            revised_lines: &self.revised_lines,
         };
 
         self.generate_pdf(&mut document, &layout_info, screenplay)?;
@@ -305,6 +309,7 @@ impl PdfExporter {
                     surface: &mut surface,
                     line_index: &mut p_line_idx,
                     max_lines: 36, // Specific for page numbers?
+                    is_revised: false,
                 };
                 let residual_page_number = write_element_custom_top_margin(
                     &mut ctx,
@@ -356,11 +361,23 @@ impl PdfExporter {
                     std::option::Option::None => 0,
                 };
 
+                let is_revised = match element_iter.peek() {
+                    Some(span) => (span.start_line..=span.end_line).any(|i| {
+                        layout_info
+                            .revised_lines
+                            .get(i.saturating_sub(1))
+                            .cloned()
+                            .unwrap_or(false)
+                    }),
+                    None => false,
+                };
+
                 let mut ctx = DrawContext {
                     layout_info,
                     surface: &mut surface,
                     line_index: &mut line_idx,
                     max_lines: max_lines_per_page,
+                    is_revised,
                 };
 
                 /// Macro for the most common usage of write_element(...), as most types of
@@ -386,6 +403,7 @@ impl PdfExporter {
                                 surface: ctx.surface,
                                 line_index: &mut initial_line_index,
                                 max_lines: max_lines_per_page,
+                                is_revised: ctx.is_revised,
                             };
 
                             let left_number_margin = Margin {
@@ -414,6 +432,7 @@ impl PdfExporter {
                                     surface: ctx.surface,
                                     line_index: &mut initial_line_index_right,
                                     max_lines: max_lines_per_page,
+                                    is_revised: ctx.is_revised,
                                 };
                                 write_element(
                                     &mut ctx_number_right,
@@ -484,6 +503,7 @@ impl PdfExporter {
                                 surface: ctx.surface,
                                 line_index: &mut initial_line_index,
                                 max_lines: max_lines_per_page,
+                                is_revised: ctx.is_revised,
                             };
                             premature_exit = premature_exit
                                 || write_dialogue(
@@ -581,6 +601,7 @@ struct DrawContext<'a, 'b> {
     surface: &'a mut Surface<'b>,
     line_index: &'a mut usize,
     max_lines: usize,
+    is_revised: bool,
 }
 
 fn write_dialogue(
@@ -875,6 +896,17 @@ fn write_line(
         );
     }
 
+    if ctx.is_revised {
+        ctx.surface.draw_text(
+            Point::from_xy(ctx.layout_info.size.x as f32 - 36.0, y),
+            ctx.layout_info.fonts.bold.clone(),
+            FONT_SIZE as f32,
+            "*",
+            false,
+            krilla::text::TextDirection::LeftToRight,
+        );
+    }
+
     Ok(())
 }
 
@@ -917,6 +949,7 @@ fn write_titlepage(
                         surface: &mut surface,
                         line_index: &mut line_idx,
                         max_lines,
+                        is_revised: false,
                     };
                     let residual = write_element(
                         &mut ctx,
@@ -965,6 +998,7 @@ fn write_titlepage(
                         surface: &mut surface,
                         line_index: &mut line_idx,
                         max_lines,
+                        is_revised: false,
                     };
                     write_element(&mut ctx, s, &TITLE_PAGE_MARGINS.margin, &mut 0, $alignment)?;
                 }
@@ -986,6 +1020,7 @@ fn write_titlepage(
                 surface: &mut surface,
                 line_index: &mut title_line_idx,
                 max_lines,
+                is_revised: false,
             };
             write_element(
                 &mut ctx,
@@ -1042,6 +1077,7 @@ fn write_titlepage(
                 surface: &mut surface,
                 line_index: &mut footer_idx,
                 max_lines,
+                is_revised: false,
             };
             write_element(
                 &mut ctx,

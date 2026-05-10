@@ -42,6 +42,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 app.config.export_sections,
                 app.config.export_synopses,
                 app.config.export_font.clone(),
+                vec![],
             ) {
                 eprintln!("Error exporting to PDF: {}", e);
                 std::process::exit(1);

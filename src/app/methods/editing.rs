@@ -10,6 +10,9 @@ impl App {
 
         if self.cursor_y < self.lines.len() {
             let cut_line = self.lines.remove(self.cursor_y);
+            if self.revised_lines.len() > self.cursor_y {
+                self.revised_lines.remove(self.cursor_y);
+            }
 
             if self.last_edit == LastEdit::Cut {
                 if let Some(buf) = &mut self.cut_buffer {
@@ -41,6 +44,7 @@ impl App {
             for (i, l) in lines_to_paste.iter().enumerate() {
                 self.lines
                     .insert(self.cursor_y + i, l.replace('\t', "    "));
+                self.revised_lines.insert(self.cursor_y + i, self.revision_mode);
             }
             self.cursor_y += lines_to_paste.len();
             self.cursor_x = 0;
@@ -52,6 +56,7 @@ impl App {
     pub fn save_state(&mut self, force: bool) {
         let state = HistoryState {
             lines: self.lines.clone(),
+            revised_lines: self.revised_lines.clone(),
             cursor_y: self.cursor_y,
             cursor_x: self.cursor_x,
         };
@@ -59,7 +64,7 @@ impl App {
             || self
                 .undo_stack
                 .last()
-                .is_none_or(|last| last.lines != state.lines)
+                .is_none_or(|last| last.lines != state.lines || last.revised_lines != state.revised_lines)
         {
             self.undo_stack.push(state);
             if self.undo_stack.len() > 640 {
@@ -73,10 +78,12 @@ impl App {
         if let Some(state) = self.undo_stack.pop() {
             self.redo_stack.push(HistoryState {
                 lines: self.lines.clone(),
+                revised_lines: self.revised_lines.clone(),
                 cursor_y: self.cursor_y,
                 cursor_x: self.cursor_x,
             });
             self.lines = state.lines;
+            self.revised_lines = state.revised_lines;
             self.cursor_y = state.cursor_y;
             self.cursor_x = state.cursor_x;
             self.dirty = true;
@@ -91,10 +98,12 @@ impl App {
         if let Some(state) = self.redo_stack.pop() {
             self.undo_stack.push(HistoryState {
                 lines: self.lines.clone(),
+                revised_lines: self.revised_lines.clone(),
                 cursor_y: self.cursor_y,
                 cursor_x: self.cursor_x,
             });
             self.lines = state.lines;
+            self.revised_lines = state.revised_lines;
             self.cursor_y = state.cursor_y;
             self.cursor_x = state.cursor_x;
             self.dirty = true;
@@ -168,6 +177,10 @@ impl App {
             self.lines[sl] = format!("{}{}", prefix, suffix);
             self.lines.drain((sl + 1)..=el);
             self.types.drain((sl + 1)..=el);
+            if self.revised_lines.len() > el {
+                self.revised_lines.drain((sl + 1)..=el);
+            }
+            self.mark_line_revised(sl);
         }
 
         self.cursor_y = sl;
@@ -279,6 +292,7 @@ impl App {
         self.lines[self.cursor_y].insert(b, c);
         let new_b = b + c.len_utf8();
         self.cursor_x += 1;
+        self.mark_line_revised(self.cursor_y);
 
         if true {
             if c == '(' {
@@ -370,6 +384,9 @@ impl App {
             if tail.trim().is_empty() {
                 self.lines.insert(self.cursor_y + 1, String::new());
                 self.lines.insert(self.cursor_y + 2, String::new());
+                self.revised_lines.insert(self.cursor_y + 1, self.revision_mode);
+                self.revised_lines.insert(self.cursor_y + 2, self.revision_mode);
+                self.mark_line_revised(self.cursor_y);
                 self.cursor_y += 2;
             } else {
                 self.lines.insert(self.cursor_y + 1, String::new());
@@ -377,10 +394,17 @@ impl App {
                 self.lines.insert(self.cursor_y + 3, String::new());
                 self.lines
                     .insert(self.cursor_y + 4, tail.trim_start().to_string());
+                self.revised_lines.insert(self.cursor_y + 1, self.revision_mode);
+                self.revised_lines.insert(self.cursor_y + 2, self.revision_mode);
+                self.revised_lines.insert(self.cursor_y + 3, self.revision_mode);
+                self.revised_lines.insert(self.cursor_y + 4, self.revision_mode);
+                self.mark_line_revised(self.cursor_y);
                 self.cursor_y += 2;
             }
         } else {
             self.lines.insert(self.cursor_y + 1, tail);
+            self.revised_lines.insert(self.cursor_y + 1, self.revision_mode);
+            self.mark_line_revised(self.cursor_y);
             self.cursor_y += 1;
         }
 
@@ -608,12 +632,17 @@ impl App {
             let b = self.byte_of(self.cursor_y, self.cursor_x - 1);
             self.lines[self.cursor_y].remove(b);
             self.cursor_x -= 1;
+            self.mark_line_revised(self.cursor_y);
             self.dirty = true;
         } else if self.cursor_y > 0 {
             let tail = self.lines.remove(self.cursor_y);
+            if self.revised_lines.len() > self.cursor_y {
+                self.revised_lines.remove(self.cursor_y);
+            }
             self.cursor_y -= 1;
             self.cursor_x = self.line_len(self.cursor_y);
             self.lines[self.cursor_y].push_str(&tail);
+            self.mark_line_revised(self.cursor_y);
             self.dirty = true;
         }
     }
@@ -664,10 +693,15 @@ impl App {
         if self.cursor_x < max {
             let b = self.byte_of(self.cursor_y, self.cursor_x);
             self.lines[self.cursor_y].remove(b);
+            self.mark_line_revised(self.cursor_y);
             self.dirty = true;
         } else if self.cursor_y + 1 < self.lines.len() {
             let next = self.lines.remove(self.cursor_y + 1);
+            if self.revised_lines.len() > self.cursor_y + 1 {
+                self.revised_lines.remove(self.cursor_y + 1);
+            }
             self.lines[self.cursor_y].push_str(&next);
+            self.mark_line_revised(self.cursor_y);
             self.dirty = true;
         }
     }
@@ -695,6 +729,7 @@ impl App {
             chars.remove(self.cursor_x);
         }
         self.lines[self.cursor_y] = chars.into_iter().collect();
+        self.mark_line_revised(self.cursor_y);
         self.dirty = true;
     }
 
@@ -719,6 +754,7 @@ impl App {
             chars.remove(self.cursor_x);
         }
         self.lines[self.cursor_y] = chars.into_iter().collect();
+        self.mark_line_revised(self.cursor_y);
         self.dirty = true;
     }
 
@@ -733,6 +769,7 @@ impl App {
                 let b_end = self.byte_of(y, x + search_len);
 
                 self.lines[y].replace_range(b_start..b_end, replacement);
+                self.mark_line_revised(y);
 
                 self.dirty = true;
                 self.last_edit = LastEdit::Other;

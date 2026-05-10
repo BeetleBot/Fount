@@ -132,6 +132,14 @@ impl Default for Theme {
 }
 
 impl Theme {
+    pub fn is_dark(&self) -> bool {
+        if let Some(bg) = &self.ui.background {
+            !bg.is_light()
+        } else {
+            true // Default to dark if no background set (terminal default)
+        }
+    }
+
     pub fn adaptive() -> Self {
         Self {
             name: "Adaptive".to_string(),

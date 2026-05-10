@@ -94,7 +94,8 @@ impl App {
             self.set_status("Cannot save the tutorial buffer. Press Ctrl+X to exit.");
             return Ok(());
         }
-        let content = self.lines.join("\n");
+        let mut content = self.lines.join("\n");
+        content.push_str(&self.get_revision_block());
         fs::write(&path, content)?;
         self.file = Some(path.clone());
         self.dirty = false;
@@ -108,7 +109,8 @@ impl App {
     }
 
     pub fn export_fountain(&self, path: &std::path::Path) -> std::io::Result<()> {
-        let content = self.lines.join("\n");
+        let mut content = self.lines.join("\n");
+        content.push_str(&self.get_revision_block());
         std::fs::write(path, content)
     }
 
@@ -129,6 +131,7 @@ impl App {
             self.config.export_sections,
             self.config.export_synopses,
             self.config.export_font.clone(),
+            self.revised_lines.clone(),
         )
     }
 
@@ -440,6 +443,23 @@ impl App {
     pub fn set_error(&mut self, msg: &str) {
         self.status_msg = Some(msg.to_string());
         self.command_error = true;
+    }
+
+    pub fn get_revision_block(&self) -> String {
+        let mut revs = Vec::new();
+        for (i, &rev) in self.revised_lines.iter().enumerate() {
+            if rev {
+                revs.push(i.to_string());
+            }
+        }
+        if revs.is_empty() && !self.revision_mode {
+            return String::new();
+        }
+        format!(
+            "\n/*\nFOUNT_REVISIONS: {}\nREVISION_MODE: {}\n*/",
+            revs.join(", "),
+            if self.revision_mode { "ON" } else { "OFF" }
+        )
     }
 
     pub fn save(&mut self) -> io::Result<()> {

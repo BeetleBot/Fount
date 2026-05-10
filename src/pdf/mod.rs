@@ -37,6 +37,7 @@ pub fn export_to_pdf(
     export_sections: bool,
     export_synopses: bool,
     export_font: String,
+    revised_lines: Vec<bool>,
 ) -> std::io::Result<()> {
     let screenplay = parse(fountain_text);
     let exporter = PdfExporter {
@@ -46,6 +47,7 @@ pub fn export_to_pdf(
         sections: export_sections,
         synopses: export_synopses,
         export_font,
+        revised_lines,
     };
     exporter.export_to_file(&screenplay, path)
 }

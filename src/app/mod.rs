@@ -51,7 +51,7 @@ pub enum EnsembleItem {
 
 pub struct HistoryState {
     pub lines: Vec<String>,
-
+    pub revised_lines: Vec<bool>,
     pub cursor_y: usize,
 
     pub cursor_x: usize,
@@ -205,6 +205,8 @@ pub struct BufferState {
     pub last_edit: LastEdit,
 
     pub last_snapshot_time: Option<std::time::Instant>,
+    pub revision_mode: bool,
+    pub revised_lines: Vec<bool>,
 }
 
 pub struct App {
@@ -252,6 +254,8 @@ pub struct App {
     pub redo_stack: Vec<HistoryState>,
 
     pub last_edit: LastEdit,
+    pub revision_mode: bool,
+    pub revised_lines: Vec<bool>,
 
     pub mode: AppMode,
     pub previous_mode: AppMode,
@@ -358,7 +362,7 @@ impl App {
         let mut files = Vec::new();
         if !cli.files.is_empty() {
             let mut seen = std::collections::HashSet::new();
-            for path in cli.files.clone() {
+            for path in cli.files {
                 let normalized = path.canonicalize().unwrap_or_else(|_| path.clone());
                 if seen.insert(normalized) {
                     files.push(Some(path));
@@ -369,6 +373,8 @@ impl App {
         let mut buffers = Vec::new();
         for path in files {
             let mut is_new_or_empty = false;
+            let mut revision_mode = false;
+            let mut revised_indices = Vec::new();
             let lines = match &path {
                 Some(p) if p.exists() => {
                     let text = fs::read_to_string(p)
@@ -378,12 +384,10 @@ impl App {
                         is_new_or_empty = true;
                         vec![String::new()]
                     } else {
-                        let ls: Vec<String> = text.lines().map(str::to_string).collect();
-                        if ls.is_empty() {
-                            vec![String::new()]
-                        } else {
-                            ls
-                        }
+                        let (ls, mode, revs) = App::parse_content_with_metadata(&text);
+                        revision_mode = mode;
+                        revised_indices = revs;
+                        ls
                     }
                 }
                 _ => {
@@ -395,8 +399,15 @@ impl App {
             let mut buf = BufferState {
                 lines,
                 file: path,
+                revision_mode,
                 ..Default::default()
             };
+            buf.revised_lines = vec![false; buf.lines.len()];
+            for idx in revised_indices {
+                if idx < buf.revised_lines.len() {
+                    buf.revised_lines[idx] = true;
+                }
+            }
 
             if is_new_or_empty && config.auto_title_page {
                 buf.lines = vec![
@@ -447,6 +458,8 @@ impl App {
             suggestion: None,
             undo_stack: Vec::new(),
             redo_stack: Vec::new(),
+            revision_mode: false,
+            revised_lines: Vec::new(),
             last_edit: LastEdit::None,
 
             mode: initial_mode,
@@ -552,6 +565,8 @@ impl App {
         std::mem::swap(&mut self.redo_stack, &mut other.redo_stack);
         std::mem::swap(&mut self.last_edit, &mut other.last_edit);
         std::mem::swap(&mut self.last_snapshot_time, &mut other.last_snapshot_time);
+        std::mem::swap(&mut self.revision_mode, &mut other.revision_mode);
+        std::mem::swap(&mut self.revised_lines, &mut other.revised_lines);
     }
 
     pub fn switch_buffer(&mut self, next_idx: usize) {
@@ -623,10 +638,23 @@ impl App {
         self.locations.clear();
         self.undo_stack.clear();
         self.redo_stack.clear();
+        self.revision_mode = false;
+        self.revised_lines.clear();
         self.last_edit = LastEdit::None;
         self.status_msg = None;
         self.command_input.clear();
         self.command_error = false;
+    }
+
+    pub fn mark_line_revised(&mut self, y: usize) {
+        if self.revision_mode {
+            if self.revised_lines.len() <= y {
+                self.revised_lines.resize(self.lines.len(), false);
+            }
+            if y < self.revised_lines.len() {
+                self.revised_lines[y] = true;
+            }
+        }
     }
 
     pub fn close_current_buffer(&mut self) -> bool {
@@ -1060,6 +1088,35 @@ impl App {
             "pos" => {
                 self.report_cursor_position();
             }
+            "revision" => {
+                if let Some(sub) = args.first() {
+                    match *sub {
+                        "on" => {
+                            self.revision_mode = true;
+                            if self.revised_lines.len() != self.lines.len() {
+                                self.revised_lines = vec![false; self.lines.len()];
+                            }
+                            self.set_status("Revision mode ON");
+                        }
+                        "off" => {
+                            self.revision_mode = false;
+                            self.set_status("Revision mode OFF");
+                        }
+                        "bake" | "lock" => {
+                            self.revised_lines = vec![false; self.lines.len()];
+                            self.revision_mode = false;
+                            self.set_status("All revisions approved and locked");
+                            self.update_layout();
+                        }
+                        _ => self.set_error("Use /revision on, off, or bake"),
+                    }
+                } else {
+                    self.set_status(&format!(
+                        "Revision mode is {}",
+                        if self.revision_mode { "ON" } else { "OFF" }
+                    ));
+                }
+            }
             // :injectnum  (auto) or  :injectnum14B  (custom tag)
             s if s.starts_with("injectnum") => {
                 let mut tag_part = &s[9..];
@@ -1311,6 +1368,64 @@ impl App {
             vec!["csv".to_string()],
             Some(default_name),
         );
+    }
+    pub fn parse_content_with_metadata(text: &str) -> (Vec<String>, bool, Vec<usize>) {
+        let mut lines: Vec<String> = text.lines().map(str::to_string).collect();
+        let mut revision_mode = false;
+        let mut revised_indices = Vec::new();
+
+        if lines.len() >= 4 {
+            let last_idx = lines.len() - 1;
+            if lines[last_idx].trim() == "*/" {
+                let mut metadata_lines = Vec::new();
+                let mut start_idx = None;
+
+                for i in (0..lines.len()).rev() {
+                    if lines[i].trim() == "/*" {
+                        start_idx = Some(i);
+                        break;
+                    }
+                    metadata_lines.push(lines[i].clone());
+                }
+
+                if let Some(start) = start_idx {
+                    let mut found_metadata = false;
+                    for line in metadata_lines {
+                        if line.contains("FOUNT_REVISIONS:") {
+                            let parts: Vec<&str> = line.split(':').collect();
+                            if parts.len() > 1 {
+                                for idx_str in parts[1].split(',') {
+                                    if let Ok(idx) = idx_str.trim().parse::<usize>() {
+                                        revised_indices.push(idx);
+                                    }
+                                }
+                                found_metadata = true;
+                            }
+                        } else if line.contains("REVISION_MODE:") {
+                            let parts: Vec<&str> = line.split(':').collect();
+                            if parts.len() > 1 {
+                                let val = parts[1].trim().to_uppercase();
+                                revision_mode = val == "ON" || val == "TRUE";
+                                found_metadata = true;
+                            }
+                        }
+                    }
+
+                    if found_metadata {
+                        lines.drain(start..);
+                        if let Some(last) = lines.last() && last.trim().is_empty() {
+                            lines.pop();
+                        }
+                    }
+                }
+            }
+        }
+
+        if lines.is_empty() {
+            lines.push(String::new());
+        }
+
+        (lines, revision_mode, revised_indices)
     }
 }
 
