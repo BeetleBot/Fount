@@ -304,9 +304,10 @@ pub struct App {
 
     pub navigator_state: ListState,
 
-    pub shortcuts_state: ListState,
+    pub shortcuts_state: TableState,
     pub shortcuts_query: String,
     pub is_shortcuts_searching: bool,
+    pub shortcuts_selected_tab: usize,
 
     pub command_input: String,
 
@@ -490,9 +491,10 @@ impl App {
             sidebar_area: Rect::default(),
             settings_area: Rect::default(),
             navigator_state: ListState::default(),
-            shortcuts_state: ListState::default(),
+            shortcuts_state: TableState::default(),
             shortcuts_query: String::new(),
             is_shortcuts_searching: false,
+            shortcuts_selected_tab: 0,
             command_input: String::new(),
             command_error: false,
             selection_anchor: None,

@@ -16,7 +16,7 @@ use ratatui::{
     layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
     text::{Line, Span},
-    widgets::{Block, BorderType, Borders, List, ListItem, Paragraph},
+    widgets::{Block, BorderType, Borders, List, ListItem, Paragraph, Table, Row, Cell},
 };
 use std::collections::HashSet;
 use unicode_width::UnicodeWidthStr;
@@ -861,187 +861,227 @@ pub fn draw(f: &mut Frame, app: &mut App) {
     }
 
     if app.mode == AppMode::Shortcuts {
-        // ── Cheat Sheet: 3-column grid ──────────────────────────────────
-        let modal_area = panes::centered_rect(92, 90, area);
+        let modal_area = panes::centered_rect(55, 70, area);
         f.render_widget(ratatui::widgets::Clear, modal_area);
 
-        let key_style = Style::default().fg(mode_bg).add_modifier(Modifier::BOLD);
-        let desc_style = theme.secondary_style();
-        let hdr_style = Style::default().fg(mode_bg).add_modifier(Modifier::BOLD);
-        let sep_style = theme.secondary_style();
-
-        // Define layout: Search Bar + Content
-        let chunks = Layout::default()
-            .direction(Direction::Vertical)
-            .constraints([
-                Constraint::Length(3), // Search input
-                Constraint::Min(0),    // Content
-            ])
-            .split(modal_area);
-
-        // 1. Render Search Bar
-        let search_style = if app.is_shortcuts_searching {
-            Style::default().fg(mode_bg).add_modifier(Modifier::BOLD)
-        } else {
-            Style::default().fg(dim_color)
-        };
-
-        let search_text = if app.shortcuts_query.is_empty() && !app.is_shortcuts_searching {
-            " Press [/] to search shortcuts...".to_string()
-        } else {
-            format!(" Search: {}", app.shortcuts_query)
-        };
-
-        let search_block = Block::default()
-            .borders(Borders::ALL)
-            .border_type(BorderType::Rounded)
-            .border_style(search_style)
-            .title(Span::styled(" [ Filter ] ", search_style));
-
-        f.render_widget(
-            Paragraph::new(search_text)
-                .block(search_block)
-                .alignment(Alignment::Left),
-            chunks[0],
+        let bg = Color::from(
+            theme.ui.background.clone().unwrap_or(HexColor("Reset".to_string())),
+        );
+        let fg = Color::from(
+            theme.ui.foreground.clone().unwrap_or(HexColor("White".to_string())),
         );
 
-        // 2. Render Shortcuts Content
+        let all_shortcuts = shortcuts::get_all_shortcuts();
+        let categories = shortcuts::get_categories(&all_shortcuts);
         let query = app.shortcuts_query.to_lowercase();
-        let all_shortcuts = shortcuts::get_all_shortcuts()
-            .into_iter()
-            .filter(|s| {
-                query.is_empty()
-                    || s.key.to_lowercase().contains(&query)
-                    || s.desc.to_lowercase().contains(&query)
-                    || s.category.to_lowercase().contains(&query)
-            })
-            .collect::<Vec<_>>();
+        let is_searching = !query.is_empty() || app.is_shortcuts_searching;
 
-        // Helper: build lines for one category from registry
-        let build_section = |title: &str, shortcuts: &[shortcuts::Shortcut]| -> Vec<Line> {
-            let mut lines = Vec::new();
-            lines.push(Line::from(Span::styled(
-                format!(" [ {} ]", title),
-                hdr_style,
-            )));
-            for shortcut in shortcuts {
-                let k = shortcut.key.trim();
-                lines.push(Line::from(vec![
-                    Span::styled(format!("  {:<14}", k), key_style),
-                    Span::styled(shortcut.desc.clone(), desc_style),
-                ]));
-            }
-            lines.push(Line::from(""));
-            lines
-        };
-
-        // Group by category while preserving order of first appearance
-        let mut categories: Vec<String> = Vec::new();
-        for s in &all_shortcuts {
-            if !categories.contains(&s.category) {
-                categories.push(s.category.clone());
-            }
-        }
-
-        // Determine number of columns based on width
-        let width = modal_area.width;
-        let num_cols = if width < 70 {
-            1
-        } else if width < 110 {
-            2
+        let visible_shortcuts: Vec<&shortcuts::Shortcut> = if !query.is_empty() {
+            shortcuts::filter_shortcuts(&all_shortcuts, &query)
+        } else if !categories.is_empty() {
+            let cat = &categories[app.shortcuts_selected_tab.min(categories.len().saturating_sub(1))];
+            shortcuts::shortcuts_in_category(&all_shortcuts, cat)
         } else {
-            3
+            all_shortcuts.iter().collect()
         };
 
-        let mut cols_lines: Vec<Vec<Line>> = vec![Vec::new(); num_cols];
-        let mut cols_heights: Vec<usize> = vec![0; num_cols];
-
-        for cat in &categories {
-            let cat_shortcuts: Vec<shortcuts::Shortcut> = all_shortcuts
-                .iter()
-                .filter(|s| s.category == *cat)
-                .cloned()
-                .collect();
-
-            let section_lines = build_section(cat, &cat_shortcuts);
-            
-            // Find column with least height to balance distribution
-            let mut min_idx = 0;
-            for j in 1..num_cols {
-                if cols_heights[j] < cols_heights[min_idx] {
-                    min_idx = j;
-                }
-            }
-            cols_heights[min_idx] += section_lines.len();
-            cols_lines[min_idx].extend(section_lines);
-        }
-
-        let block = Block::default()
+        let outer_block = Block::default()
+            .borders(Borders::ALL)
+            .border_type(BorderType::Rounded)
+            .border_style(Style::default().fg(dim_color))
+            .style(Style::default().bg(bg).fg(fg))
             .title(Span::styled(
                 " [ Cheat Sheet ] ",
                 Style::default().fg(mode_bg).add_modifier(Modifier::BOLD),
-            ))
-            .borders(ratatui::widgets::Borders::ALL)
-            .border_type(ratatui::widgets::BorderType::Rounded)
-            .border_style(Style::default().fg(dim_color))
-            .style(
-                Style::default()
-                    .bg(Color::from(
-                        theme
-                            .ui
-                            .background
-                            .clone()
-                            .unwrap_or(HexColor("Reset".to_string())),
-                    ))
-                    .fg(Color::from(
-                        theme
-                            .ui
-                            .foreground
-                            .clone()
-                            .unwrap_or(HexColor("White".to_string())),
-                    )),
-            );
+            ));
 
-        let inner_area = block.inner(chunks[1]);
-        f.render_widget(block, chunks[1]);
+        let inner_area = outer_block.inner(modal_area);
+        f.render_widget(outer_block, modal_area);
 
-        // Define column constraints dynamically
-        let col_constraints = match num_cols {
-            1 => vec![Constraint::Min(0)],
-            2 => vec![Constraint::Percentage(50), Constraint::Length(1), Constraint::Min(0)],
-            3 => vec![Constraint::Ratio(1, 3), Constraint::Length(1), Constraint::Ratio(1, 3), Constraint::Length(1), Constraint::Min(0)],
-            _ => vec![Constraint::Min(0)],
-        };
-
-        let col_chunks = Layout::default()
-            .direction(Direction::Horizontal)
-            .constraints(col_constraints)
+        let main_chunks = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints([
+                Constraint::Length(3),
+                Constraint::Length(1),
+                Constraint::Min(0),
+                Constraint::Length(1),
+            ])
             .split(inner_area);
 
-        // Calculate scroll offset based on shortcuts_state
-        let scroll_idx = app.shortcuts_state.selected().unwrap_or(0);
-        let scroll = scroll_idx as u16;
+        let tab_area = main_chunks[0];
+        let content_area = main_chunks[2];
+        let footer_hint_area = main_chunks[3];
 
-        // Render columns and separators
-        for i in 0..num_cols {
-            let area_idx = i * 2;
-            if area_idx < col_chunks.len() {
-                f.render_widget(
-                    Paragraph::new(cols_lines[i].clone()).scroll((scroll, 0)),
-                    col_chunks[area_idx]
-                );
-            }
+        if is_searching {
+            let search_style = if app.is_shortcuts_searching {
+                Style::default().fg(mode_bg).add_modifier(Modifier::BOLD)
+            } else {
+                Style::default().fg(dim_color)
+            };
 
-            if i < num_cols - 1 {
-                let sep_idx = i * 2 + 1;
-                if sep_idx < col_chunks.len() {
-                    let sep_lines: Vec<Line> = (0..col_chunks[sep_idx].height)
-                        .map(|_| Line::from(Span::styled("\u{2502}", sep_style)))
-                        .collect();
-                    f.render_widget(Paragraph::new(sep_lines), col_chunks[sep_idx]);
+            let search_text = if app.shortcuts_query.is_empty() && app.is_shortcuts_searching {
+                " Type to filter...".to_string()
+            } else if app.shortcuts_query.is_empty() {
+                " Press [/] to search...".to_string()
+            } else {
+                format!("  {}", app.shortcuts_query)
+            };
+
+            let search_block = Block::default()
+                .borders(Borders::ALL)
+                .border_type(BorderType::Rounded)
+                .border_style(search_style)
+                .title(Span::styled(" Search ", search_style));
+
+            f.render_widget(
+                Paragraph::new(search_text).block(search_block),
+                tab_area,
+            );
+        } else {
+            let tab_inner = tab_area.inner(ratatui::layout::Margin {
+                horizontal: 1,
+                vertical: 0,
+            });
+
+            let mut tab_spans: Vec<Span> = Vec::new();
+            for (i, cat) in categories.iter().enumerate() {
+                let is_active = i == app.shortcuts_selected_tab;
+
+                let short_name = match cat.as_str() {
+                    "Essential Controls" => "Essential",
+                    "Edit & History" => "Edit",
+                    "File & Project" => "File",
+                    "Selection & Editing" => "Selection",
+                    "Search & Replace" => "Search",
+                    "Navigation & Motion" => "Navigate",
+                    "Production Tools" => "Production",
+                    other => other,
+                };
+
+                if is_active {
+                    tab_spans.push(Span::styled(
+                        format!(" {} ", short_name),
+                        Style::default()
+                            .fg(bg)
+                            .bg(mode_bg)
+                            .add_modifier(Modifier::BOLD),
+                    ));
+                } else {
+                    tab_spans.push(Span::styled(
+                        format!(" {} ", short_name),
+                        Style::default().fg(dim_color),
+                    ));
+                }
+                if i < categories.len() - 1 {
+                    tab_spans.push(Span::styled(" ", Style::default()));
                 }
             }
+
+            f.render_widget(
+                Paragraph::new(Line::from(tab_spans)).alignment(Alignment::Center),
+                Rect::new(tab_inner.x, tab_inner.y + 1, tab_inner.width, 1),
+            );
         }
+
+        let sep_line = Line::from(Span::styled(
+            "─".repeat(inner_area.width.saturating_sub(2) as usize),
+            Style::default().fg(dim_color),
+        ));
+        f.render_widget(
+            Paragraph::new(sep_line).alignment(Alignment::Center),
+            main_chunks[1],
+        );
+
+        let scroll_idx = app.shortcuts_state.selected().unwrap_or(0);
+        let available_h = content_area.height as usize;
+        let total_items = visible_shortcuts.len();
+
+        let scroll_offset = if scroll_idx >= available_h.saturating_sub(2) {
+            scroll_idx.saturating_sub(available_h.saturating_sub(3))
+        } else {
+            0
+        };
+
+        let mut rows = Vec::new();
+
+        for sc in visible_shortcuts.iter() {
+            let key_color = sc.color.resolve(theme);
+            
+            rows.push(Row::new(vec![
+                Cell::from(Span::styled(format!(" {:<10}", sc.key), Style::default().fg(key_color).add_modifier(Modifier::BOLD))),
+                Cell::from(Span::styled(format!(" {:<16}", sc.label), Style::default().fg(fg).add_modifier(Modifier::BOLD))),
+                Cell::from(Span::styled(format!(" {}", sc.desc), Style::default().fg(dim_color))),
+            ]));
+        }
+
+        if rows.is_empty() {
+            rows.push(Row::new(vec![
+                Cell::from(""),
+                Cell::from(Span::styled(
+                    if query.is_empty() { "No shortcuts found" } else { "No matches found" },
+                    Style::default().fg(dim_color).add_modifier(Modifier::ITALIC),
+                )),
+                Cell::from(""),
+            ]));
+        }
+
+        let table = Table::new(
+            rows,
+            [
+                Constraint::Length(14),
+                Constraint::Length(20),
+                Constraint::Min(20),
+            ],
+        )
+        .header(
+            Row::new(vec![
+                Cell::from(Span::styled(" KEY", Style::default().fg(mode_bg).add_modifier(Modifier::BOLD))),
+                Cell::from(Span::styled(" ACTION", Style::default().fg(mode_bg).add_modifier(Modifier::BOLD))),
+                Cell::from(Span::styled(" DESCRIPTION", Style::default().fg(mode_bg).add_modifier(Modifier::BOLD))),
+            ])
+            .bottom_margin(1)
+        )
+        .column_spacing(4);
+
+        f.render_stateful_widget(table, content_area, &mut app.shortcuts_state);
+
+        let hint_spans = if app.is_shortcuts_searching {
+            vec![
+                Span::styled(" [Esc] ", Style::default().fg(mode_bg).add_modifier(Modifier::BOLD)),
+                Span::styled("Close Search  ", Style::default().fg(dim_color)),
+            ]
+        } else {
+            vec![
+                Span::styled(" [←/→] ", Style::default().fg(mode_bg).add_modifier(Modifier::BOLD)),
+                Span::styled("Category  ", Style::default().fg(dim_color)),
+                Span::styled(" [↑/↓] ", Style::default().fg(mode_bg).add_modifier(Modifier::BOLD)),
+                Span::styled("Scroll  ", Style::default().fg(dim_color)),
+                Span::styled(" [/] ", Style::default().fg(mode_bg).add_modifier(Modifier::BOLD)),
+                Span::styled("Search  ", Style::default().fg(dim_color)),
+                Span::styled(" [Esc] ", Style::default().fg(mode_bg).add_modifier(Modifier::BOLD)),
+                Span::styled("Close", Style::default().fg(dim_color)),
+            ]
+        };
+
+        let scroll_indicator = if total_items > available_h {
+            format!(" {}/{} ", scroll_offset + 1, total_items)
+        } else {
+            String::new()
+        };
+
+        let mut footer_spans = hint_spans;
+        if !scroll_indicator.is_empty() {
+            footer_spans.push(Span::styled("  ", Style::default()));
+            footer_spans.push(Span::styled(
+                scroll_indicator,
+                Style::default().fg(dim_color).add_modifier(Modifier::ITALIC),
+            ));
+        }
+
+        f.render_widget(
+            Paragraph::new(Line::from(footer_spans)).alignment(Alignment::Center),
+            footer_hint_area,
+        );
     }
 
     // ── Footer rendering (Zen Style) ────────────────────────────────────────

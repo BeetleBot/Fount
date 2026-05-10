@@ -221,6 +221,10 @@ impl App {
                     return Ok(false);
                 }
                 AppMode::Shortcuts => {
+                    let total_cats = crate::app::shortcuts::get_categories(
+                        &crate::app::shortcuts::get_all_shortcuts(),
+                    ).len();
+
                     if self.is_shortcuts_searching {
                         match key.code {
                             KeyCode::Esc | KeyCode::Enter => {
@@ -242,10 +246,35 @@ impl App {
                                 self.mode = AppMode::Normal;
                                 self.shortcuts_query.clear();
                                 self.is_shortcuts_searching = false;
+                                self.shortcuts_selected_tab = 0;
                             }
                             KeyCode::Char('/') => {
                                 self.is_shortcuts_searching = true;
                                 self.shortcuts_query.clear();
+                            }
+                            KeyCode::Char('h') if ctrl => {
+                                self.open_scene_navigator();
+                            }
+                            KeyCode::Char('p') if ctrl => {
+                                self.mode = AppMode::SettingsPane;
+                                self.selected_setting = 0;
+                            }
+                            KeyCode::Char('f') if ctrl => {}
+                            KeyCode::Tab | KeyCode::Right | KeyCode::Char('l') => {
+                                if total_cats > 0 {
+                                    self.shortcuts_selected_tab = (self.shortcuts_selected_tab + 1) % total_cats;
+                                    self.shortcuts_state.select(Some(0));
+                                }
+                            }
+                            KeyCode::BackTab | KeyCode::Left | KeyCode::Char('h') => {
+                                if total_cats > 0 {
+                                    self.shortcuts_selected_tab = if self.shortcuts_selected_tab == 0 {
+                                        total_cats - 1
+                                    } else {
+                                        self.shortcuts_selected_tab - 1
+                                    };
+                                    self.shortcuts_state.select(Some(0));
+                                }
                             }
                             KeyCode::Up | KeyCode::Char('k') => {
                                 let i = self.shortcuts_state.selected().unwrap_or(0);
@@ -266,14 +295,6 @@ impl App {
                             KeyCode::Home => {
                                 self.shortcuts_state.select(Some(0));
                             }
-                            KeyCode::Char('h') if ctrl => {
-                                self.open_scene_navigator();
-                            }
-                            KeyCode::Char('p') if ctrl => {
-                                self.mode = AppMode::SettingsPane;
-                                self.selected_setting = 0;
-                            }
-                            KeyCode::Char('f') if ctrl => {}
                             _ => {}
                         }
                     }
