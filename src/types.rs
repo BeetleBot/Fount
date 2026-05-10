@@ -2,22 +2,9 @@ use crate::config::Config;
 use crate::theme::Theme;
 use ratatui::style::{Color, Modifier, Style};
 
-
-
-
-
 pub const PAGE_WIDTH: u16 = 60;
 
-
-
-
-
-
 pub const LINES_PER_PAGE: usize = 55;
-
-
-
-
 
 #[derive(Clone, Copy)]
 pub struct Fmt {
@@ -57,52 +44,33 @@ impl Fmt {
     }
 }
 
-
 pub const FMT_ACTION: Fmt = Fmt::new(0, 60);
-
 
 pub const FMT_SCENE: Fmt = Fmt::new(0, 60);
 
-
 pub const FMT_CHARACTER: Fmt = Fmt::new(20, 38);
-
 
 pub const FMT_DIALOGUE: Fmt = Fmt::new(11, 35);
 
-
 pub const FMT_PAREN: Fmt = Fmt::new_with_wrap(16, 28, 17);
-
 
 pub const FMT_TRANSITION: Fmt = Fmt::new(0, 60);
 
-
 pub const FMT_CENTERED: Fmt = Fmt::new(0, 60);
-
 
 pub const FMT_LYRICS: Fmt = Fmt::new(0, 60);
 
-
 pub const FMT_SECTION: Fmt = Fmt::new(0, 60);
-
 
 pub const FMT_SYNOPSIS: Fmt = Fmt::new(0, 60);
 
-
 pub const FMT_NOTE: Fmt = Fmt::new(0, 60);
-
 
 pub const FMT_METADATA_KEY: Fmt = Fmt::new(10, 51);
 
-
 pub const FMT_METADATA_VAL: Fmt = Fmt::new(12, 49);
 
-
 pub const FMT_METADATA_TITLE: Fmt = Fmt::new(10, 51);
-
-
-
-
-
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum LineType {
@@ -185,11 +153,6 @@ impl LineType {
         }
     }
 }
-
-
-
-
-
 
 pub fn base_style(lt: LineType, config: &Config, theme: &Theme) -> Style {
     let mut style = match lt {
@@ -314,7 +277,6 @@ pub fn base_style(lt: LineType, config: &Config, theme: &Theme) -> Style {
         }
     };
 
-
     if config.no_color {
         style.fg = None;
         style.bg = None;
@@ -328,14 +290,6 @@ pub fn base_style(lt: LineType, config: &Config, theme: &Theme) -> Style {
 
     style
 }
-
-
-
-
-
-
-
-
 
 pub fn get_marker_color(note_text: &str, theme: &Theme) -> Option<Color> {
     let mut words = note_text.split_whitespace();

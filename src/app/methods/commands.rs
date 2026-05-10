@@ -43,7 +43,6 @@ impl App {
     }
 }
 
-
 impl crate::app::App {
     pub fn update_autocomplete(&mut self) {
         let pending_tab_suggestion = self.suggestion.take();

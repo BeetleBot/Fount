@@ -346,7 +346,6 @@ impl App {
     }
 }
 
-
 impl crate::app::App {
     pub fn current_visual_x(&self) -> u16 {
         let (_, vis_x) = find_visual_cursor(&self.layout, self.cursor_y, self.cursor_x);

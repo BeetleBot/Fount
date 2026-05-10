@@ -39,7 +39,6 @@ pub fn centered_rect(percent_x: u16, percent_y: u16, r: Rect) -> Rect {
         .split(popup_layout[1])[1]
 }
 
-
 pub fn draw_sprint_stats(f: &mut Frame, app: &mut App) {
     let area = f.area();
     let theme = &app.theme;
@@ -104,7 +103,6 @@ pub fn draw_sprint_stats(f: &mut Frame, app: &mut App) {
 
     f.render_stateful_widget(table, inner_area, &mut app.sprint_stats_state);
 }
-
 
 pub fn draw_file_picker(f: &mut Frame, app: &mut App, area: Rect) {
     let state = if let Some(ref mut s) = app.file_picker {
@@ -327,7 +325,6 @@ pub fn draw_file_picker(f: &mut Frame, app: &mut App, area: Rect) {
     }
 }
 
-
 pub fn draw_snapshots(f: &mut Frame, app: &mut App) {
     let area = f.area();
     let theme = &app.theme;
@@ -545,4 +542,3 @@ pub fn draw_export_modal(f: &mut Frame, app: &App) {
     ]);
     f.render_widget(Paragraph::new(footer_text).alignment(ratatui::layout::Alignment::Center), layout[2]);
 }
-

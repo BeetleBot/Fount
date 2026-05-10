@@ -34,7 +34,6 @@ impl App {
                     match key.code {
                         KeyCode::Esc => {}
 
-
                         KeyCode::Left if ctrl => {
                             self.move_word_left();
                             *update_target_x = true;

@@ -672,27 +672,7 @@ impl App {
 
     #[allow(dead_code)]
 
-
-
-
     
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
     /// Strips a trailing `#num#` tag from a scene heading line if present.
     fn strip_scene_number_from_line(line: &str) -> &str {
@@ -870,12 +850,9 @@ impl App {
         self.set_status("Title page inserted");
     }
 
-
     // ── Selection Helpers ────────────────────────────────────────────────────
 
-
     /// Returns (start, end) in document order, where each is (line, char).
-
 
     /// Delete the selected region and place cursor at selection start.
     /// Returns true if anything was deleted.
@@ -887,9 +864,6 @@ impl App {
         self.cursor_y = last_line;
         self.cursor_x = self.lines[last_line].chars().count();
     }
-
-
-
 
     /// Helper to save the current buffer to a new path.
 
@@ -1317,11 +1291,6 @@ impl App {
         Ok(false)
     }
 
-
-
-
-
-
     pub fn open_sprint_stats(&mut self) {
         if let Ok(records) = self.sprint_manager.get_records() {
             self.sprint_history = records;
@@ -1345,7 +1314,6 @@ impl App {
         );
     }
 }
-
 
 pub mod file_picker;
 pub mod input;

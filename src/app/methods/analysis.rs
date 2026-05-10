@@ -551,7 +551,6 @@ impl App {
     }
 }
 
-
 impl crate::app::App {
     pub fn calculate_scene_height(&self, item: &NavigatorItem) -> usize {
         if item.is_section {
@@ -599,8 +598,6 @@ impl crate::app::App {
             }
             height += syn_lines;
         }
-
-
 
         height += 1; // Empty separator line or ending spacer
         height

@@ -29,7 +29,6 @@ use super::*;
         );
     }
 
-
     #[test]
     fn test_draw_focus_mode_shows_prompt() {
         use ratatui::{Terminal, backend::TestBackend};
@@ -56,7 +55,6 @@ use super::*;
         );
     }
 
-
     #[test]
     fn test_draw_focus_mode_shows_status_msg() {
         use ratatui::{Terminal, backend::TestBackend};
@@ -82,7 +80,6 @@ use super::*;
             "Status message should appear even in focus mode"
         );
     }
-
 
     #[test]
     fn test_draw_no_formatting_page_numbers() {
@@ -116,7 +113,6 @@ use super::*;
         assert!(found, "Page number not found");
     }
 
-
     #[test]
     fn test_draw_panel_style_resets_color() {
         use ratatui::{Terminal, backend::TestBackend};
@@ -137,7 +133,6 @@ use super::*;
         );
         assert!(status_cell.modifier.contains(Modifier::BOLD));
     }
-
 
     #[test]
     fn test_draw_force_ascii_and_no_color_strips_ui_elements() {
@@ -183,7 +178,6 @@ use super::*;
         );
     }
 
-
     #[test]
     fn test_draw_typewriter_mode_normal() {
         use ratatui::{
@@ -207,7 +201,6 @@ use super::*;
         assert_eq!(terminal.backend_mut().get_cursor_position().unwrap().y, 1);
     }
 
-
     #[test]
     fn test_draw_typewriter_mode_strict() {
         use ratatui::{
@@ -228,7 +221,6 @@ use super::*;
 
         assert_eq!(terminal.backend_mut().get_cursor_position().unwrap().y, 12);
     }
-
 
     #[test]
     fn test_draw_metadata_key_dimming() {
@@ -263,5 +255,3 @@ use super::*;
         }
         assert!(found_gray_colon, "Metadata colon not found on screen");
     }
-
-

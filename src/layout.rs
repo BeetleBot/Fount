@@ -12,13 +12,6 @@ use crate::types::{LINES_PER_PAGE, LineType, PAGE_WIDTH, get_marker_color};
 pub static SCENE_NUM_RE: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"^(.*?)\s*#([^#]+)#\s*$").unwrap());
 
-
-
-
-
-
-
-
 #[derive(Clone)]
 pub struct VisualRow {
     
@@ -131,23 +124,6 @@ impl VisualRow {
     }
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 pub fn strip_sigils(raw: &str, lt: LineType) -> &str {
     let trimmed = raw.trim_start();
     match lt {
@@ -178,11 +154,6 @@ pub fn strip_sigils(raw: &str, lt: LineType) -> &str {
     }
 }
 
-
-
-
-
-
 pub fn sigil_left_chars(raw: &str, lt: LineType) -> usize {
     let stripped = strip_sigils(raw, lt);
     if stripped.as_ptr() >= raw.as_ptr() {
@@ -192,11 +163,6 @@ pub fn sigil_left_chars(raw: &str, lt: LineType) -> usize {
         0
     }
 }
-
-
-
-
-
 
 pub fn is_printable(lt: LineType) -> bool {
     !matches!(
@@ -311,20 +277,6 @@ impl<'a> Iterator for TokenizeText<'a> {
         Some(&self.text[start..current_pos])
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 pub fn build_layout(
     lines: &[String],
@@ -794,13 +746,6 @@ pub fn build_layout(
 
     rows
 }
-
-
-
-
-
-
-
 
 pub fn find_visual_cursor(layout: &[VisualRow], cursor_y: usize, cursor_x: usize) -> (usize, u16) {
     let mut last_for_line = None;

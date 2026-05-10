@@ -51,41 +51,6 @@ fn style_to_ansi(style: Style, text: &str) -> String {
     ansi
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 pub fn export_document(
     layout: &[VisualRow],
     lines: &[String],

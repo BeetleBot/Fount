@@ -782,7 +782,6 @@ impl App {
     }
 }
 
-
 impl crate::app::App {
     pub fn line_len(&self, y: usize) -> usize {
         self.lines.get(y).map(|l| l.chars().count()).unwrap_or(0)

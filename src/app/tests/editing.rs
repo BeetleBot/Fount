@@ -9,7 +9,6 @@ use super::*;
         assert!(app.dirty);
     }
 
-
     #[test]
     fn test_app_insert_matching_parentheses() {
         let mut app = create_empty_app();
@@ -17,7 +16,6 @@ use super::*;
         assert_eq!(app.lines[0], "()");
         assert_eq!(app.cursor_x, 1);
     }
-
 
     #[test]
     fn test_app_insert_matching_brackets() {
@@ -28,7 +26,6 @@ use super::*;
         assert_eq!(app.cursor_x, 2);
     }
 
-
     #[test]
     fn test_app_insert_matching_boneyard() {
         let mut app = create_empty_app();
@@ -37,7 +34,6 @@ use super::*;
         assert_eq!(app.lines[0], "/**/");
         assert_eq!(app.cursor_x, 2);
     }
-
 
     #[test]
     fn test_app_backspace() {
@@ -49,7 +45,6 @@ use super::*;
         assert_eq!(app.cursor_x, 0);
     }
 
-
     #[test]
     fn test_app_backspace_matching_brackets() {
         let mut app = create_empty_app();
@@ -59,7 +54,6 @@ use super::*;
         assert_eq!(app.lines[0], "");
         assert_eq!(app.cursor_x, 0);
     }
-
 
     #[test]
     fn test_app_backspace_merge_lines() {
@@ -74,7 +68,6 @@ use super::*;
         assert_eq!(app.cursor_x, 1);
     }
 
-
     #[test]
     fn test_app_delete_forward() {
         let mut app = create_empty_app();
@@ -84,7 +77,6 @@ use super::*;
         assert_eq!(app.lines[0], "B");
         assert_eq!(app.cursor_x, 0);
     }
-
 
     #[test]
     fn test_app_delete_forward_merge_lines() {
@@ -96,7 +88,6 @@ use super::*;
         assert_eq!(app.lines[0], "AB");
     }
 
-
     #[test]
     fn test_app_delete_word_back() {
         let mut app = create_empty_app();
@@ -107,7 +98,6 @@ use super::*;
         assert_eq!(app.cursor_x, 4);
     }
 
-
     #[test]
     fn test_app_delete_word_forward() {
         let mut app = create_empty_app();
@@ -117,7 +107,6 @@ use super::*;
         assert_eq!(app.lines[0], " Two");
         assert_eq!(app.cursor_x, 0);
     }
-
 
     #[test]
     fn test_app_insert_newline() {
@@ -131,7 +120,6 @@ use super::*;
         assert_eq!(app.cursor_y, 1);
         assert_eq!(app.cursor_x, 0);
     }
-
 
     #[test]
     fn test_app_insert_newline_auto_paragraph_breaks() {
@@ -148,7 +136,6 @@ use super::*;
         assert_eq!(app.cursor_y, 2);
     }
 
-
     #[test]
     fn test_app_insert_newline_smart_element_escape() {
         let mut app = create_empty_app();
@@ -162,7 +149,6 @@ use super::*;
         assert_eq!(app.cursor_y, 1);
     }
 
-
     #[test]
     fn test_app_undo_redo_stack() {
         let mut app = create_empty_app();
@@ -174,7 +160,6 @@ use super::*;
         app.redo();
         assert_eq!(app.lines[0], "Changed");
     }
-
 
     #[test]
     fn test_app_cut_and_paste() {
@@ -189,7 +174,6 @@ use super::*;
         assert_eq!(app.lines[1], "Line 2");
     }
 
-
     #[test]
     fn test_app_cut_append_buffer() {
         let mut app = create_empty_app();
@@ -198,7 +182,6 @@ use super::*;
         app.cut_line();
         assert_eq!(app.cut_buffer, Some("A\nB".to_string()));
     }
-
 
     #[test]
     fn test_app_tab_state_machine_empty_to_char() {
@@ -209,7 +192,6 @@ use super::*;
         assert_eq!(app.lines[0], "@");
         assert_eq!(app.cursor_x, 1);
     }
-
 
     #[test]
     fn test_app_tab_state_machine_char_to_scene() {
@@ -222,7 +204,6 @@ use super::*;
         assert_eq!(app.cursor_x, 1);
     }
 
-
     #[test]
     fn test_app_tab_state_machine_scene_to_transition() {
         let mut app = create_empty_app();
@@ -233,7 +214,6 @@ use super::*;
         assert_eq!(app.lines[0], ">");
         assert_eq!(app.cursor_x, 1);
     }
-
 
     #[test]
     fn test_app_tab_state_machine_transition_to_empty() {
@@ -246,7 +226,6 @@ use super::*;
         assert_eq!(app.cursor_x, 0);
     }
 
-
     #[test]
     fn test_app_tab_state_machine_after_dialogue_is_paren() {
         let mut app = create_empty_app();
@@ -258,7 +237,6 @@ use super::*;
         assert_eq!(app.cursor_x, 1);
     }
 
-
     #[test]
     fn test_app_tab_dialogue_wrap() {
         let mut app = create_empty_app();
@@ -268,7 +246,6 @@ use super::*;
         app.handle_tab();
         assert_eq!(app.lines[1], "(speaking)");
     }
-
 
     #[test]
     fn test_app_tab_strip_forced_markers() {
@@ -280,7 +257,6 @@ use super::*;
         assert_eq!(app.lines[0], "Force");
         assert_eq!(app.cursor_x, 5);
     }
-
 
     #[test]
     fn test_nano_navigation_and_deletion_shortcuts() {
@@ -322,7 +298,6 @@ use super::*;
         );
     }
 
-
     #[test]
     fn test_app_delete_forward_out_of_bounds_cursor_clamp() {
         let mut app = create_empty_app();
@@ -335,7 +310,6 @@ use super::*;
         assert_eq!(app.lines[0], "WordNext");
         assert_eq!(app.lines.len(), 1);
     }
-
 
     #[test]
     fn test_app_tab_autocomplete_character_without_at_symbol() {
@@ -376,7 +350,6 @@ use super::*;
         assert_eq!(app.cursor_x, 9);
     }
 
-
     #[test]
     fn test_app_tab_autocomplete_fallback_to_at_symbol_for_unknown() {
         let mut app = create_empty_app();
@@ -398,7 +371,6 @@ use super::*;
         assert_eq!(app.cursor_x, 2);
     }
 
-
     #[test]
     fn test_app_tab_autocomplete_fixes_case_on_accept() {
         let mut app = create_empty_app();
@@ -419,7 +391,6 @@ use super::*;
         );
     }
 
-
     #[test]
     fn test_app_tab_fallback_strip_sigils_restored() {
         let mut app = create_empty_app();
@@ -439,7 +410,6 @@ use super::*;
             "Cursor should shift left by 1 after stripping the sigil"
         );
     }
-
 
     #[test]
     fn test_app_tab_autocomplete_cancellation_reverts_magic() {
@@ -477,7 +447,6 @@ use super::*;
         );
     }
 
-
     #[test]
     fn test_app_tab_autocomplete_exact_match_prepends_at() {
         let mut app = create_empty_app();
@@ -497,7 +466,6 @@ use super::*;
         assert_eq!(app.suggestion, None);
         assert_eq!(app.cursor_x, 5);
     }
-
 
     #[test]
     fn test_app_tab_autocomplete_interrupted_by_enter() {
@@ -532,7 +500,6 @@ use super::*;
         assert_eq!(app.suggestion, None, "Suggestion must be destroyed");
     }
 
-
     #[test]
     fn test_app_tab_autocomplete_cursor_in_middle_of_word() {
         let mut app = create_empty_app();
@@ -554,7 +521,6 @@ use super::*;
             "Cursor should shift right by 1 due to the prepended '@'"
         );
     }
-
 
     #[test]
     fn test_app_tab_autocomplete_trailing_space() {
@@ -579,7 +545,6 @@ use super::*;
         assert_eq!(app.cursor_x, 3, "Cursor shifts by 1 because of '@'");
     }
 
-
     #[test]
     fn test_app_undo_stack_limit_truncation() {
         let mut app = create_empty_app();
@@ -595,7 +560,6 @@ use super::*;
             "Undo stack should be truncated at 640 (...ought to be enough for anybody)"
         );
     }
-
 
     #[test]
     fn test_app_tab_autocomplete_character_edge_case_dots() {
@@ -630,7 +594,6 @@ use super::*;
         assert_eq!(app.cursor_x, 5, "Cursor should be at end of line");
     }
 
-
     #[test]
     fn test_app_tab_autocomplete_normal_character_regression() {
         let mut app = create_empty_app();
@@ -655,7 +618,6 @@ use super::*;
         );
         assert_eq!(app.cursor_x, 4);
     }
-
 
     #[test]
     fn test_app_tab_autocomplete_location_normal() {
@@ -687,7 +649,6 @@ use super::*;
             "Cursor should account for the leading dot"
         );
     }
-
 
     #[test]
     fn test_app_tab_no_infinite_dots_after_non_empty_line() {
@@ -723,7 +684,6 @@ use super::*;
         assert_eq!(app.types[1], LineType::Action);
     }
 
-
     #[test]
     fn test_production_lock_auto_suffix_single_insertion() {
         let mut app = create_empty_app();
@@ -747,7 +707,6 @@ use super::*;
         assert_eq!(App::extract_scene_tag(&app.lines[1]), Some("1".to_string()));
         assert_eq!(App::extract_scene_tag(&app.lines[5]), Some("2".to_string()));
     }
-
 
     #[test]
     fn test_production_lock_auto_suffix_multiple_insertions() {
@@ -775,7 +734,6 @@ use super::*;
         assert_eq!(App::extract_scene_tag(&app.lines[3]), Some("5A".to_string()));
         assert_eq!(App::extract_scene_tag(&app.lines[7]), Some("6".to_string()));
     }
-
 
     #[test]
     fn test_replace_all_matches() {

@@ -476,5 +476,3 @@ And Beat itself, of course: https://www.beat-app.fi/
             "Reference render does not match expected output."
         );
     }
-
-

@@ -6,23 +6,6 @@ use crate::types::LineType;
 static META_KEY_RE: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"^([\p{L}][\p{L}\s]*):\s*").unwrap());
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 pub struct Parser;
 
 impl Parser {

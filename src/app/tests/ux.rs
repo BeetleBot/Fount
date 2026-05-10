@@ -18,7 +18,6 @@ use super::*;
         assert_eq!(app.cursor_x, 5);
     }
 
-
     #[test]
     fn test_app_word_navigation_utf8() {
         let mut app = create_empty_app();
@@ -35,7 +34,6 @@ use super::*;
         app.move_word_left();
         assert_eq!(app.cursor_x, 9);
     }
-
 
     #[test]
     fn test_ux_boundary_beginning_of_file() {
@@ -54,7 +52,6 @@ use super::*;
         assert_eq!(app.lines[0], "First");
     }
 
-
     #[test]
     fn test_ux_boundary_end_of_file() {
         let mut app = create_empty_app();
@@ -72,7 +69,6 @@ use super::*;
         assert_eq!(app.lines[0], "Last");
     }
 
-
     #[test]
     fn test_ux_line_joining_backspace() {
         let mut app = create_empty_app();
@@ -87,7 +83,6 @@ use super::*;
         assert_eq!(app.cursor_y, 0);
         assert_eq!(app.cursor_x, 6);
     }
-
 
     #[test]
     fn test_ux_line_joining_delete() {
@@ -104,7 +99,6 @@ use super::*;
         assert_eq!(app.cursor_x, 6);
     }
 
-
     #[test]
     fn test_ux_line_splitting_enter() {
         let mut app = create_empty_app();
@@ -120,7 +114,6 @@ use super::*;
         assert_eq!(app.cursor_y, 1);
         assert_eq!(app.cursor_x, 0);
     }
-
 
     #[test]
     fn test_ux_utf8_multibyte_safety() {
@@ -186,7 +179,6 @@ use super::*;
         assert_eq!(app.cursor_x, 3, "cursor should be at end of remaining word");
     }
 
-
     #[test]
     fn test_ux_visual_up_down_inside_soft_wrapped_line() {
         let mut app = create_empty_app();
@@ -219,7 +211,6 @@ use super::*;
         );
     }
 
-
     #[test]
     fn test_ux_smart_pairing_deletion() {
         let mut app = create_empty_app();
@@ -231,7 +222,6 @@ use super::*;
         assert_eq!(app.lines[0], "");
         assert_eq!(app.cursor_x, 0);
     }
-
 
     #[test]
     fn test_ux_undo_restores_cursor_position_perfectly() {
@@ -250,7 +240,6 @@ use super::*;
         assert_eq!(app.lines[0], "Some text");
         assert_eq!(app.cursor_x, 5);
     }
-
 
     #[test]
     fn test_ux_ghost_cursor_memory_target_x() {
@@ -277,7 +266,6 @@ use super::*;
         );
     }
 
-
     #[test]
     fn test_ux_tab_state_machine_middle_of_line() {
         let mut app = create_empty_app();
@@ -294,7 +282,6 @@ use super::*;
             "Cursor must shift right when a sigil is prepended!"
         );
     }
-
 
     #[test]
     fn test_report_cursor_position_utf8_multibyte() {
@@ -315,7 +302,6 @@ use super::*;
             "Cursor metrics should count UTF-8 chars, not raw bytes"
         );
     }
-
 
     #[test]
     fn test_ux_smart_pairing_basic_triggers() {
@@ -347,7 +333,6 @@ use super::*;
             "Cursor should be placed inside the single quotes"
         );
     }
-
 
     #[test]
     fn test_ux_smart_pairing_step_over_existing_closing_chars() {
@@ -402,7 +387,6 @@ use super::*;
         );
     }
 
-
     #[test]
     fn test_ux_smart_pairing_alphanumeric_boundary_rules() {
         let mut app = create_empty_app();
@@ -448,7 +432,6 @@ use super::*;
             "Single quote following a space must be treated as a pairable quote"
         );
     }
-
 
     #[test]
     fn test_ux_smart_pairing_quote_parity_and_apostrophe_logic() {
@@ -496,7 +479,6 @@ use super::*;
         );
     }
 
-
     #[test]
     fn test_ux_smart_pairing_fountain_multichar_elements() {
         let mut app = create_empty_app();
@@ -538,7 +520,6 @@ use super::*;
         );
     }
 
-
     #[test]
     fn test_ux_smart_pairing_unicode_and_emoji_boundaries() {
         let mut app = create_empty_app();
@@ -579,5 +560,3 @@ use super::*;
             "Cursor must strictly track character indexing, not byte indexing, after pair deletion"
         );
     }
-
-

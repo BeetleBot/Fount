@@ -7,14 +7,6 @@ use ratatui::{
 
 use crate::types::get_marker_color;
 
-
-
-
-
-
-
-
-
 pub trait StringCaseExt {
     
     
@@ -46,23 +38,12 @@ impl StringCaseExt for str {
     }
 }
 
-
-
-
-
 #[inline]
 pub fn has_markup_bytes(text: &str) -> bool {
     text.as_bytes()
         .iter()
         .any(|&b| matches!(b, b'*' | b'_' | b'\\' | b'[' | b'/'))
 }
-
-
-
-
-
-
-
 
 bitflags::bitflags! {
     #[derive(Default, Clone, Copy, PartialEq, Eq)]
@@ -110,20 +91,6 @@ impl LineFormatting {
         self.has_style(idx, StyleBits::HIDDEN)
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 struct PairDef<'a> {
     open: &'a [char],
@@ -292,11 +259,6 @@ pub fn parse_formatting(text: &str, theme: &crate::theme::Theme) -> LineFormatti
     fmt
 }
 
-
-
-
-
-
 #[derive(Debug, Clone, Copy, Default)]
 pub struct RenderConfig {
     
@@ -329,24 +291,6 @@ pub struct RenderConfig {
     
     pub no_formatting: bool,
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 pub fn render_inline(
     text: &str,

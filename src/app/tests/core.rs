@@ -10,7 +10,6 @@ use super::*;
         assert!(app.mode == AppMode::Normal);
     }
 
-
     #[test]
     fn test_app_autocomplete_character() {
         let mut app = create_empty_app();
@@ -21,7 +20,6 @@ use super::*;
         app.update_autocomplete();
         assert_eq!(app.suggestion, Some("RLOTTE C.".to_string()));
     }
-
 
     #[test]
     fn test_app_autocomplete_scene_heading() {
@@ -37,7 +35,6 @@ use super::*;
         app.update_autocomplete();
         assert_eq!(app.suggestion, Some("G ROOM - DAY".to_string()));
     }
-
 
     #[test]
     fn test_app_auto_title_page_enabled() {
@@ -61,7 +58,6 @@ use super::*;
         );
     }
 
-
     #[test]
     fn test_app_auto_title_page_disabled() {
         let mut cli = crate::config::Cli::default();
@@ -75,7 +71,6 @@ use super::*;
             "Should only have one line"
         );
     }
-
 
     #[test]
     fn test_app_autocomplete_disabled() {
@@ -94,7 +89,6 @@ use super::*;
         );
     }
 
-
     #[test]
     fn test_app_auto_paragraph_breaks_disabled() {
         let mut app = create_empty_app();
@@ -111,7 +105,6 @@ use super::*;
         assert_eq!(app.cursor_y, 1);
     }
 
-
     #[test]
     fn test_report_cursor_position_empty() {
         let mut app = create_empty_app();
@@ -123,7 +116,6 @@ use super::*;
             "Empty document should report 100% for all metrics"
         );
     }
-
 
     #[test]
     fn test_report_cursor_position_basic_math() {
@@ -142,7 +134,6 @@ use super::*;
             Some("line 1/1 (100%), col 3/6 (50%), char 3/6 (50%)")
         );
     }
-
 
     #[test]
     fn test_report_cursor_position_soft_wrap() {
@@ -164,7 +155,6 @@ use super::*;
         );
     }
 
-
     #[test]
     fn test_report_cursor_position_multi_line() {
         let mut app = create_empty_app();
@@ -182,7 +172,6 @@ use super::*;
             Some("line 2/3 (66%), col 2/4 (50%), char 6/14 (42%)")
         );
     }
-
 
     #[test]
     fn test_report_cursor_position_end_of_file() {
@@ -202,7 +191,6 @@ use super::*;
             "Should safely handle cursor being positioned at the absolute end of the line"
         );
     }
-
 
     #[test]
     fn test_nano_multibuffer_indicator_persistence() {
@@ -224,7 +212,6 @@ use super::*;
             "Multiple buffers flag must not be reset to false"
         );
     }
-
 
     #[test]
     fn test_buffer_state_isolation_on_switch() {
@@ -263,7 +250,6 @@ use super::*;
         assert!(app.dirty);
     }
 
-
     #[test]
     fn test_app_deletion_out_of_bounds_cursor_clamp() {
         let mut app = create_empty_app();
@@ -278,7 +264,6 @@ use super::*;
         );
         assert_eq!(app.lines[0], "Wor");
     }
-
 
     #[test]
     fn test_app_autocomplete_forced_scene_heading() {
@@ -295,7 +280,6 @@ use super::*;
         assert_eq!(app.suggestion, Some("CHEN - DAY".to_string()));
     }
 
-
     #[test]
     fn test_app_autocomplete_scene_heading_without_dot() {
         let mut app = create_empty_app();
@@ -310,7 +294,6 @@ use super::*;
         app.update_autocomplete();
         assert_eq!(app.suggestion, Some("G ROOM - DAY".to_string()));
     }
-
 
     #[test]
     fn test_app_no_ghost_text_while_typing_action_line() {
@@ -336,7 +319,6 @@ use super::*;
         );
     }
 
-
     #[test]
     fn test_app_deduplicate_files() {
         let mut cli = Cli::default();
@@ -347,7 +329,6 @@ use super::*;
         let app = App::new(cli);
         assert_eq!(app.buffers.len(), 1, "Duplicate files should be removed");
     }
-
 
     #[test]
     fn test_app_emergency_save() {
@@ -367,7 +348,6 @@ use super::*;
         let _ = std::fs::remove_file(save_path);
     }
 
-
     #[test]
     fn test_app_save_command() {
         let mut app = create_empty_app();
@@ -384,7 +364,6 @@ use super::*;
 
         let _ = std::fs::remove_file(file_path);
     }
-
 
     #[test]
     fn test_app_mouse_scrolling() {
@@ -420,7 +399,6 @@ use super::*;
         assert_eq!(app.cursor_y, 0);
     }
 
-
     #[test]
     fn test_app_prompt_save_logic() {
         let mut app = create_empty_app();
@@ -451,7 +429,6 @@ use super::*;
         );
     }
 
-
     #[test]
     fn test_app_prompt_filename_logic() {
         let mut app = create_empty_app();
@@ -468,7 +445,6 @@ use super::*;
         assert_eq!(app.mode, AppMode::Normal);
     }
 
-
     #[test]
     fn test_app_close_last_buffer_returns_home() {
         let mut app = create_empty_app();
@@ -482,7 +458,6 @@ use super::*;
         assert_eq!(app.mode, AppMode::Home, "Should return to Home mode");
         assert!(app.buffers.is_empty(), "Buffers should be empty");
     }
-
 
     #[test]
     fn test_app_close_middle_buffer() {
@@ -512,7 +487,6 @@ use super::*;
         assert_eq!(app.lines[0], "Buf 2");
     }
 
-
     #[test]
     fn test_app_prompt_save_cancel_via_esc_and_ctrl_c() {
         let mut app = create_empty_app();
@@ -528,7 +502,6 @@ use super::*;
         assert_eq!(app.status_msg.as_deref(), Some("Cancelled"));
     }
 
-
     #[test]
     fn test_app_prompt_filename_empty_input_cancels() {
         let mut app = create_empty_app();
@@ -540,7 +513,6 @@ use super::*;
         assert_eq!(app.mode, AppMode::Normal);
         assert_eq!(app.status_msg.as_deref(), Some("Cancelled"));
     }
-
 
     #[test]
     fn test_app_prompt_filename_save_error() {
@@ -560,7 +532,6 @@ use super::*;
             "An error saving message should appear"
         );
     }
-
 
     #[test]
     fn test_app_shift_enter_literal_newline() {
@@ -582,7 +553,6 @@ use super::*;
         assert_eq!(app.lines[1], " line.");
     }
 
-
     #[test]
     fn test_handle_event_ex_command_closes_app() {
         let mut app = create_empty_app();
@@ -596,7 +566,6 @@ use super::*;
 
         assert!(result, "/ex command should return true to exit the application");
     }
-
 
     #[test]
     fn test_app_inline_note_color_parsing_strictness() {
@@ -664,7 +633,6 @@ use super::*;
         );
     }
 
-
     #[test]
     fn test_open_scene_navigator_colors() {
         let mut app = create_empty_app();
@@ -698,7 +666,6 @@ use super::*;
         assert_eq!(app.scenes[0].color, Some(Color::Magenta));
     }
 
-
     #[test]
     fn test_forced_uppercase_transformation() {
         let mut app = create_empty_app();
@@ -719,14 +686,12 @@ use super::*;
         assert_eq!(app.lines[1], "Action line."); // Should stay original
     }
 
-
     #[test]
     fn test_increment_suffix_basic() {
         assert_eq!(App::increment_suffix("A"), "B");
         assert_eq!(App::increment_suffix("B"), "C");
         assert_eq!(App::increment_suffix("Y"), "Z");
     }
-
 
     #[test]
     fn test_increment_suffix_wrap() {
@@ -735,13 +700,11 @@ use super::*;
         assert_eq!(App::increment_suffix("ZZ"), "AAA");
     }
 
-
     #[test]
     fn test_next_suffix_label_empty() {
         let existing: Vec<String> = vec![];
         assert_eq!(App::next_suffix_label(&existing), "A");
     }
-
 
     #[test]
     fn test_next_suffix_label_after_a_b() {
@@ -749,13 +712,11 @@ use super::*;
         assert_eq!(App::next_suffix_label(&existing), "C");
     }
 
-
     #[test]
     fn test_next_suffix_label_after_z() {
         let existing = vec!["Z".to_string()];
         assert_eq!(App::next_suffix_label(&existing), "AA");
     }
-
 
     #[test]
     fn test_extract_scene_tag() {
@@ -770,7 +731,6 @@ use super::*;
         assert_eq!(App::extract_scene_tag("INT. ROOM - DAY"), None);
         assert_eq!(App::extract_scene_tag(""), None);
     }
-
 
     #[test]
     fn test_production_lock_scene_before_first_numbered() {
@@ -791,7 +751,6 @@ use super::*;
         );
     }
 
-
     #[test]
     fn test_production_lock_scene_after_last_numbered() {
         let mut app = create_empty_app();
@@ -810,7 +769,6 @@ use super::*;
             "Scene after last numbered should suffix from that number"
         );
     }
-
 
     #[test]
     fn test_production_lock_off_no_auto_numbering() {
@@ -832,7 +790,6 @@ use super::*;
             "With lock OFF, un-numbered scenes should stay un-numbered"
         );
     }
-
 
     #[test]
     fn test_locknum_does_not_renumber() {
@@ -859,7 +816,6 @@ use super::*;
         assert_eq!(App::extract_scene_tag(&app.lines[3]), Some("10".to_string()));
     }
 
-
     #[test]
     fn test_renum_works_regardless_of_lock() {
         let mut app = create_empty_app();
@@ -879,5 +835,3 @@ use super::*;
         assert_eq!(App::extract_scene_tag(&app.lines[1]), Some("1".to_string()));
         assert_eq!(App::extract_scene_tag(&app.lines[3]), Some("2".to_string()));
     }
-
-

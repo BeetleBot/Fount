@@ -121,8 +121,6 @@ unset force_scene_numbers
 set export_bold_scene_headings
 "#;
 
-
-
 #[derive(Clone, Debug, PartialEq, Eq, Default)]
 pub enum MirrorOption {
     
@@ -135,11 +133,6 @@ pub enum MirrorOption {
     #[default]
     ExportOnly,
 }
-
-
-
-
-
 
 #[derive(Parser, Debug, Default, Clone)]
 #[command(name = "fount", author, version, about, long_about = None)]
@@ -271,11 +264,6 @@ pub struct Cli {
     #[arg(long)]
     pub export_synopses: bool,
 }
-
-
-
-
-
 
 #[derive(Clone, Debug)]
 pub struct Config {
@@ -775,8 +763,6 @@ impl Config {
         config
     }
 }
-
-
 
 #[cfg(test)]
 mod config_tests {

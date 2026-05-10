@@ -93,7 +93,6 @@ pub fn draw_home(f: &mut Frame, app: &mut App) {
      /      ██║     ╚██████╔╝╚██████╔╝██║ ╚████║   ██║   
     /       ╚═╝      ╚═════╝  ╚═════╝ ╚═╝  ╚═══╝   ╚═╝   
 
-
     Fountain Pen Nib:
                   ▄▄              
                  ╱██╲             

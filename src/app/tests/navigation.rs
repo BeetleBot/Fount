@@ -10,7 +10,6 @@ use super::*;
         assert_eq!(app.cursor_y, 1);
     }
 
-
     #[test]
     fn test_app_move_up() {
         let mut app = create_empty_app();
@@ -21,7 +20,6 @@ use super::*;
         app.move_up();
         assert_eq!(app.cursor_y, 0);
     }
-
 
     #[test]
     fn test_app_move_right() {
@@ -37,7 +35,6 @@ use super::*;
         assert_eq!(app.cursor_x, 0);
     }
 
-
     #[test]
     fn test_app_move_left() {
         let mut app = create_empty_app();
@@ -51,7 +48,6 @@ use super::*;
         assert_eq!(app.cursor_x, 2);
     }
 
-
     #[test]
     fn test_app_move_word_right() {
         let mut app = create_empty_app();
@@ -61,7 +57,6 @@ use super::*;
         app.move_word_right();
         assert_eq!(app.cursor_x, 8);
     }
-
 
     #[test]
     fn test_app_move_word_left() {
@@ -74,7 +69,6 @@ use super::*;
         assert_eq!(app.cursor_x, 0);
     }
 
-
     #[test]
     fn test_app_move_home_and_end() {
         let mut app = create_empty_app();
@@ -84,7 +78,6 @@ use super::*;
         app.move_home();
         assert_eq!(app.cursor_x, 0);
     }
-
 
     #[test]
     fn test_app_search_forward() {
@@ -97,7 +90,6 @@ use super::*;
         assert_eq!(app.mode, AppMode::Normal);
     }
 
-
     #[test]
     fn test_app_search_wrap_around() {
         let mut app = create_empty_app();
@@ -108,7 +100,6 @@ use super::*;
         assert_eq!(app.cursor_y, 0);
         assert_eq!(app.cursor_x, 1);
     }
-
 
     #[test]
     fn test_app_search_regex_not_found() {
@@ -125,7 +116,6 @@ use super::*;
             "Highlight should be disabled if not found"
         );
     }
-
 
     #[test]
     fn test_search_regex_basic_and_highlight_flag() {
@@ -144,7 +134,6 @@ use super::*;
             "Highlight flag should be active after finding"
         );
     }
-
 
     #[test]
     fn test_search_regex_wrap_around() {
@@ -165,7 +154,6 @@ use super::*;
         );
     }
 
-
     #[test]
     fn test_search_regex_utf8_multibyte_safety() {
         let mut app = create_empty_app();
@@ -182,7 +170,6 @@ use super::*;
             "Search must correctly convert byte offsets to char offsets"
         );
     }
-
 
     #[test]
     fn test_search_highlight_cleared_on_escape() {
@@ -222,7 +209,6 @@ use super::*;
         );
     }
 
-
     #[test]
     fn test_move_page_down_and_up() {
         let mut app = create_empty_app();
@@ -237,7 +223,6 @@ use super::*;
         app.move_page_up();
         assert_eq!(app.cursor_y, 0);
     }
-
 
     #[test]
     fn test_app_vertical_movement_cursor_clamp() {
@@ -272,7 +257,6 @@ use super::*;
         );
     }
 
-
     #[test]
     fn test_app_search_cancel_via_esc_and_ctrl_c() {
         let mut app = create_empty_app();
@@ -289,7 +273,6 @@ use super::*;
         assert_eq!(app.status_msg.as_deref(), Some("Cancelled"));
     }
 
-
     #[test]
     fn test_app_search_backspace_to_empty_and_enter() {
         let mut app = create_empty_app();
@@ -304,7 +287,6 @@ use super::*;
         assert_eq!(app.mode, AppMode::Normal);
         assert_eq!(app.status_msg.as_deref(), Some("Cancelled"));
     }
-
 
     #[test]
     fn test_ux_smart_pairing_backspace_removes_both_pairs_safely() {
@@ -335,7 +317,6 @@ use super::*;
         }
     }
 
-
     #[test]
     fn test_ux_smart_pairing_delete_forward_removes_both_pairs_safely() {
         let mut app = create_empty_app();
@@ -364,8 +345,6 @@ use super::*;
             );
         }
     }
-
-
 
     #[test]
     fn test_app_search_match_count() {

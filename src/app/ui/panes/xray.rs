@@ -99,7 +99,6 @@ pub fn draw_xray(f: &mut Frame, app: &mut App) {
 
     let content_area = tab_layout[2];
 
-
     if let Some(ref data) = app.xray_data {
         match app.xray_tab {
             0 => draw_dialogue_tab(f, content_area, data, app.xray_scroll, accent, dim, normal_fg, theme),
