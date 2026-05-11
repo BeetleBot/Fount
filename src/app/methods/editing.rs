@@ -177,9 +177,10 @@ impl App {
             self.lines[sl] = format!("{}{}", prefix, suffix);
             self.lines.drain((sl + 1)..=el);
             self.types.drain((sl + 1)..=el);
-            if self.revised_lines.len() > el {
-                self.revised_lines.drain((sl + 1)..=el);
+            if self.revised_lines.len() < self.lines.len() + (el - sl) {
+                self.revised_lines.resize(self.lines.len() + (el - sl), false);
             }
+            self.revised_lines.drain((sl + 1)..=el);
             self.mark_line_revised(sl);
         }
 
@@ -326,10 +327,15 @@ impl App {
         self.save_state(true);
         self.last_edit = LastEdit::Other;
 
+        if self.revised_lines.len() != self.lines.len() {
+            self.revised_lines.resize(self.lines.len(), false);
+        }
+
         if is_shift {
             let b = self.byte_of(self.cursor_y, self.cursor_x);
             let tail = self.lines[self.cursor_y].split_off(b);
             self.lines.insert(self.cursor_y + 1, tail);
+            self.revised_lines.insert(self.cursor_y + 1, self.revision_mode);
             self.cursor_y += 1;
             self.cursor_x = 0;
             self.dirty = true;
@@ -355,6 +361,7 @@ impl App {
 
             if trim_rem.is_empty() || trim_rem == ")" {
                 self.lines.insert(self.cursor_y + 1, String::new());
+                self.revised_lines.insert(self.cursor_y + 1, self.revision_mode);
                 self.cursor_y += 1;
                 self.cursor_x = 0;
                 self.dirty = true;
@@ -862,6 +869,9 @@ impl crate::app::App {
             for line in lines.iter().take(lines.len() - 1).skip(1) {
                 self.lines.insert(insert_idx, line.clone());
                 self.types.insert(insert_idx, LineType::Action);
+                if insert_idx <= self.revised_lines.len() {
+                    self.revised_lines.insert(insert_idx, self.revision_mode);
+                }
                 insert_idx += 1;
             }
             let empty = String::new();
@@ -869,6 +879,9 @@ impl crate::app::App {
             self.lines
                 .insert(insert_idx, format!("{}{}", last_line_content, suffix));
             self.types.insert(insert_idx, LineType::Action);
+            if insert_idx <= self.revised_lines.len() {
+                self.revised_lines.insert(insert_idx, self.revision_mode);
+            }
 
             self.cursor_y = insert_idx;
             self.cursor_x = last_line_content.chars().count();
