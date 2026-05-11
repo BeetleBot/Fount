@@ -2,6 +2,7 @@ pub mod panes;
 use self::panes::{
     draw_file_picker, draw_snapshots, draw_sprint_stats, home::draw_home,
     index_cards::draw_index_cards, xray::draw_xray, draw_export_modal,
+    quick_help::draw_quick_help,
 };
 
 use crate::{
@@ -1346,10 +1347,17 @@ pub fn draw(f: &mut Frame, app: &mut App) {
         };
 
         if current_context_mode == AppMode::IndexCards {
-            let cards_len = app.extract_scene_cards().len();
+            let sections = app.index_cards.iter().filter(|c| c.is_section).count();
+            let scenes = app.index_cards.len() - sections;
+
             right_spans.push(Span::styled(sep, sep_style));
             right_spans.push(Span::styled(
-                format!("{} Scenes", cards_len),
+                "[?] Quick Help",
+                dim_style,
+            ));
+            right_spans.push(Span::styled(sep, sep_style));
+            right_spans.push(Span::styled(
+                format!("{} Sections, {} Scenes", sections, scenes),
                 dim_style,
             ));
         } else {
@@ -1491,5 +1499,9 @@ pub fn draw(f: &mut Frame, app: &mut App) {
 
     if current_view_mode == AppMode::IndexCards {
         draw_index_cards(f, app, text_area);
+    }
+
+    if app.show_quick_help {
+        draw_quick_help(f, app, area);
     }
 }

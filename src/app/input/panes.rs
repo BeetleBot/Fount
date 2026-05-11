@@ -1,4 +1,5 @@
 use std::path::PathBuf;
+use ratatui::layout::Rect;
 use crate::app::{App, AppMode, FilePickerAction};
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use std::io;
@@ -754,8 +755,19 @@ impl App {
                     return Ok(false);
                 }
                 AppMode::IndexCards => {
-                    let cards_count = self.extract_scene_cards().len();
-                    let columns = 3;
+                    if self.show_quick_help {
+                        match key.code {
+                            KeyCode::Esc | KeyCode::Char('?') | KeyCode::Enter | KeyCode::Char('q') => {
+                                self.show_quick_help = false;
+                            }
+                            _ => {}
+                        }
+                        return Ok(false);
+                    }
+
+                    let cards = self.index_cards.clone();
+                    let cards_count = cards.len();
+                    let _columns = 3;
 
                     if self.is_card_editing {
                         match key.code {
@@ -769,21 +781,16 @@ impl App {
                                 let mut h = String::new();
                                 let mut s = String::new();
                                 
-                                {
-                                   let cards = self.extract_scene_cards();
-                                   if let Some(card) = cards.get(idx) {
-                                       h = card.heading.trim_start_matches('.').to_string();
-                                       s = card.synopsis.clone();
-                                   }
+                                if let Some(card) = cards.get(idx) {
+                                    h = card.heading.clone();
+                                    s = card.synopsis.clone();
                                 }
 
                                 if self.is_heading_editing {
                                     self.update_card_content(idx, self.card_input_buffer.clone(), s);
                                     self.is_heading_editing = false;
-                                    {
-                                        let cards = self.extract_scene_cards();
-                                        self.card_input_buffer = cards.get(idx).map(|c| c.synopsis.clone()).unwrap_or_default();
-                                    }
+                                    let updated_cards = &self.index_cards;
+                                    self.card_input_buffer = updated_cards.get(idx).map(|c| c.synopsis.clone()).unwrap_or_default();
                                     self.set_status("Editing Synopsis... [Enter] to finish");
                                 } else {
                                     self.update_card_content(idx, h, self.card_input_buffer.clone());
@@ -806,8 +813,6 @@ impl App {
                         match key.code {
                             KeyCode::Esc | KeyCode::Char('q') => {
                                 self.mode = AppMode::Normal;
-                                // Jump to the selected scene
-                                let cards = self.extract_scene_cards();
                                 if let Some(card) = cards.get(self.selected_card_idx) {
                                     self.cursor_y = card.start_line;
                                     self.cursor_x = 0;
@@ -824,7 +829,28 @@ impl App {
                                         *text_changed = true;
                                     }
                                 } else {
-                                    self.selected_card_idx = self.selected_card_idx.saturating_sub(columns);
+                                    // Grid-aware Up: find card above
+                                    let area = Rect::new(0, 0, 100, 100); // Dummy area for relative layout
+                                    let rects = self.calculate_index_card_layout(area);
+                                    if let Some(cur_rect) = rects.get(self.selected_card_idx) {
+                                        let mut best_idx = self.selected_card_idx.saturating_sub(1);
+                                        let mut min_dist = f32::MAX;
+                                        
+                                        for (i, rect) in rects.iter().enumerate().take(self.selected_card_idx) {
+                                            if rect.y < cur_rect.y {
+                                                let dx = (rect.x as i32 - cur_rect.x as i32).abs();
+                                                let dy = (rect.y as i32 - cur_rect.y as i32).abs();
+                                                let dist = (dx as f32) + (dy as f32 * 2.0); // Prioritize vertical alignment
+                                                if dist < min_dist {
+                                                    min_dist = dist;
+                                                    best_idx = i;
+                                                }
+                                            }
+                                        }
+                                        self.selected_card_idx = best_idx;
+                                    } else {
+                                        self.selected_card_idx = self.selected_card_idx.saturating_sub(1);
+                                    }
                                 }
                             }
                             KeyCode::Down => {
@@ -836,49 +862,52 @@ impl App {
                                         *text_changed = true;
                                     }
                                 } else {
-                                    if self.selected_card_idx + columns < cards_count {
-                                        self.selected_card_idx += columns;
+                                    // Grid-aware Down: find card below
+                                    let area = Rect::new(0, 0, 100, 100);
+                                    let rects = self.calculate_index_card_layout(area);
+                                    if let Some(cur_rect) = rects.get(self.selected_card_idx) {
+                                        let mut best_idx = (self.selected_card_idx + 1).min(cards_count.saturating_sub(1));
+                                        let mut min_dist = f32::MAX;
+                                        
+                                        for (i, rect) in rects.iter().enumerate().skip(self.selected_card_idx + 1) {
+                                            if rect.y > cur_rect.y {
+                                                let dx = (rect.x as i32 - cur_rect.x as i32).abs();
+                                                let dy = (rect.y as i32 - cur_rect.y as i32).abs();
+                                                let dist = (dx as f32) + (dy as f32 * 2.0);
+                                                if dist < min_dist {
+                                                    min_dist = dist;
+                                                    best_idx = i;
+                                                }
+                                            }
+                                        }
+                                        self.selected_card_idx = best_idx;
+                                    } else {
+                                        self.selected_card_idx = (self.selected_card_idx + 1).min(cards_count.saturating_sub(1));
                                     }
                                 }
                             }
                             KeyCode::Left => {
-                                let shift = key.modifiers.contains(KeyModifiers::SHIFT);
-                                if shift {
-                                    if self.selected_card_idx > 0 {
-                                        self.swap_cards(self.selected_card_idx, self.selected_card_idx - 1);
-                                        self.selected_card_idx -= 1;
-                                        *text_changed = true;
-                                    }
-                                } else {
-                                    self.selected_card_idx = self.selected_card_idx.saturating_sub(1);
-                                }
+                                self.selected_card_idx = self.selected_card_idx.saturating_sub(1);
                             }
                             KeyCode::Right => {
-                                let shift = key.modifiers.contains(KeyModifiers::SHIFT);
-                                if shift {
-                                    if self.selected_card_idx + 1 < cards_count {
-                                        self.swap_cards(self.selected_card_idx, self.selected_card_idx + 1);
-                                        self.selected_card_idx += 1;
-                                        *text_changed = true;
-                                    }
-                                } else {
-                                    if self.selected_card_idx + 1 < cards_count {
-                                        self.selected_card_idx += 1;
-                                    }
+                                if self.selected_card_idx + 1 < cards_count {
+                                    self.selected_card_idx += 1;
                                 }
                             }
                             KeyCode::Enter => {
-                                self.is_card_editing = true;
-                                self.is_heading_editing = true;
-                                let cards = self.extract_scene_cards();
-                                self.card_input_buffer = cards.get(self.selected_card_idx)
-                                    .map(|c| c.heading.trim_start_matches('.').to_string())
-                                    .unwrap_or_default();
-                                self.set_status("Editing Scene Heading... [Enter] to move to Synopsis");
-                                *text_changed = true;
+                                if let Some(card) = cards.get(self.selected_card_idx) {
+                                    self.is_card_editing = true;
+                                    self.is_heading_editing = true;
+                                    self.card_input_buffer = card.heading.clone();
+                                    self.set_status("Editing Title... [Enter] to next");
+                                }
                             }
-                            KeyCode::Char('n') => {
-                                self.add_card(self.selected_card_idx);
+                            KeyCode::Char('?') => {
+                                self.show_quick_help = true;
+                            }
+                            KeyCode::Char('n') | KeyCode::Char('N') => {
+                                let is_section = shift || key.code == KeyCode::Char('N');
+                                self.add_card(self.selected_card_idx, is_section);
                                 *text_changed = true;
                                 *cursor_moved = true;
                             }

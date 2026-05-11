@@ -1,6 +1,7 @@
 pub mod home;
 pub mod xray;
 pub mod index_cards;
+pub mod quick_help;
 
 use unicode_width::UnicodeWidthStr;
 use crate::theme::HexColor;

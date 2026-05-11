@@ -344,7 +344,9 @@ pub struct App {
     pub is_heading_editing: bool,
     pub card_input_buffer: String,
     pub card_row_offset: usize,
+    pub index_cards: Vec<crate::app::methods::index_cards::IndexCard>,
     pub export_tab: usize,
+    pub show_quick_help: bool,
 }
 
 impl Drop for App {
@@ -526,7 +528,9 @@ impl App {
             is_heading_editing: false,
             card_input_buffer: String::new(),
             card_row_offset: 0,
+            index_cards: Vec::new(),
             export_tab: 0,
+            show_quick_help: false,
         };
 
         app.load_recent_files();

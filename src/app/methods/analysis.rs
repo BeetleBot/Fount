@@ -551,6 +551,7 @@ impl App {
                 }
             }
         }
+        self.update_index_cards();
     }
 }
 

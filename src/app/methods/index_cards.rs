@@ -1,8 +1,9 @@
 use crate::app::App;
 use crate::types::LineType;
+use ratatui::layout::Rect;
 
 #[derive(Clone, Debug)]
-pub struct SceneCard {
+pub struct IndexCard {
     pub start_line: usize,
     pub end_line: usize,
     pub heading: String,
@@ -10,27 +11,31 @@ pub struct SceneCard {
     pub preview: String,
     pub scene_num: Option<String>,
     pub color: Option<ratatui::style::Color>,
+    pub is_section: bool,
 }
 
 impl App {
-    pub fn extract_scene_cards(&self) -> Vec<SceneCard> {
+    pub fn update_index_cards(&mut self) {
         let mut cards = Vec::new();
-        let mut current_card: Option<SceneCard> = None;
+        let mut current_card: Option<IndexCard> = None;
 
         for (i, (&lt, line)) in self.types.iter().zip(self.lines.iter()).enumerate() {
-            if lt == LineType::SceneHeading {
+            if lt == LineType::SceneHeading || lt == LineType::Section {
                 if let Some(mut card) = current_card.take() {
                     card.end_line = i.saturating_sub(1);
                     cards.push(card);
                 }
 
-                let (clean_heading, scene_num) = if let Some(caps) = crate::layout::SCENE_NUM_RE.captures(line) {
+                let is_section = lt == LineType::Section;
+                let (clean_heading, scene_num) = if is_section {
+                    (crate::layout::strip_sigils(line, lt).to_string(), None)
+                } else if let Some(caps) = crate::layout::SCENE_NUM_RE.captures(line) {
                     (caps[1].to_string(), Some(caps[2].to_string()))
                 } else {
                     (line.clone(), None)
                 };
 
-                current_card = Some(SceneCard {
+                current_card = Some(IndexCard {
                     start_line: i,
                     end_line: self.lines.len().saturating_sub(1),
                     heading: clean_heading,
@@ -38,6 +43,7 @@ impl App {
                     preview: String::new(),
                     scene_num,
                     color: None,
+                    is_section,
                 });
             } else if let Some(ref mut card) = current_card {
                 if lt == LineType::Synopsis {
@@ -61,11 +67,11 @@ impl App {
             cards.push(card);
         }
 
-        cards
+        self.index_cards = cards;
     }
 
     pub fn swap_cards(&mut self, i: usize, j: usize) {
-        let cards = self.extract_scene_cards();
+        let cards = self.index_cards.clone();
         if i >= cards.len() || j >= cards.len() || i == j {
             return;
         }
@@ -89,9 +95,9 @@ impl App {
         self.update_layout();
     }
 
-    pub fn add_card(&mut self, after_idx: usize) {
+    pub fn add_card(&mut self, after_idx: usize, is_section: bool) {
         self.save_state(true);
-        let cards = self.extract_scene_cards();
+        let cards = self.index_cards.clone();
         
         let insert_line = if cards.is_empty() {
             self.lines.len()
@@ -101,13 +107,22 @@ impl App {
             self.lines.len()
         };
 
-        // Insert a blank scene
-        let new_lines = vec![
-            String::new(),
-            ". UNTITLED SCENE".to_string(), // The dot forces it to be a scene heading and text ensures parser recognizes it
-            "= ".to_string(),
-            String::new(),
-        ];
+        // Insert a blank scene or section
+        let new_lines = if is_section {
+            vec![
+                String::new(),
+                "# UNTITLED SECTION".to_string(), 
+                "= ".to_string(),
+                String::new(),
+            ]
+        } else {
+            vec![
+                String::new(),
+                ". UNTITLED SCENE".to_string(), 
+                "= ".to_string(),
+                String::new(),
+            ]
+        };
         
         for (i, line) in new_lines.into_iter().enumerate() {
             self.lines.insert(insert_line + i, line);
@@ -123,7 +138,7 @@ impl App {
     }
 
     pub fn delete_card(&mut self, idx: usize) {
-        let cards = self.extract_scene_cards();
+        let cards = self.index_cards.clone();
         if idx >= cards.len() {
             return;
         }
@@ -139,7 +154,7 @@ impl App {
     }
 
     pub fn update_card_content(&mut self, idx: usize, heading: String, synopsis: String) {
-        let cards = self.extract_scene_cards();
+        let cards = self.index_cards.clone();
         if idx >= cards.len() {
             return;
         }
@@ -147,11 +162,19 @@ impl App {
         let card = &cards[idx];
         
         // Update Heading
-        let clean_heading = if heading.is_empty() { "UNTITLED SCENE".to_string() } else { heading };
-        self.lines[card.start_line] = if clean_heading.starts_with('.') { clean_heading } else { format!(".{}", clean_heading) };
+        let clean_heading = if heading.is_empty() { 
+            if card.is_section { "UNTITLED SECTION".to_string() } else { "UNTITLED SCENE".to_string() }
+        } else { 
+            heading 
+        };
+        
+        self.lines[card.start_line] = if card.is_section {
+            if clean_heading.starts_with('#') { clean_heading } else { format!("# {}", clean_heading) }
+        } else {
+            if clean_heading.starts_with('.') { clean_heading } else { format!(".{}", clean_heading) }
+        };
         
         // Update Synopsis
-        // Find existing synopsis line or insert one
         let mut syn_found = false;
         for i in card.start_line + 1..=card.end_line {
             if self.types[i] == LineType::Synopsis {
@@ -167,5 +190,39 @@ impl App {
         
         self.parse_document();
         self.update_layout();
+    }
+
+    pub fn calculate_index_card_layout(&self, area: Rect) -> Vec<Rect> {
+        let cards = &self.index_cards;
+
+        let columns = 3;
+        let gutter = 1;
+        let card_w = (area.width.saturating_sub(4)) / columns;
+        let scene_h = 10;
+        let section_h = 6;
+
+        let mut card_rects = Vec::new();
+        let mut current_y = 0;
+        let mut current_col = 0;
+
+        for card in cards {
+            if card.is_section {
+                if current_col > 0 {
+                    current_y += scene_h;
+                    current_col = 0;
+                }
+                card_rects.push(Rect::new(2, current_y, area.width.saturating_sub(4), section_h));
+                current_y += section_h;
+            } else {
+                let x = 2 + (current_col as u16 * (card_w + gutter));
+                card_rects.push(Rect::new(x, current_y, card_w, scene_h - 1));
+                current_col += 1;
+                if current_col >= columns {
+                    current_y += scene_h;
+                    current_col = 0;
+                }
+            }
+        }
+        card_rects
     }
 }
