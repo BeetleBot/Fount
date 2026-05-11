@@ -28,13 +28,9 @@ set hide_markup
 # in bright white color.
 unset highlight_active_action
 
-# Typewriter mode
+# Typewriter mode (forces the active line to stay in the exact
+# vertical center of the terminal at all times).
 unset typewriter_mode
-
-# Strict typewriter mode (forces the active line to stay in the exact
-# vertical center of the terminal at all times, even at the beginning
-# of the document).
-unset strict_typewriter_mode
 
 # Focus mode
 unset focus_mode
@@ -179,10 +175,6 @@ pub struct Cli {
 
     
     #[arg(long)]
-    pub strict_typewriter_mode: bool,
-
-    
-    #[arg(long)]
     pub focus_mode: bool,
 
     
@@ -296,10 +288,6 @@ pub struct Config {
     pub typewriter_mode: bool,
 
     
-    
-    pub strict_typewriter_mode: bool,
-
-    
     pub focus_mode: bool,
 
     
@@ -407,7 +395,6 @@ impl Default for Config {
             auto_paragraph_breaks: true,
             auto_title_page: false,
             typewriter_mode: true,
-            strict_typewriter_mode: true,
             focus_mode: false,
             break_actions: true,
             goto_end: false,
@@ -477,8 +464,7 @@ impl Config {
                         "auto_contd" => self.auto_contd = true,
                         "auto_paragraph_breaks" => self.auto_paragraph_breaks = true,
                         "auto_title_page" => self.auto_title_page = true,
-                        "typewriter_mode" => self.typewriter_mode = true,
-                        "strict_typewriter_mode" => self.strict_typewriter_mode = true,
+                        "typewriter_mode" | "typewriter" => self.typewriter_mode = true,
                         "focus_mode" => self.focus_mode = true,
                         "break_actions" => self.break_actions = true,
                         "goto_end" => self.goto_end = true,
@@ -529,8 +515,7 @@ impl Config {
                         "auto_contd" => self.auto_contd = false,
                         "auto_paragraph_breaks" => self.auto_paragraph_breaks = false,
                         "auto_title_page" => self.auto_title_page = false,
-                        "typewriter_mode" => self.typewriter_mode = false,
-                        "strict_typewriter_mode" => self.strict_typewriter_mode = false,
+                        "typewriter_mode" | "typewriter" => self.typewriter_mode = false,
                         "focus_mode" => self.focus_mode = false,
                         "break_actions" => self.break_actions = false,
                         "goto_end" => self.goto_end = false,
@@ -698,7 +683,7 @@ impl Config {
 
         config.auto_title_page |= cli.auto_title_page;
         config.typewriter_mode |= cli.typewriter_mode;
-        config.strict_typewriter_mode |= cli.strict_typewriter_mode;
+        config.typewriter_mode |= cli.typewriter_mode;
         config.focus_mode |= cli.focus_mode;
         config.no_color |= cli.no_color;
         config.no_formatting |= cli.no_formatting;

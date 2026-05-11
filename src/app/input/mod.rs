@@ -118,8 +118,8 @@ impl App {
                                 } else {
                                     match self.selected_setting {
                                         0 => {
-                                            self.config.strict_typewriter_mode =
-                                                !self.config.strict_typewriter_mode
+                                            self.config.typewriter_mode =
+                                                !self.config.typewriter_mode
                                         }
                                         1 => self.config.auto_save = !self.config.auto_save,
                                         2 => {

@@ -202,26 +202,6 @@ pub fn draw(f: &mut Frame, app: &mut App) {
     }
 
     app.settings_area = Rect::default();
-    if app.mode == AppMode::SettingsPane {
-        let side_width: u16 = 34;
-        let side_chunks = Layout::default()
-            .direction(Direction::Horizontal)
-            .constraints([
-                Constraint::Min(0),
-                Constraint::Length(1),
-                Constraint::Length(side_width),
-            ])
-            .split(text_area);
-        text_area = side_chunks[0];
-        let shadow_area = side_chunks[1];
-        app.settings_area = side_chunks[2];
-
-        // Draw clean separator
-        let sep_lines: Vec<Line> = (0..shadow_area.height)
-            .map(|_| Line::from(Span::styled("│", theme.secondary_style())))
-            .collect();
-        f.render_widget(Paragraph::new(sep_lines), shadow_area);
-    }
 
     let height = text_area.height as usize;
     app.visible_height = height;
@@ -233,20 +213,12 @@ pub fn draw(f: &mut Frame, app: &mut App) {
     if app.mode != AppMode::Home {
         let (vis_row, _vis_x) = find_visual_cursor(&app.layout, app.cursor_y, app.cursor_x);
 
-        if app.config.strict_typewriter_mode {
+        if app.config.typewriter_mode {
             let center_offset = (height / 2) as usize;
             if vis_row < center_offset {
                 pad_top = center_offset - vis_row;
             }
             app.scroll = vis_row.saturating_sub(center_offset);
-        } else if app.config.typewriter_mode {
-            let center_offset = (height / 2) as usize;
-
-            if vis_row >= center_offset {
-                app.scroll = vis_row - center_offset;
-            } else {
-                app.scroll = 0;
-            }
         } else {
             if vis_row < app.scroll {
                 app.scroll = vis_row;
@@ -890,7 +862,7 @@ pub fn draw(f: &mut Frame, app: &mut App) {
 
     if app.mode == AppMode::SettingsPane {
         let settings = vec![
-            ("Typewriter Mode", &app.config.strict_typewriter_mode),
+            ("Typewriter Mode", &app.config.typewriter_mode),
             ("Auto-Save", &app.config.auto_save),
             ("Autocomplete", &app.config.autocomplete),
             ("Auto-Breaks", &app.config.auto_paragraph_breaks),
@@ -1525,6 +1497,9 @@ pub fn draw(f: &mut Frame, app: &mut App) {
         }
         AppMode::ThemePicker => {
             panes::theme_picker::draw_theme_picker(f, app, area);
+        }
+        AppMode::SettingsPane => {
+            panes::settings::draw_settings_modal(f, app, area);
         }
         _ => {}
     }

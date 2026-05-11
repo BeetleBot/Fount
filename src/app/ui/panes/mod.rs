@@ -4,6 +4,7 @@ pub mod index_cards;
 pub mod quick_help;
 pub mod structure_picker;
 pub mod theme_picker;
+pub mod settings;
 
 use unicode_width::UnicodeWidthStr;
 use crate::app::App;

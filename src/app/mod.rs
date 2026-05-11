@@ -1051,7 +1051,7 @@ impl App {
                         "pagenums" => self.config.show_page_numbers = val,
                         "scenenums" => self.config.show_scene_numbers = val,
                         "contd" => self.config.auto_contd = val,
-                        "typewriter" => self.config.strict_typewriter_mode = val,
+                        "typewriter" => self.config.typewriter_mode = val,
                         "autosave" => self.config.auto_save = val,
                         "autocomplete" => self.config.autocomplete = val,
                         "autobreaks" => self.config.auto_paragraph_breaks = val,
@@ -1073,7 +1073,7 @@ impl App {
                         }
                         "contd" => self.config.auto_contd = !self.config.auto_contd,
                         "typewriter" => {
-                            self.config.strict_typewriter_mode = !self.config.strict_typewriter_mode
+                            self.config.typewriter_mode = !self.config.typewriter_mode
                         }
                         "autosave" => self.config.auto_save = !self.config.auto_save,
                         "autocomplete" => self.config.autocomplete = !self.config.autocomplete,
@@ -1088,7 +1088,8 @@ impl App {
                     }
                     *text_changed = true;
                 } else if args.is_empty() {
-                    self.set_status("Usage: /set <option> [on/off]");
+                    self.mode = AppMode::SettingsPane;
+                    self.selected_setting = 0;
                 }
             }
             "snap" => {

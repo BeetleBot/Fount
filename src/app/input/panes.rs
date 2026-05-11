@@ -131,91 +131,67 @@ impl App {
                     return Ok(false);
                 }
                 AppMode::SettingsPane => {
-                    let settings_count = 6;
+                    let settings_count = 10;
                     match key.code {
                         KeyCode::Esc => {
                             self.mode = AppMode::Normal;
                         }
-                        KeyCode::Char('p') if ctrl => {
-                            self.mode = AppMode::Normal;
+                        KeyCode::Up => {
+                            self.selected_setting = if self.selected_setting == 0 {
+                                settings_count - 1
+                            } else {
+                                self.selected_setting - 1
+                            };
                         }
-                        KeyCode::Char('f') if ctrl => {}
-                        KeyCode::Char('h') if ctrl => {
-                            self.open_scene_navigator();
-                        }
-                        KeyCode::Up | KeyCode::Char('k') => {
-                            self.selected_setting = self.selected_setting.saturating_sub(1);
-                        }
-                        KeyCode::Down | KeyCode::Char('j') => {
-                            self.selected_setting =
-                                (self.selected_setting + 1).min(settings_count - 1);
+                        KeyCode::Down => {
+                            self.selected_setting = (self.selected_setting + 1) % settings_count;
                         }
                         KeyCode::Enter | KeyCode::Char(' ') => {
                             match self.selected_setting {
                                 0 => {
-                                    self.config.strict_typewriter_mode =
-                                        !self.config.strict_typewriter_mode;
-                                    let _ = crate::config::Config::save_setting("strict_typewriter_mode", self.config.strict_typewriter_mode);
-                                }
-                                1 => {
-                                    self.config.auto_save = !self.config.auto_save;
-                                    let _ = crate::config::Config::save_setting("auto_save", self.config.auto_save);
-                                }
-                                2 => {
-                                    self.config.autocomplete = !self.config.autocomplete;
-                                    let _ = crate::config::Config::save_setting("autocomplete", self.config.autocomplete);
-                                }
-                                3 => {
-                                    self.config.auto_paragraph_breaks =
-                                        !self.config.auto_paragraph_breaks;
-                                    let _ = crate::config::Config::save_setting("auto_paragraph_breaks", self.config.auto_paragraph_breaks);
-                                }
-                                4 => {
                                     self.config.focus_mode = !self.config.focus_mode;
                                     let _ = crate::config::Config::save_setting("focus_mode", self.config.focus_mode);
                                 }
+                                1 => {
+                                    self.config.show_line_numbers = !self.config.show_line_numbers;
+                                    let _ = crate::config::Config::save_setting("line_numbers", self.config.show_line_numbers);
+                                }
+                                2 => {
+                                    self.config.typewriter_mode = !self.config.typewriter_mode;
+                                    let _ = crate::config::Config::save_setting("typewriter_mode", self.config.typewriter_mode);
+                                }
+                                3 => {
+                                    self.config.hide_markup = !self.config.hide_markup;
+                                    let _ = crate::config::Config::save_setting("hide_markup", self.config.hide_markup);
+                                }
+                                4 => {
+                                    self.config.show_page_numbers = !self.config.show_page_numbers;
+                                    let _ = crate::config::Config::save_setting("show_page_numbers", self.config.show_page_numbers);
+                                }
                                 5 => {
-                                    let themes = self.theme_manager.list_themes();
-                                    if let Some(pos) = themes.iter().position(|t| t == &self.config.theme) {
-                                        let next = (pos + 1) % themes.len();
-                                        let name = &themes[next];
-                                        if self.theme_manager.set_theme(name) {
-                                            self.theme = self.theme_manager.current_theme.clone();
-                                            self.config.theme = self.theme.name.clone();
-                                            let _ = crate::config::Config::save_string_setting("theme", &self.theme.name);
-                                            self.set_status(&format!("Theme set to {}", self.theme.name));
-                                            self.update_layout();
-                                        }
-                                    } else {
-                                        // Fallback if current theme name is not in list for some reason
-                                        if !themes.is_empty() {
-                                            let name = &themes[0];
-                                            if self.theme_manager.set_theme(name) {
-                                                self.theme = self.theme_manager.current_theme.clone();
-                                                self.config.theme = self.theme.name.clone();
-                                                let _ = crate::config::Config::save_string_setting("theme", &self.theme.name);
-                                                self.set_status(&format!("Theme set to {}", self.theme.name));
-                                                self.update_layout();
-                                            }
-                                        }
-                                    }
+                                    self.config.show_scene_numbers = !self.config.show_scene_numbers;
+                                    let _ = crate::config::Config::save_setting("show_scene_numbers", self.config.show_scene_numbers);
+                                }
+                                6 => {
+                                    self.config.auto_contd = !self.config.auto_contd;
+                                    let _ = crate::config::Config::save_setting("auto_contd", self.config.auto_contd);
+                                }
+                                7 => {
+                                    self.config.auto_save = !self.config.auto_save;
+                                    let _ = crate::config::Config::save_setting("auto_save", self.config.auto_save);
+                                }
+                                8 => {
+                                    self.config.autocomplete = !self.config.autocomplete;
+                                    let _ = crate::config::Config::save_setting("autocomplete", self.config.autocomplete);
+                                }
+                                9 => {
+                                    self.config.auto_paragraph_breaks = !self.config.auto_paragraph_breaks;
+                                    let _ = crate::config::Config::save_setting("auto_paragraph_breaks", self.config.auto_paragraph_breaks);
                                 }
                                 _ => {}
                             }
                             *text_changed = true;
-                        }
-                        KeyCode::Char('?') | KeyCode::Char('h') => {
-                            let desc = match self.selected_setting {
-                                0 => "Always center the cursor, even at the start of the file.",
-                                1 => "Periodically save the current buffer to disk.",
-                                2 => "Suggest character names and scene prefixes.",
-                                3 => "Insert paragraph breaks after screenplay elements.",
-                                4 => "Hide the UI bars for a distraction-free view.",
-                                _ => "",
-                            };
-                            if !desc.is_empty() {
-                                self.set_status(desc);
-                            }
+                            self.update_layout();
                         }
                         _ => {}
                     }
