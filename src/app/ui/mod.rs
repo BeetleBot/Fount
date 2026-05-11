@@ -2,7 +2,7 @@ pub mod panes;
 use self::panes::{
     draw_file_picker, draw_snapshots, draw_sprint_stats, home::draw_home,
     index_cards::draw_index_cards, xray::draw_xray, draw_export_modal,
-    quick_help::draw_quick_help, structure_picker::draw_structure_picker,
+    quick_help::draw_quick_help,
 };
 
 use crate::{
@@ -1291,13 +1291,12 @@ pub fn draw(f: &mut Frame, app: &mut App) {
                     theme.secondary_style(),
                 ));
             }
-        } else if app.mode != AppMode::Home {
+        } else if app.mode != AppMode::Home && app.mode != AppMode::IndexCards {
             let scene_name = app.get_current_scene_name();
             spans.push(Span::styled(
                 scene_name,
                 Style::default().fg(mode_bg).add_modifier(Modifier::BOLD),
             ));
-        } else {
             spans.push(Span::styled("F1 Reference", theme.secondary_style()));
         }
 
@@ -1497,8 +1496,14 @@ pub fn draw(f: &mut Frame, app: &mut App) {
         draw_index_cards(f, app, text_area);
     }
 
-    if app.mode == AppMode::StructurePicker {
-        draw_structure_picker(f, app);
+    match app.mode {
+        AppMode::StructurePicker => {
+            panes::structure_picker::draw_structure_picker(f, app);
+        }
+        AppMode::ThemePicker => {
+            panes::theme_picker::draw_theme_picker(f, app, area);
+        }
+        _ => {}
     }
 
     if app.show_quick_help {

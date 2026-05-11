@@ -116,6 +116,7 @@ pub enum AppMode {
     ReplaceOne,
     ReplaceAll,
     StructurePicker,
+    ThemePicker,
 }
 
 #[derive(Clone, Debug)]
@@ -363,6 +364,7 @@ pub struct App {
     pub show_quick_help: bool,
     pub structures: Vec<Structure>,
     pub structure_selected: usize,
+    pub theme_picker_state: ListState,
 }
 
 impl Drop for App {
@@ -549,6 +551,7 @@ impl App {
             show_quick_help: false,
             structures: Vec::new(),
             structure_selected: 0,
+            theme_picker_state: ListState::default(),
         };
 
         app.load_structures();
@@ -954,20 +957,22 @@ impl App {
 
         match cmd {
             "theme" | "t" => {
-                let themes_list = self.theme_manager.list_themes();
-                if let Some(name) = args.first() {
-                    if self.theme_manager.set_theme(name) {
+                let theme_name = args.join(" ");
+                if !theme_name.is_empty() {
+                    if self.theme_manager.set_theme(&theme_name) {
                         self.theme = self.theme_manager.current_theme.clone();
                         self.config.theme = self.theme.name.clone();
                         let _ = crate::config::Config::save_string_setting("theme", &self.theme.name);
                         self.set_status(&format!("Theme set to {}", self.theme.name));
                         self.update_layout();
                     } else {
-                        self.set_error(&format!("Theme not found: {}", name));
+                        self.set_error(&format!("Theme not found: {}", theme_name));
                     }
                 } else {
-                    let themes_str = themes_list.join(", ");
-                    self.set_status(&format!("Available themes: {}", themes_str));
+                    self.mode = AppMode::ThemePicker;
+                    let themes = self.theme_manager.list_themes();
+                    let current_idx = themes.iter().position(|t| t == &self.theme.name).unwrap_or(0);
+                    self.theme_picker_state.select(Some(current_idx));
                 }
             }
             "w" => {

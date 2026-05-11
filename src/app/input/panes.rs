@@ -980,6 +980,49 @@ impl App {
                     }
                     return Ok(false);
                 }
+                AppMode::ThemePicker => {
+                    let themes = self.theme_manager.list_themes();
+                    match key.code {
+                        KeyCode::Esc => {
+                            self.mode = AppMode::Normal;
+                        }
+                        KeyCode::Up | KeyCode::Char('k') => {
+                            let current = self.theme_picker_state.selected().unwrap_or(0);
+                            let new_idx = if current == 0 {
+                                themes.len().saturating_sub(1)
+                            } else {
+                                current - 1
+                            };
+                            self.theme_picker_state.select(Some(new_idx));
+                        }
+                        KeyCode::Down | KeyCode::Char('j') => {
+                            let current = self.theme_picker_state.selected().unwrap_or(0);
+                            let new_idx = if current >= themes.len().saturating_sub(1) {
+                                0
+                            } else {
+                                current + 1
+                            };
+                            self.theme_picker_state.select(Some(new_idx));
+                        }
+                        KeyCode::Enter => {
+                            if let Some(idx) = self.theme_picker_state.selected() {
+                                if idx < themes.len() {
+                                    let name = themes[idx].clone();
+                                    if self.theme_manager.set_theme(&name) {
+                                        self.theme = self.theme_manager.current_theme.clone();
+                                        self.config.theme = self.theme.name.clone();
+                                        let _ = crate::config::Config::save_string_setting("theme", &self.theme.name);
+                                        self.set_status(&format!("Theme set to {}", self.theme.name));
+                                        self.update_layout();
+                                    }
+                                }
+                            }
+                            self.mode = AppMode::Normal;
+                        }
+                        _ => {}
+                    }
+                    return Ok(false);
+                }
             _ => {}
         }
         Ok(false)
