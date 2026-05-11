@@ -103,7 +103,7 @@ pub fn draw_xray(f: &mut Frame, app: &mut App) {
         match app.xray_tab {
             0 => draw_dialogue_tab(f, content_area, data, app.xray_scroll, accent, dim, normal_fg, theme),
             1 => draw_pacing_tab(f, content_area, data, app.xray_scroll, accent, dim, normal_fg, theme),
-            2 => draw_scenes_tab(f, content_area, data, app.xray_scroll, accent, dim, normal_fg, theme),
+            2 => draw_scenes_tab(f, content_area, data, app.xray_scroll, accent, dim, normal_fg, theme, app.config.use_nerd_fonts),
             _ => {}
         }
     } else {
@@ -269,6 +269,7 @@ fn draw_scenes_tab(
     dim: Color,
     normal_fg: Color,
     theme: &crate::theme::Theme,
+    use_nerd_fonts: bool,
 ) {
     let mut lines = Vec::new();
 
@@ -297,7 +298,7 @@ fn draw_scenes_tab(
                 )
             } else {
                 Span::styled(
-                    "  *  All scenes within limit [X]",
+                    format!("  {}  All scenes within limit", if use_nerd_fonts { " " } else { "* [X]" }),
                     theme.success_style(),
                 )
             },
@@ -328,9 +329,15 @@ fn draw_scenes_tab(
             let pages_str = format!("{:.1}", scene.page_count);
 
             let (status, status_style) = if scene.is_over_limit {
-                ("[!] TOO LONG", theme.warning_style().add_modifier(Modifier::BOLD))
+                (
+                    if use_nerd_fonts { " TOO LONG" } else { "[!] TOO LONG" },
+                    theme.warning_style().add_modifier(Modifier::BOLD)
+                )
             } else {
-                ("[X]", theme.success_style())
+                (
+                    if use_nerd_fonts { " " } else { "[X]" },
+                    theme.success_style()
+                )
             };
 
             let line_style = if scene.is_over_limit {

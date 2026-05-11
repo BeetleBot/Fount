@@ -38,7 +38,7 @@ pub fn draw(f: &mut Frame, app: &mut App) {
     let (mode_str, mode_bg) = match app.mode {
         AppMode::Normal => (
             if app.config.use_nerd_fonts {
-                " 󰄲 Normal "
+                " 󰼭 Normal "
             } else {
                 " Normal "
             },
@@ -46,7 +46,7 @@ pub fn draw(f: &mut Frame, app: &mut App) {
         ),
         AppMode::Command => (
             if app.config.use_nerd_fonts {
-                " 󰘳 Command "
+                " 󰌌 Command "
             } else {
                 " Command "
             },
@@ -54,7 +54,7 @@ pub fn draw(f: &mut Frame, app: &mut App) {
         ),
         AppMode::SceneNavigator => (
             if app.config.use_nerd_fonts {
-                " 󰉋 Navigator "
+                " 󰙅 Navigator "
             } else {
                 " Navigator "
             },
@@ -78,7 +78,7 @@ pub fn draw(f: &mut Frame, app: &mut App) {
         ),
         AppMode::Shortcuts => (
             if app.config.use_nerd_fonts {
-                " 󰘳 Legend "
+                " 󰌌 Legend "
             } else {
                 " Legend "
             },
@@ -126,7 +126,7 @@ pub fn draw(f: &mut Frame, app: &mut App) {
         ),
         AppMode::XRay => (
             if app.config.use_nerd_fonts {
-                " 󰝟 X-Ray "
+                " 󰆣 X-Ray "
             } else {
                 " X-Ray "
             },
@@ -1444,7 +1444,8 @@ pub fn draw(f: &mut Frame, app: &mut App) {
             let words_written = current_words.saturating_sub(*start_words);
 
             let sprint_msg = format!(
-                " | Sprint [{}{}] {:02}:{:02} +{}w",
+                " | {} [{}{}] {:02}:{:02} +{}w",
+                if app.config.use_nerd_fonts { "󱎫" } else { "Sprint" },
                 "█".repeat(filled),
                 "░".repeat(empty),
                 rem_min,
@@ -1489,18 +1490,15 @@ pub fn draw(f: &mut Frame, app: &mut App) {
             right_spans.push(Span::styled(sep, sep_style));
             right_spans.push(Span::styled(pos_str, dim_style));
         }
+        // F1 Cheat Sheet
+        right_spans.push(Span::styled(sep, sep_style));
+        right_spans.push(Span::styled(
+            if app.config.use_nerd_fonts { "󰌌 F1 - Cheat Sheet" } else { "F1 - Cheat Sheet" },
+            dim_style,
+        ));
+
         // Closing bracket
         right_spans.push(Span::styled(" ]", sep_style));
-
-        // Cheat Sheet hint on the far right
-        right_spans.push(Span::styled("  ", Style::default())); 
-        right_spans.push(Span::styled(
-            format!(
-                "{} F1 Cheat Sheet ",
-                if app.config.use_nerd_fonts { "󰘳" } else { "" }
-            ),
-            theme.secondary_style(),
-        ));
 
         let left_width: usize = spans
             .iter()
