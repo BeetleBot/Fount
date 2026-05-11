@@ -442,7 +442,7 @@ pub fn build_layout(
         }
 
         if lt == LineType::PageBreak {
-            let display_text = if is_active {
+            let display_text = if is_active || !config.hide_markup {
                 raw_line.to_string()
             } else {
                 let fill_char = if config.force_ascii { "-" } else { "─" };
@@ -497,13 +497,13 @@ pub fn build_layout(
             }
         }
 
-        let mut display = if is_active {
+        let mut display = if is_active || !config.hide_markup {
             Cow::Borrowed(raw_line.as_ref())
         } else {
             Cow::Borrowed(strip_sigils(&raw_line, lt))
         };
 
-        if !is_active
+        if (!is_active && config.hide_markup)
             && matches!(
                 lt,
                 LineType::SceneHeading | LineType::Section | LineType::Synopsis
@@ -562,7 +562,7 @@ pub fn build_layout(
             last_speaking_character = compare_name;
         }
 
-        let sigil_left = if is_active {
+        let sigil_left = if is_active || !config.hide_markup {
             0
         } else {
             sigil_left_chars(&raw_line, lt)
