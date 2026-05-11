@@ -12,74 +12,9 @@ use std::{io, panic, time::Duration};
 
 use fount::app::{App, ui::draw};
 use fount::config::Cli;
-use fount::export;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let cli = Cli::parse();
-
-    if let Some(export_path) = cli.export.clone() {
-        if !cli.files.first().is_some_and(|p| p.exists()) {
-            eprintln!("Error: Input file does not exist or was not provided.");
-            std::process::exit(1);
-        }
-
-        let mut app = App::new(cli.clone());
-
-        let fmt = cli.format.to_lowercase();
-        if fmt == "pdf" {
-            let fountain_text = app.lines.join("\n");
-            let paper_size = if app.config.paper_size.to_lowercase() == "letter" {
-                fount::pdf::LETTER
-            } else {
-                fount::pdf::A4
-            };
-            if let Err(e) = fount::pdf::export_to_pdf(
-                &fountain_text,
-                &export_path,
-                paper_size,
-                app.config.export_bold_scene_headings,
-                app.config.mirror_scene_numbers.clone(),
-                app.config.export_sections,
-                app.config.export_synopses,
-                app.config.export_font.clone(),
-                vec![],
-            ) {
-                eprintln!("Error exporting to PDF: {}", e);
-                std::process::exit(1);
-            }
-            return Ok(());
-        }
-
-        let with_ansi = match fmt.as_str() {
-            "ansi" => true,
-            "ascii" => {
-                app.config.force_ascii = true;
-                false
-            }
-            "plain" => false,
-            _ => {
-                eprintln!(
-                    "Error: Unknown export format '{}'. Expected 'plain', 'ascii', 'ansi', or 'pdf'.",
-                    fmt
-                );
-                std::process::exit(1)
-            }
-        };
-
-        app.cursor_y = usize::MAX;
-        app.update_layout();
-
-        let output = export::export_document(&app.layout, &app.lines, &app.config, &app.theme, with_ansi);
-
-        if export_path.as_os_str() == "-" {
-            print!("{}", output);
-        } else if let Err(e) = std::fs::write(&export_path, output) {
-            eprintln!("Error writing to '{}': {}", export_path.display(), e);
-            std::process::exit(1);
-        }
-
-        return Ok(());
-    }
 
     let default_panic = panic::take_hook();
     panic::set_hook(Box::new(move |info| {

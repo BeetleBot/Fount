@@ -133,128 +133,8 @@ pub enum MirrorOption {
 #[derive(Parser, Debug, Default, Clone)]
 #[command(name = "fount", author, version, about, long_about = None)]
 pub struct Cli {
-    
     #[arg(num_args = 0..)]
     pub files: Vec<PathBuf>,
-
-    
-    #[arg(long, value_name = "FILE")]
-    pub config: Option<PathBuf>,
-
-    
-    #[arg(long)]
-    pub hide_scene_numbers: bool,
-
-    
-    #[arg(long)]
-    pub hide_page_numbers: bool,
-
-    
-    #[arg(long)]
-    pub show_markup: bool,
-
-    
-    #[arg(long)]
-    pub no_autocomplete: bool,
-
-    
-    #[arg(long)]
-    pub no_auto_contd: bool,
-
-    
-    #[arg(long)]
-    pub no_auto_paragraph_breaks: bool,
-
-    
-    #[arg(long)]
-    pub auto_title_page: bool,
-
-    
-    #[arg(long)]
-    pub typewriter_mode: bool,
-
-    
-    #[arg(long)]
-    pub focus_mode: bool,
-
-    
-    #[arg(long)]
-    pub no_break_actions: bool,
-
-    
-    #[arg(long)]
-    pub goto_end: bool,
-
-    
-    #[arg(long, value_name = "MODE", num_args = 0..=1, default_missing_value = "always")]
-    pub mirror_scene_numbers: Option<String>,
-
-    
-    #[arg(long)]
-    pub contd_extension: Option<String>,
-
-    
-    #[arg(long)]
-    pub heading_style: Option<String>,
-
-    
-    #[arg(long)]
-    pub heading_spacing: Option<usize>,
-
-    
-    #[arg(long)]
-    pub shot_style: Option<String>,
-
-    
-    #[arg(long)]
-    pub no_color: bool,
-
-    
-    #[arg(long)]
-    pub no_formatting: bool,
-
-    
-    #[arg(long)]
-    pub force_ascii: bool,
-
-    
-    #[arg(long)]
-    pub force_ansi: bool,
-
-    #[arg(long)]
-    pub no_nerd_fonts: bool,
-
-    
-    #[arg(long, value_name = "FILE", num_args = 0..=1, default_missing_value = "-")]
-    pub export: Option<PathBuf>,
-
-    
-    #[arg(long, default_value = "plain", value_name = "FORMAT")]
-    pub format: String,
-
-    /// Paper size for PDF export (a4, letter)
-    #[arg(long, value_name = "SIZE")]
-    pub paper_size: Option<String>,
-
-    /// Force scene numbers in PDF export
-    #[arg(long)]
-    pub force_scene_numbers: bool,
-
-    /// Export scene headings in bold
-    #[arg(long)]
-    pub export_bold_scene_headings: bool,
-
-    /// Include title page in exports
-    #[arg(long)]
-    pub include_title_page: bool,
-
-    /// Include sections in export
-    #[arg(long)]
-    pub export_sections: bool,
-
-    /// Include synopses in export
-    #[arg(long)]
-    pub export_synopses: bool,
 }
 
 #[derive(Clone, Debug)]
@@ -646,14 +526,13 @@ impl Config {
         Ok(())
     }
 
-    pub fn load(cli: &Cli) -> Self {
+    pub fn load(_cli: &Cli) -> Self {
         let mut config = Self::default();
 
-        let is_custom_path = cli.config.is_some();
-        let config_path = cli.config.clone().or_else(Self::config_path);
+        let config_path = Self::config_path();
 
         if let Some(path) = config_path {
-            if !is_custom_path && !path.exists() {
+            if !path.exists() {
                 if let Some(parent) = path.parent() {
                     let _ = fs::create_dir_all(parent);
                 }
@@ -662,40 +541,9 @@ impl Config {
 
             match fs::read_to_string(&path) {
                 Ok(content) => config.parse_config_str(&content),
-                Err(e) if is_custom_path => {
-                    eprintln!(
-                        "Warning: Failed to load custom config file at '{}': {}",
-                        path.display(),
-                        e
-                    );
-                }
                 _ => {}
             }
         }
-
-        config.show_scene_numbers &= !cli.hide_scene_numbers;
-        config.show_page_numbers &= !cli.hide_page_numbers;
-        config.hide_markup &= !cli.show_markup;
-        config.autocomplete &= !cli.no_autocomplete;
-        config.auto_contd &= !cli.no_auto_contd;
-        config.auto_paragraph_breaks &= !cli.no_auto_paragraph_breaks;
-        config.break_actions &= !cli.no_break_actions;
-
-        config.auto_title_page |= cli.auto_title_page;
-        config.typewriter_mode |= cli.typewriter_mode;
-        config.typewriter_mode |= cli.typewriter_mode;
-        config.focus_mode |= cli.focus_mode;
-        config.no_color |= cli.no_color;
-        config.no_formatting |= cli.no_formatting;
-        config.force_ascii |= cli.force_ascii;
-        config.force_ansi |= cli.force_ansi;
-        config.goto_end |= cli.goto_end;
-        config.force_scene_numbers |= cli.force_scene_numbers;
-        config.export_bold_scene_headings |= cli.export_bold_scene_headings;
-        config.include_title_page |= cli.include_title_page;
-        config.export_sections |= cli.export_sections;
-        config.export_synopses |= cli.export_synopses;
-        config.use_nerd_fonts &= !cli.no_nerd_fonts;
 
         if config.export_font.is_empty() {
             config.export_font = "courier_prime".to_string();
@@ -703,31 +551,6 @@ impl Config {
 
         if config.export_format.is_empty() {
             config.export_format = "pdf".to_string();
-        }
-
-        if let Some(ref size) = cli.paper_size {
-            config.paper_size = size.clone();
-        }
-
-        if let Some(ref mode) = cli.mirror_scene_numbers {
-            config.mirror_scene_numbers = match mode.as_str() {
-                "export" => MirrorOption::ExportOnly,
-                "off" | "false" => MirrorOption::Off,
-                _ => MirrorOption::Always,
-            };
-        }
-
-        if let Some(ref ext) = cli.contd_extension {
-            config.contd_extension = ext.clone();
-        }
-        if let Some(ref style) = cli.heading_style {
-            config.heading_style = style.clone();
-        }
-        if let Some(spacing) = cli.heading_spacing {
-            config.heading_spacing = spacing;
-        }
-        if let Some(ref style) = cli.shot_style {
-            config.shot_style = style.clone();
         }
 
         let supports_unicode = supports_unicode::on(supports_unicode::Stream::Stdout);
