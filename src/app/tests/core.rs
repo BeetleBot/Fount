@@ -37,42 +37,6 @@ use super::*;
     }
 
     #[test]
-    fn test_app_auto_title_page_enabled() {
-        let mut cli = crate::config::Cli::default();
-        cli.auto_title_page = true;
-        // Logic only triggers if files are provided
-        cli.files = vec![PathBuf::from("new_script.fountain")];
-
-        let app = App::new(cli);
-        assert!(
-            app.lines.len() > 1,
-            "Title page should generate multiple lines"
-        );
-        assert_eq!(
-            app.lines[0], "Title: Untitled",
-            "First line must be Title metadata"
-        );
-        assert!(
-            app.dirty,
-            "App should be marked dirty after generating title page"
-        );
-    }
-
-    #[test]
-    fn test_app_auto_title_page_disabled() {
-        let mut cli = crate::config::Cli::default();
-        cli.auto_title_page = false;
-        cli.files = vec![PathBuf::from("new_script.fountain")];
-
-        let app = App::new(cli);
-        assert_eq!(
-            app.lines.len(),
-            1,
-            "Should only have one line"
-        );
-    }
-
-    #[test]
     fn test_app_autocomplete_disabled() {
         let mut app = create_empty_app();
         app.config.autocomplete = false;

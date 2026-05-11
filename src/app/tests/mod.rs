@@ -8,7 +8,8 @@ use crossterm::event::{KeyCode, KeyModifiers};
     pub(crate) fn create_empty_app() -> App {
         let mut app = App::new(crate::config::Cli::default());
         app.config = crate::config::Config::default();
-        
+        app.config.typewriter_mode = false;
+        app.config.show_line_numbers = false;
         // Tests expect an initial empty buffer in Normal mode
         let buf = BufferState {
             lines: vec![String::new()],

@@ -179,36 +179,13 @@ use super::*;
     }
 
     #[test]
-    fn test_draw_typewriter_mode_normal() {
+    fn test_draw_typewriter_mode() {
         use ratatui::{
             Terminal,
             backend::{Backend, TestBackend},
         };
         let mut app = create_empty_app();
         app.config.typewriter_mode = true;
-        app.config.strict_typewriter_mode = false;
-        app.lines = vec!["Line 1".to_string()];
-        app.types = vec![LineType::Action];
-        app.cursor_y = 0;
-        app.update_layout();
-
-        let backend = TestBackend::new(80, 24);
-        let mut terminal = Terminal::new(backend).unwrap();
-
-        terminal.draw(|f| crate::app::ui::draw(f, &mut app)).unwrap();
-
-        assert_eq!(app.scroll, 0);
-        assert_eq!(terminal.backend_mut().get_cursor_position().unwrap().y, 1);
-    }
-
-    #[test]
-    fn test_draw_typewriter_mode_strict() {
-        use ratatui::{
-            Terminal,
-            backend::{Backend, TestBackend},
-        };
-        let mut app = create_empty_app();
-        app.config.strict_typewriter_mode = true;
         app.lines = vec!["Line 1".to_string()];
         app.types = vec![LineType::Action];
         app.cursor_y = 0;
@@ -227,7 +204,6 @@ use super::*;
         use ratatui::{Terminal, backend::TestBackend};
         let mut app = create_empty_app();
         app.config.no_color = false;
-        app.config.strict_typewriter_mode = false;
         app.lines = vec!["Author: René".to_string()];
         app.types = vec![LineType::MetadataKey];
         app.update_layout();

@@ -1,3 +1,4 @@
+use super::centered_rect;
 use crate::app::App;
 use ratatui::{
     Frame,
@@ -6,7 +7,6 @@ use ratatui::{
     text::{Line, Span},
     widgets::{Block, Borders, Clear, List, ListItem, Paragraph},
 };
-use super::centered_rect;
 
 pub fn draw_settings_modal(f: &mut Frame, app: &mut App, area: Rect) {
     let theme = &app.theme;
@@ -62,14 +62,78 @@ pub fn draw_settings_modal(f: &mut Frame, app: &mut App, area: Rect) {
     };
 
     // List of settings options (sync with execute_command /set)
-    options.push(render_option("Focus Mode", if app.config.focus_mode { "[ON]" } else { "[OFF]" }, app.selected_setting == 0));
-    options.push(render_option("Line Numbers", if app.config.show_line_numbers { "[ON]" } else { "[OFF]" }, app.selected_setting == 1));
-    options.push(render_option("Typewriter Mode", if app.config.typewriter_mode { "[ON]" } else { "[OFF]" }, app.selected_setting == 2));
-    options.push(render_option("Show Markup", if !app.config.hide_markup { "[ON]" } else { "[OFF]" }, app.selected_setting == 3));
-    options.push(render_option("Highlight Block", if app.config.highlight_active_action { "[ON]" } else { "[OFF]" }, app.selected_setting == 4));
-    options.push(render_option("Page Numbers", if app.config.show_page_numbers { "[ON]" } else { "[OFF]" }, app.selected_setting == 5));
-    options.push(render_option("Scene Numbers", if app.config.show_scene_numbers { "[ON]" } else { "[OFF]" }, app.selected_setting == 6));
-    options.push(render_option("Auto (CONT'D)", if app.config.auto_contd { "[ON]" } else { "[OFF]" }, app.selected_setting == 7));
+    options.push(render_option(
+        "Focus Mode",
+        if app.config.focus_mode {
+            "[ON]"
+        } else {
+            "[OFF]"
+        },
+        app.selected_setting == 0,
+    ));
+    options.push(render_option(
+        "Line Numbers",
+        if app.config.show_line_numbers {
+            "[ON]"
+        } else {
+            "[OFF]"
+        },
+        app.selected_setting == 1,
+    ));
+    options.push(render_option(
+        "Typewriter Mode",
+        if app.config.typewriter_mode {
+            "[ON]"
+        } else {
+            "[OFF]"
+        },
+        app.selected_setting == 2,
+    ));
+    options.push(render_option(
+        "Show Markup",
+        if !app.config.hide_markup {
+            "[ON]"
+        } else {
+            "[OFF]"
+        },
+        app.selected_setting == 3,
+    ));
+    options.push(render_option(
+        "Highlight Block",
+        if app.config.highlight_active_action {
+            "[ON]"
+        } else {
+            "[OFF]"
+        },
+        app.selected_setting == 4,
+    ));
+    options.push(render_option(
+        "Page Numbers",
+        if app.config.show_page_numbers {
+            "[ON]"
+        } else {
+            "[OFF]"
+        },
+        app.selected_setting == 5,
+    ));
+    options.push(render_option(
+        "Scene Numbers",
+        if app.config.show_scene_numbers {
+            "[ON]"
+        } else {
+            "[OFF]"
+        },
+        app.selected_setting == 6,
+    ));
+    options.push(render_option(
+        "Auto (CONT'D)",
+        if app.config.auto_contd {
+            "[ON]"
+        } else {
+            "[OFF]"
+        },
+        app.selected_setting == 7,
+    ));
 
     let auto_save_val = if !app.config.auto_save {
         "[OFF]".to_string()
@@ -82,19 +146,48 @@ pub fn draw_settings_modal(f: &mut Frame, app: &mut App, area: Rect) {
             v => format!("[{}s]", v),
         }
     };
-    options.push(render_option("Auto-Save", &auto_save_val, app.selected_setting == 8));
+    options.push(render_option(
+        "Auto-Save",
+        &auto_save_val,
+        app.selected_setting == 8,
+    ));
 
-    options.push(render_option("Autocomplete", if app.config.autocomplete { "[ON]" } else { "[OFF]" }, app.selected_setting == 9));
-    options.push(render_option("Smart Breaks", if app.config.auto_paragraph_breaks { "[ON]" } else { "[OFF]" }, app.selected_setting == 10));
+    options.push(render_option(
+        "Autocomplete",
+        if app.config.autocomplete {
+            "[ON]"
+        } else {
+            "[OFF]"
+        },
+        app.selected_setting == 9,
+    ));
+    options.push(render_option(
+        "Smart Breaks",
+        if app.config.auto_paragraph_breaks {
+            "[ON]"
+        } else {
+            "[OFF]"
+        },
+        app.selected_setting == 10,
+    ));
 
     f.render_widget(List::new(options), layout[0]);
 
     // Footer
     let footer_text = Line::from(vec![
-        Span::styled(" [^/v] ", Style::default().fg(mode_bg).add_modifier(Modifier::BOLD)),
+        Span::styled(
+            " [^/v] ",
+            Style::default().fg(mode_bg).add_modifier(Modifier::BOLD),
+        ),
         Span::styled("Select  ", theme.secondary_style()),
-        Span::styled(" [Enter/Space] ", Style::default().fg(mode_bg).add_modifier(Modifier::BOLD)),
+        Span::styled(
+            " [Enter/Space] ",
+            Style::default().fg(mode_bg).add_modifier(Modifier::BOLD),
+        ),
         Span::styled("Toggle Option", theme.secondary_style()),
     ]);
-    f.render_widget(Paragraph::new(footer_text).alignment(ratatui::layout::Alignment::Center), layout[1]);
+    f.render_widget(
+        Paragraph::new(footer_text).alignment(ratatui::layout::Alignment::Center),
+        layout[1],
+    );
 }

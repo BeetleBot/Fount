@@ -96,7 +96,7 @@ And Beat itself, of course: https://www.beat-app.fi/
 
 > FADE OUT"#;
 
-        let mut app = App::new(crate::config::Cli::default());
+        let mut app = create_empty_app();
         app.config.mirror_scene_numbers = crate::config::MirrorOption::Off;
         app.config.export_sections = false;
         app.config.export_synopses = false;
