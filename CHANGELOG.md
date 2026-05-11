@@ -7,8 +7,13 @@
 - **Intelligent Auto-Save Cycler**: The Auto-Save setting now cycles through precise intervals (`[1 min]`, `[3 min]`, `[5 min]`, `[10 min]`, `[OFF]`) directly from the Settings Modal.
 - **Section Creation Shortcut**: Added `Shift+N` to instantly create a new Section in the Index Cards view.
 - **Status Bar Guidance**: The Index Cards mode now displays clear, contextual shortcut guidance in the status bar.
+- **Line Number Enhancements**: Added `/set line` (and `/set linenums`) to toggle line numbers via command. Line numbers now automatically hide themselves when Focus Mode is engaged.
+- **Theme Picker**: Implemented a streamlined theme selection workflow for instantly previewing and applying curated color palettes.
+- **Modal Editing Integration**: Successfully merged basic modal editing logic, allowing opt-in Vim-like interactions without disrupting the default Fount experience.
 
 ### Changed
+- **Modernized Scene Navigator**: Transformed the navigator into a clean, tree-structured outliner. Removed heavy horizontal rules in favor of minimalist tree-line spacing, eliminated "no synopsis" placeholder clutter, and implemented intelligent word-wrapping for long scene headings to prevent truncation.
+- **Index Cards Overhaul**: Upgraded the basic grid to a premium card-like interface with visual depth effects, while drastically improving real-time character typing responsiveness.
 - **Settings Modal Consolidation**: Migrated the Settings interface from a static side-pane to a sleek, centered, floating modal window that mirrors the Export and Snapshot screens.
 - **Arrow-Key Driven UI**: Completely removed all legacy `HJKL` (Vim-style) navigation logic. The application is now fully standardized on intuitive Arrow-key navigation, with `Enter` for selection and `Esc` for dismissal.
 - **Dynamic Shortcuts Registry**: The Cheat Sheet (`F1`) has been transformed into a source-driven, tabbed UI component. All shortcuts are now compiled directly into the binary, removing the need for external asset files.
@@ -17,7 +22,9 @@
 - **Show Markup Polish**: The "Show Markup" setting (`/set markup`) now guarantees a 100% accurate representation of your document by exposing *every* Fountain structural marker (e.g. `#`, `=`, `.`, `!`, `!!`, `@`, `^`, `~`, `===`) when enabled.
 
 ### Fixed
+- **Robust Error Handling**: Audited layout and parsing routines to safely propagate errors, ensuring a crash-free experience during complex document edits.
 - **Index Cards Stability**: Rewrote the grid rendering and navigation math to prevent underflow crashes during high-speed, multi-card scrolling in large scripts.
+- **Rendering Performance**: Optimized `build_layout` and `parse_document` routines for a faster, distraction-free rendering loop during rapid typing.
 
 ## [0.9.4] - 2026-05-10
 
