@@ -329,13 +329,31 @@ pub fn draw_file_picker(f: &mut Frame, app: &mut App, area: Rect) {
             Line::from(""),
             Line::from(vec![
                 if state.overwrite_confirmed {
-                    Span::styled("  > YES  ", Style::default().bg(Color::from(app.theme.ui.success.clone())).fg(Color::from(app.theme.ui.selection_fg.clone())).add_modifier(Modifier::BOLD))
+                    Span::styled(
+                        format!(
+                            "  {} YES  ",
+                            if app.config.use_nerd_fonts { "󰁔" } else { ">" }
+                        ),
+                        Style::default()
+                            .bg(Color::from(app.theme.ui.success.clone()))
+                            .fg(Color::from(app.theme.ui.selection_fg.clone()))
+                            .add_modifier(Modifier::BOLD),
+                    )
                 } else {
                     Span::styled("    Yes  ", app.theme.success_style())
                 },
                 Span::raw("      "),
                 if !state.overwrite_confirmed {
-                    Span::styled("  > NO   ", Style::default().bg(Color::from(app.theme.ui.error.clone())).fg(Color::from(app.theme.ui.selection_fg.clone())).add_modifier(Modifier::BOLD))
+                    Span::styled(
+                        format!(
+                            "  {} NO   ",
+                            if app.config.use_nerd_fonts { "󰁔" } else { ">" }
+                        ),
+                        Style::default()
+                            .bg(Color::from(app.theme.ui.error.clone()))
+                            .fg(Color::from(app.theme.ui.selection_fg.clone()))
+                            .add_modifier(Modifier::BOLD),
+                    )
                 } else {
                     Span::styled("    No   ", app.theme.error_style())
                 },
@@ -525,11 +543,11 @@ pub fn draw_export_modal(f: &mut Frame, app: &App) {
         options.push(render_option(0, "Format", format_label, app.selected_export_option == 0));
         options.push(render_option(1, "Paper Size", &app.config.paper_size.to_uppercase(), app.selected_export_option == 1));
         options.push(render_option(2, "Font", font_label, app.selected_export_option == 2));
-        options.push(render_option(3, "Bold Headings", if app.config.export_bold_scene_headings { "[X]" } else { "[ ]" }, app.selected_export_option == 3));
-        options.push(render_option(4, "Scene Numbers", if app.config.mirror_scene_numbers != crate::config::MirrorOption::Off { "[X]" } else { "[ ]" }, app.selected_export_option == 4));
-        options.push(render_option(5, "Include Sections", if app.config.export_sections { "[X]" } else { "[ ]" }, app.selected_export_option == 5));
-        options.push(render_option(6, "Include Synopses", if app.config.export_synopses { "[X]" } else { "[ ]" }, app.selected_export_option == 6));
-        options.push(render_option(7, "Title Page", if app.config.include_title_page { "[X]" } else { "[ ]" }, app.selected_export_option == 7));
+        options.push(render_option(3, "Bold Headings", if app.config.export_bold_scene_headings { if app.config.use_nerd_fonts { "󰄲 " } else { "[X]" } } else { if app.config.use_nerd_fonts { "󰄱 " } else { "[ ]" } }, app.selected_export_option == 3));
+        options.push(render_option(4, "Scene Numbers", if app.config.mirror_scene_numbers != crate::config::MirrorOption::Off { if app.config.use_nerd_fonts { "󰄲 " } else { "[X]" } } else { if app.config.use_nerd_fonts { "󰄱 " } else { "[ ]" } }, app.selected_export_option == 4));
+        options.push(render_option(5, "Include Sections", if app.config.export_sections { if app.config.use_nerd_fonts { "󰄲 " } else { "[X]" } } else { if app.config.use_nerd_fonts { "󰄱 " } else { "[ ]" } }, app.selected_export_option == 5));
+        options.push(render_option(6, "Include Synopses", if app.config.export_synopses { if app.config.use_nerd_fonts { "󰄲 " } else { "[X]" } } else { if app.config.use_nerd_fonts { "󰄱 " } else { "[ ]" } }, app.selected_export_option == 6));
+        options.push(render_option(7, "Title Page", if app.config.include_title_page { if app.config.use_nerd_fonts { "󰄲 " } else { "[X]" } } else { if app.config.use_nerd_fonts { "󰄱 " } else { "[ ]" } }, app.selected_export_option == 7));
         
         options.push(ListItem::new(Line::raw("")));
         let export_style = if app.selected_export_option == 8 {
@@ -538,7 +556,18 @@ pub fn draw_export_modal(f: &mut Frame, app: &App) {
             theme.success_style()
         };
         options.push(ListItem::new(Line::from(vec![
-            Span::styled(if app.selected_export_option == 8 { " > " } else { "   " }, export_style),
+            Span::styled(
+                if app.selected_export_option == 8 {
+                    if app.config.use_nerd_fonts {
+                        " 󰁔 "
+                    } else {
+                        " > "
+                    }
+                } else {
+                    "   "
+                },
+                export_style,
+            ),
             Span::styled(" [ EXPORT SCREENPLAY ] ", export_style),
         ])));
     } else {
@@ -562,7 +591,18 @@ pub fn draw_export_modal(f: &mut Frame, app: &App) {
             theme.success_style()
         };
         options.push(ListItem::new(Line::from(vec![
-            Span::styled(if app.selected_export_option == 1 { " > " } else { "   " }, export_style),
+            Span::styled(
+                if app.selected_export_option == 1 {
+                    if app.config.use_nerd_fonts {
+                        " 󰁔 "
+                    } else {
+                        " > "
+                    }
+                } else {
+                    "   "
+                },
+                export_style,
+            ),
             Span::styled(" [ EXPORT REPORT ] ", export_style),
         ])));
     }

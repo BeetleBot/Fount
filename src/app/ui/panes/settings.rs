@@ -103,45 +103,45 @@ pub fn draw_settings_modal(f: &mut Frame, app: &mut App, area: Rect) {
     options.push(render_option(
         "Show Markup",
         if !app.config.hide_markup {
-            "[ON]"
+            if app.config.use_nerd_fonts { "󰄲 " } else { "[ON]" }
         } else {
-            "[OFF]"
+            if app.config.use_nerd_fonts { "󰄱 " } else { "[OFF]" }
         },
         app.selected_setting == 3,
     ));
     options.push(render_option(
         "Highlight Block",
         if app.config.highlight_active_action {
-            "[ON]"
+            if app.config.use_nerd_fonts { "󰄲 " } else { "[ON]" }
         } else {
-            "[OFF]"
+            if app.config.use_nerd_fonts { "󰄱 " } else { "[OFF]" }
         },
         app.selected_setting == 4,
     ));
     options.push(render_option(
         "Page Numbers",
         if app.config.show_page_numbers {
-            "[ON]"
+            if app.config.use_nerd_fonts { "󰄲 " } else { "[ON]" }
         } else {
-            "[OFF]"
+            if app.config.use_nerd_fonts { "󰄱 " } else { "[OFF]" }
         },
         app.selected_setting == 5,
     ));
     options.push(render_option(
         "Scene Numbers",
         if app.config.show_scene_numbers {
-            "[ON]"
+            if app.config.use_nerd_fonts { "󰄲 " } else { "[ON]" }
         } else {
-            "[OFF]"
+            if app.config.use_nerd_fonts { "󰄱 " } else { "[OFF]" }
         },
         app.selected_setting == 6,
     ));
     options.push(render_option(
         "Auto (CONT'D)",
         if app.config.auto_contd {
-            "[ON]"
+            if app.config.use_nerd_fonts { "󰄲 " } else { "[ON]" }
         } else {
-            "[OFF]"
+            if app.config.use_nerd_fonts { "󰄱 " } else { "[OFF]" }
         },
         app.selected_setting == 7,
     ));
@@ -166,27 +166,27 @@ pub fn draw_settings_modal(f: &mut Frame, app: &mut App, area: Rect) {
     options.push(render_option(
         "Autocomplete",
         if app.config.autocomplete {
-            "[ON]"
+            if app.config.use_nerd_fonts { "󰄲 " } else { "[ON]" }
         } else {
-            "[OFF]"
+            if app.config.use_nerd_fonts { "󰄱 " } else { "[OFF]" }
         },
         app.selected_setting == 9,
     ));
     options.push(render_option(
         "Smart Breaks",
         if app.config.auto_paragraph_breaks {
-            "[ON]"
+            if app.config.use_nerd_fonts { "󰄲 " } else { "[ON]" }
         } else {
-            "[OFF]"
+            if app.config.use_nerd_fonts { "󰄱 " } else { "[OFF]" }
         },
         app.selected_setting == 10,
     ));
     options.push(render_option(
         "Nerd Icons",
         if app.config.use_nerd_fonts {
-            "[ON]"
+            if app.config.use_nerd_fonts { "󰄲 " } else { "[ON]" }
         } else {
-            "[OFF]"
+            if app.config.use_nerd_fonts { "󰄱 " } else { "[OFF]" }
         },
         app.selected_setting == 11,
     ));

@@ -36,32 +36,126 @@ pub fn draw(f: &mut Frame, app: &mut App) {
     f.render_widget(Block::default().style(base_ui_style), area);
 
     let (mode_str, mode_bg) = match app.mode {
-        AppMode::Normal => (" Normal ", Color::from(theme.ui.normal_mode_bg.clone())),
-        AppMode::Command => (" Command ", Color::from(theme.ui.command_mode_bg.clone())),
+        AppMode::Normal => (
+            if app.config.use_nerd_fonts {
+                " 󰄲 Normal "
+            } else {
+                " Normal "
+            },
+            Color::from(theme.ui.normal_mode_bg.clone()),
+        ),
+        AppMode::Command => (
+            if app.config.use_nerd_fonts {
+                " 󰘳 Command "
+            } else {
+                " Command "
+            },
+            Color::from(theme.ui.command_mode_bg.clone()),
+        ),
         AppMode::SceneNavigator => (
-            " Navigator ",
+            if app.config.use_nerd_fonts {
+                " 󰉋 Navigator "
+            } else {
+                " Navigator "
+            },
             Color::from(theme.ui.navigator_mode_bg.clone()),
         ),
-        AppMode::SettingsPane => (" Settings ", Color::from(theme.ui.settings_mode_bg.clone())),
-        AppMode::ExportPane => (" Export ", Color::from(theme.ui.normal_mode_bg.clone())),
-        AppMode::Shortcuts => (" Legend ", Color::from(theme.ui.normal_mode_bg.clone())),
-        AppMode::Search => (" Search ", Color::from(theme.ui.search_mode_bg.clone())),
-        AppMode::Home => (" Home ", Color::from(theme.ui.normal_mode_bg.clone())),
-        AppMode::FilePicker => (" File ", Color::from(theme.ui.normal_mode_bg.clone())),
+        AppMode::SettingsPane => (
+            if app.config.use_nerd_fonts {
+                " 󰒓 Settings "
+            } else {
+                " Settings "
+            },
+            Color::from(theme.ui.settings_mode_bg.clone()),
+        ),
+        AppMode::ExportPane => (
+            if app.config.use_nerd_fonts {
+                " 󰮔 Export "
+            } else {
+                " Export "
+            },
+            Color::from(theme.ui.normal_mode_bg.clone()),
+        ),
+        AppMode::Shortcuts => (
+            if app.config.use_nerd_fonts {
+                " 󰘳 Legend "
+            } else {
+                " Legend "
+            },
+            Color::from(theme.ui.normal_mode_bg.clone()),
+        ),
+        AppMode::Search => (
+            if app.config.use_nerd_fonts {
+                " 󰍉 Search "
+            } else {
+                " Search "
+            },
+            Color::from(theme.ui.search_mode_bg.clone()),
+        ),
+        AppMode::Home => (
+            if app.config.use_nerd_fonts {
+                " 󰋜 Home "
+            } else {
+                " Home "
+            },
+            Color::from(theme.ui.normal_mode_bg.clone()),
+        ),
+        AppMode::FilePicker => (
+            if app.config.use_nerd_fonts {
+                " 󰈙 File "
+            } else {
+                " File "
+            },
+            Color::from(theme.ui.normal_mode_bg.clone()),
+        ),
         AppMode::Snapshots => (
-            " Snapshots ",
+            if app.config.use_nerd_fonts {
+                " 󰄄 Snapshots "
+            } else {
+                " Snapshots "
+            },
             Color::from(theme.ui.navigator_mode_bg.clone()),
         ),
-        AppMode::SprintStat => (" Sprints ", Color::from(theme.ui.normal_mode_bg.clone())),
-        AppMode::XRay => (" X-Ray ", Color::from(theme.ui.navigator_mode_bg.clone())),
+        AppMode::SprintStat => (
+            if app.config.use_nerd_fonts {
+                " 󱐋 Sprints "
+            } else {
+                " Sprints "
+            },
+            Color::from(theme.ui.normal_mode_bg.clone()),
+        ),
+        AppMode::XRay => (
+            if app.config.use_nerd_fonts {
+                " 󰝟 X-Ray "
+            } else {
+                " X-Ray "
+            },
+            Color::from(theme.ui.navigator_mode_bg.clone()),
+        ),
         AppMode::IndexCards => (
-            " Index Cards ",
+            if app.config.use_nerd_fonts {
+                " 󰄬 Index Cards "
+            } else {
+                " Index Cards "
+            },
             Color::from(theme.ui.navigator_mode_bg.clone()),
         ),
-        AppMode::ReplaceOne | AppMode::ReplaceAll => {
-            (" Replace ", Color::from(theme.ui.command_mode_bg.clone()))
-        }
-        AppMode::StructurePicker => (" Structure ", Color::from(theme.ui.normal_mode_bg.clone())),
+        AppMode::ReplaceOne | AppMode::ReplaceAll => (
+            if app.config.use_nerd_fonts {
+                " 󰑐 Replace "
+            } else {
+                " Replace "
+            },
+            Color::from(theme.ui.command_mode_bg.clone()),
+        ),
+        AppMode::StructurePicker => (
+            if app.config.use_nerd_fonts {
+                " 󰉏 Structure "
+            } else {
+                " Structure "
+            },
+            Color::from(theme.ui.normal_mode_bg.clone()),
+        ),
         _ => (" Prompt ", Color::from(theme.ui.command_mode_bg.clone())),
     };
 
@@ -1209,7 +1303,7 @@ pub fn draw(f: &mut Frame, app: &mut App) {
             .unwrap_or_else(|| "New Script".to_string());
         let dirty_str = if app.dirty { "*" } else { "" };
         let lock_str = if app.config.production_lock {
-            " [L]"
+            if app.config.use_nerd_fonts { " " } else { " [L]" }
         } else {
             ""
         };
@@ -1223,7 +1317,7 @@ pub fn draw(f: &mut Frame, app: &mut App) {
             let elapsed = time.elapsed().as_secs_f32();
             if elapsed < 2.0 {
                 spans.push(Span::styled(
-                    "  [X] Saved",
+                    if app.config.use_nerd_fonts { "   Saved" } else { "  [X] Saved" },
                     theme.success_style().add_modifier(Modifier::BOLD),
                 ));
             }
@@ -1326,7 +1420,6 @@ pub fn draw(f: &mut Frame, app: &mut App) {
                 scene_name,
                 Style::default().fg(mode_bg).add_modifier(Modifier::BOLD),
             ));
-            spans.push(Span::styled("F1 Reference", theme.secondary_style()));
         }
 
         // Sprint progress (if active)
@@ -1398,6 +1491,16 @@ pub fn draw(f: &mut Frame, app: &mut App) {
         }
         // Closing bracket
         right_spans.push(Span::styled(" ]", sep_style));
+
+        // Cheat Sheet hint on the far right
+        right_spans.push(Span::styled("  ", Style::default())); 
+        right_spans.push(Span::styled(
+            format!(
+                "{} F1 Cheat Sheet ",
+                if app.config.use_nerd_fonts { "󰘳" } else { "" }
+            ),
+            theme.secondary_style(),
+        ));
 
         let left_width: usize = spans
             .iter()
