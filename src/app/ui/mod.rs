@@ -512,6 +512,50 @@ pub fn draw(f: &mut Frame, app: &mut App) {
                         Span::styled(item.label.to_uppercase(), style),
                     ]));
 
+                    // Render synopses for sections
+                    let syn_line_char = "│  ";
+                    let dim_style = if is_selected {
+                        style
+                    } else {
+                        theme.secondary_style()
+                    };
+
+                    if !item.synopses.is_empty() {
+                        for syn in &item.synopses {
+                            let mut current_line = String::new();
+                            let max_syn_w = 34;
+
+                            for word in syn.split_whitespace() {
+                                if current_line.len() + word.len() + 1 > max_syn_w {
+                                    lines.push(Line::from(vec![
+                                        Span::styled("   ", Style::default()),
+                                        Span::styled(syn_line_char, line_style),
+                                        Span::styled(
+                                            current_line.clone(),
+                                            dim_style.add_modifier(Modifier::ITALIC),
+                                        ),
+                                    ]));
+                                    current_line = word.to_string();
+                                } else {
+                                    if !current_line.is_empty() {
+                                        current_line.push(' ');
+                                    }
+                                    current_line.push_str(word);
+                                }
+                            }
+                            if !current_line.is_empty() {
+                                lines.push(Line::from(vec![
+                                    Span::styled("   ", Style::default()),
+                                    Span::styled(syn_line_char, line_style),
+                                    Span::styled(
+                                        current_line,
+                                        dim_style.add_modifier(Modifier::ITALIC),
+                                    ),
+                                ]));
+                            }
+                        }
+                    }
+
                     // Add a connecting line start below the section if the next item is a scene
                     if i + 1 < app.scenes.len() && !app.scenes[i + 1].is_section {
                         lines.push(Line::from(vec![

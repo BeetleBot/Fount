@@ -480,8 +480,11 @@ impl App {
                             match self.home_selected {
                                 0 => {
                                     // New File
+                                    let lines = vec![String::new()];
+                                    let revised_lines = vec![false; lines.len()];
                                     let new_buf = crate::app::BufferState {
-                                        lines: vec![String::new()],
+                                        lines,
+                                        revised_lines,
                                         ..Default::default()
                                     };
                                     self.buffers.push(new_buf);
@@ -501,10 +504,12 @@ impl App {
                                     // Tutorial
                                     let tutorial_text = include_str!("../../../assets/tutorial.fountain");
                                     let lines: Vec<String> = tutorial_text.lines().map(|s: &str| s.to_string()).collect();
+                                    let revised_lines = vec![false; lines.len()];
                                     let new_buf = crate::app::BufferState {
                                         lines,
                                         file: None,
                                         is_tutorial: true,
+                                        revised_lines,
                                         ..Default::default()
                                     };
                                     self.buffers.push(new_buf);
@@ -533,9 +538,12 @@ impl App {
                                                 .lines()
                                                 .map(|s| s.to_string())
                                                 .collect();
+                                            let lines = if lines.is_empty() { vec![String::new()] } else { lines };
+                                            let revised_lines = vec![false; lines.len()];
                                             let new_buf = crate::app::BufferState {
-                                                lines: if lines.is_empty() { vec![String::new()] } else { lines },
+                                                lines,
                                                 file: Some(path.clone()),
+                                                revised_lines,
                                                 ..Default::default()
                                             };
                                             self.buffers.push(new_buf);

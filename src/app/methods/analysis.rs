@@ -75,10 +75,13 @@ impl App {
                 let label = strip_sigils(&row.raw_text, row.line_type)
                     .trim()
                     .to_string();
-                self.scenes.push(NavigatorItem {
+                let color = row.override_color.or(last_color);
+                current_scene = Some(NavigatorItem {
                     line_idx: row.line_idx,
                     label,
                     is_section: true,
+                    synopses: Vec::new(),
+                    color,
                     ..Default::default()
                 });
                 last_color = None;

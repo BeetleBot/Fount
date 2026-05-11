@@ -420,6 +420,7 @@ impl App {
                     "".to_string(),
                     "".to_string(),
                 ];
+                buf.revised_lines = vec![false; buf.lines.len()];
                 buf.cursor_y = buf.lines.len() - 1;
                 buf.dirty = true;
             } else if config.goto_end {
@@ -1246,13 +1247,16 @@ impl App {
                                 .lines()
                                 .map(str::to_string)
                                 .collect();
+                            let lines = if lines.is_empty() {
+                                vec![String::new()]
+                            } else {
+                                lines
+                            };
+                            let revised_lines = vec![false; lines.len()];
                             let new_buf = crate::app::BufferState {
-                                lines: if lines.is_empty() {
-                                    vec![String::new()]
-                                } else {
-                                    lines
-                                },
+                                lines,
                                 file: Some(path.clone()),
+                                revised_lines,
                                 ..Default::default()
                             };
                             self.buffers.push(new_buf);
@@ -1294,8 +1298,11 @@ impl App {
                 *cursor_moved = true;
             }
             "newfile" | "new" => {
+                let lines = vec![String::new()];
+                let revised_lines = vec![false; lines.len()];
                 let new_buf = BufferState {
-                    lines: vec![String::new()],
+                    lines,
+                    revised_lines,
                     ..Default::default()
                 };
                 self.buffers.push(new_buf);

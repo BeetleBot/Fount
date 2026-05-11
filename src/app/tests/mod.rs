@@ -12,6 +12,7 @@ use crossterm::event::{KeyCode, KeyModifiers};
         // Tests expect an initial empty buffer in Normal mode
         let buf = BufferState {
             lines: vec![String::new()],
+            revised_lines: vec![false],
             ..Default::default()
         };
         app.buffers.push(buf);

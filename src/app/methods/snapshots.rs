@@ -50,9 +50,11 @@ impl App {
         };
 
         if in_new_buffer {
+            let revised_lines = vec![false; lines.len()];
             let new_buf = crate::app::BufferState {
                 lines,
                 dirty: true,
+                revised_lines,
                 ..Default::default()
             };
             self.buffers.push(new_buf);
@@ -65,6 +67,7 @@ impl App {
             ));
         } else {
             self.save_state(true); // Save current for undo
+            self.revised_lines = vec![false; lines.len()];
             self.lines = lines;
             self.cursor_y = 0;
             self.cursor_x = 0;

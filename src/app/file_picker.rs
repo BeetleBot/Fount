@@ -184,10 +184,13 @@ impl App {
             FilePickerAction::Open => {
                 match std::fs::read_to_string(&path) {
                     Ok(content) => {
-                        let lines: Vec<String> = content.replace('\t', "    ").lines().map(str::to_string).collect();
+                        let lines: Vec<String> = content.lines().map(|s| s.to_string()).collect();
+                        let lines = if lines.is_empty() { vec![String::new()] } else { lines };
+                        let revised_lines = vec![false; lines.len()];
                         let new_buf = crate::app::BufferState {
-                            lines: if lines.is_empty() { vec![String::new()] } else { lines },
+                            lines,
                             file: Some(path.clone()),
+                            revised_lines,
                             ..Default::default()
                         };
                         self.buffers.push(new_buf);

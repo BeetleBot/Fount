@@ -95,8 +95,11 @@ impl App {
                             );
                         }
                         KeyCode::Char('n') if ctrl => {
+                            let lines = vec![String::new()];
+                            let revised_lines = vec![false; lines.len()];
                             let new_buf = crate::app::BufferState {
-                                lines: vec![String::new()],
+                                lines,
+                                revised_lines,
                                 ..Default::default()
                             };
                             self.buffers.push(new_buf);

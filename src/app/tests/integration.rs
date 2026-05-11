@@ -98,6 +98,8 @@ And Beat itself, of course: https://www.beat-app.fi/
 
         let mut app = App::new(crate::config::Cli::default());
         app.config.mirror_scene_numbers = crate::config::MirrorOption::Off;
+        app.config.export_sections = false;
+        app.config.export_synopses = false;
         app.lines = tutorial_text.lines().map(|s| s.to_string()).collect();
         app.cursor_y = 0;
         app.cursor_x = 0;
