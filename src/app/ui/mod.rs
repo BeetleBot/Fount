@@ -474,8 +474,6 @@ pub fn draw(f: &mut Frame, app: &mut App) {
     if app.mode == AppMode::SceneNavigator {
         let selected_bg = Color::from(theme.ui.selection_bg.clone());
         let selected_fg = Color::from(theme.ui.selection_fg.clone());
-        let dim_color = Color::from(theme.ui.dim.clone());
-        let _border_color = dim_color;
         let header_color = theme
             .sidebar
             .section_header
@@ -494,7 +492,6 @@ pub fn draw(f: &mut Frame, app: &mut App) {
                 let line_style = theme.secondary_style();
 
                 if item.is_section {
-                    // Section Header (ACT I, etc.)
                     let style = if is_selected {
                         Style::default()
                             .fg(selected_fg)
@@ -506,34 +503,68 @@ pub fn draw(f: &mut Frame, app: &mut App) {
                             .add_modifier(Modifier::BOLD)
                     };
 
-                    let prefix = if is_selected { " > " } else { "   " };
-                    lines.push(Line::from(vec![
-                        Span::styled(prefix, style),
-                        Span::styled(item.label.to_uppercase(), style),
-                    ]));
+                    let prefix = if is_selected { " ▸ " } else { "   " };
+                    let max_section_w = 32;
+                    let mut current_line = String::new();
+                    let mut first_line = true;
 
-                    // Render synopses for sections
-                    let syn_line_char = "│  ";
-                    let dim_style = if is_selected {
-                        style
-                    } else {
-                        theme.secondary_style()
-                    };
+                    for word in item.label.to_uppercase().split_whitespace() {
+                        if current_line.len() + word.len() + 1 > max_section_w {
+                            if first_line {
+                                lines.push(Line::from(vec![
+                                    Span::styled(prefix, style),
+                                    Span::styled("◆ ", style),
+                                    Span::styled(current_line.clone(), style),
+                                ]));
+                                first_line = false;
+                            } else {
+                                lines.push(Line::from(vec![
+                                    Span::styled("   ", Style::default()),
+                                    Span::styled("│  ", line_style),
+                                    Span::styled(current_line.clone(), style),
+                                ]));
+                            }
+                            current_line = word.to_string();
+                        } else {
+                            if !current_line.is_empty() {
+                                current_line.push(' ');
+                            }
+                            current_line.push_str(word);
+                        }
+                    }
+                    if !current_line.is_empty() {
+                        if first_line {
+                            lines.push(Line::from(vec![
+                                Span::styled(prefix, style),
+                                Span::styled("◆ ", style),
+                                Span::styled(current_line, style),
+                            ]));
+                        } else {
+                            lines.push(Line::from(vec![
+                                Span::styled("   ", Style::default()),
+                                Span::styled("│  ", line_style),
+                                Span::styled(current_line, style),
+                            ]));
+                        }
+                    }
 
                     if !item.synopses.is_empty() {
+                        let dim_style = if is_selected {
+                            style
+                        } else {
+                            theme.secondary_style().add_modifier(Modifier::ITALIC)
+                        };
+
                         for syn in &item.synopses {
                             let mut current_line = String::new();
-                            let max_syn_w = 34;
+                            let max_syn_w = 32;
 
                             for word in syn.split_whitespace() {
                                 if current_line.len() + word.len() + 1 > max_syn_w {
                                     lines.push(Line::from(vec![
                                         Span::styled("   ", Style::default()),
-                                        Span::styled(syn_line_char, line_style),
-                                        Span::styled(
-                                            current_line.clone(),
-                                            dim_style.add_modifier(Modifier::ITALIC),
-                                        ),
+                                        Span::styled("│  ", line_style),
+                                        Span::styled(current_line.clone(), dim_style),
                                     ]));
                                     current_line = word.to_string();
                                 } else {
@@ -546,17 +577,13 @@ pub fn draw(f: &mut Frame, app: &mut App) {
                             if !current_line.is_empty() {
                                 lines.push(Line::from(vec![
                                     Span::styled("   ", Style::default()),
-                                    Span::styled(syn_line_char, line_style),
-                                    Span::styled(
-                                        current_line,
-                                        dim_style.add_modifier(Modifier::ITALIC),
-                                    ),
+                                    Span::styled("│  ", line_style),
+                                    Span::styled(current_line, dim_style),
                                 ]));
                             }
                         }
                     }
 
-                    // Add a connecting line start below the section if the next item is a scene
                     if i + 1 < app.scenes.len() && !app.scenes[i + 1].is_section {
                         lines.push(Line::from(vec![
                             Span::styled("   ", Style::default()),
@@ -566,7 +593,6 @@ pub fn draw(f: &mut Frame, app: &mut App) {
                         lines.push(Line::from(""));
                     }
                 } else {
-                    // Scene Item
                     let mut base_style = if is_selected {
                         Style::default()
                             .bg(selected_bg)
@@ -583,18 +609,16 @@ pub fn draw(f: &mut Frame, app: &mut App) {
                         base_style = base_style.fg(Color::from(c.clone()));
                     }
 
-                    let dim_style = if is_selected {
-                        base_style
-                    } else {
-                        theme.secondary_style()
-                    };
+                    let prefix = if is_selected { " ▸ " } else { "   " };
 
-                    let prefix = if is_selected { " > " } else { "   " };
-
-                    // Determine if this is the last scene in the section
                     let is_last_in_section =
                         i + 1 == app.scenes.len() || app.scenes[i + 1].is_section;
-                    let connector = if is_last_in_section {
+
+                    let has_parent_section = app.scenes[..i].iter().rev().any(|s| s.is_section);
+
+                    let connector = if !has_parent_section {
+                        "   "
+                    } else if is_last_in_section {
                         "└─ "
                     } else {
                         "├─ "
@@ -606,16 +630,15 @@ pub fn draw(f: &mut Frame, app: &mut App) {
                         String::new()
                     };
 
-                    // Line 1: Scene Heading
-                    let max_heading_w = 45; // Match calculate_scene_height
-                    let heading_indent = 5; // prefix(3) + connector(2)
+                    let max_heading_w = 33;
+                    let heading_indent = 5;
                     let mut current_heading_len = 0;
-                    
+
                     let mut current_spans = vec![
                         Span::styled(prefix, base_style),
                         Span::styled(connector, line_style),
                     ];
-                    
+
                     if !s_tag.is_empty() {
                         current_spans.push(Span::styled(s_tag.clone(), base_style));
                         current_heading_len += s_tag.len();
@@ -624,42 +647,51 @@ pub fn draw(f: &mut Frame, app: &mut App) {
                     for word in item.label.split_whitespace() {
                         if current_heading_len + word.len() + heading_indent + 1 > max_heading_w {
                             lines.push(Line::from(current_spans));
-                            let syn_line_char = if is_last_in_section { "   " } else { "│  " };
+                            let cont_char = if !has_parent_section || is_last_in_section {
+                                "   "
+                            } else {
+                                "│  "
+                            };
                             current_spans = vec![
                                 Span::styled("   ", Style::default()),
-                                Span::styled(syn_line_char, line_style),
+                                Span::styled(cont_char, line_style),
                             ];
                             current_heading_len = 0;
                         }
-                        
+
                         if current_heading_len > 0 {
                             current_spans.push(Span::styled(" ", base_style));
                             current_heading_len += 1;
                         }
-                        
+
                         current_spans.push(Span::styled(word.to_string(), base_style));
                         current_heading_len += word.len();
                     }
-                    
+
                     lines.push(Line::from(current_spans));
 
-                    // Line 2+: Wrapped Synopses or placeholder
-                    let syn_line_char = if is_last_in_section { "   " } else { "│  " };
                     if !item.synopses.is_empty() {
-                        // Wrapping logic for each synopsis
+                        let cont_char = if !has_parent_section || is_last_in_section {
+                            "   "
+                        } else {
+                            "│  "
+                        };
+                        let dim_style = if is_selected {
+                            base_style
+                        } else {
+                            theme.secondary_style().add_modifier(Modifier::ITALIC)
+                        };
+
                         for syn in &item.synopses {
                             let mut current_line = String::new();
-                            let max_syn_w = 34; // Fits within the new 42-char wide navigator width
+                            let max_syn_w = 32;
 
                             for word in syn.split_whitespace() {
                                 if current_line.len() + word.len() + 1 > max_syn_w {
                                     lines.push(Line::from(vec![
                                         Span::styled("   ", Style::default()),
-                                        Span::styled(syn_line_char, line_style),
-                                        Span::styled(
-                                            current_line.clone(),
-                                            dim_style.add_modifier(Modifier::ITALIC),
-                                        ),
+                                        Span::styled(cont_char, line_style),
+                                        Span::styled(current_line.clone(), dim_style),
                                     ]));
                                     current_line = word.to_string();
                                 } else {
@@ -672,21 +704,17 @@ pub fn draw(f: &mut Frame, app: &mut App) {
                             if !current_line.is_empty() {
                                 lines.push(Line::from(vec![
                                     Span::styled("   ", Style::default()),
-                                    Span::styled(syn_line_char, line_style),
-                                    Span::styled(
-                                        current_line,
-                                        dim_style.add_modifier(Modifier::ITALIC),
-                                    ),
+                                    Span::styled(cont_char, line_style),
+                                    Span::styled(current_line, dim_style),
                                 ]));
                             }
                         }
                     }
 
-                    // Spacer/Separator
-                    if !is_last_in_section {
+                    if !is_last_in_section && has_parent_section {
                         lines.push(Line::from(vec![
                             Span::styled("   ", Style::default()),
-                            Span::styled(syn_line_char, line_style),
+                            Span::styled("│", line_style),
                         ]));
                     } else {
                         lines.push(Line::from(""));
