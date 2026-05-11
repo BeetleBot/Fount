@@ -50,6 +50,44 @@ impl App {
         self.mode = AppMode::Normal;
         self.set_status(&format!("New file created with {} structure", struct_data.name));
     }
+
+    pub fn import_selected_structure(&mut self) {
+        if self.structure_selected >= self.structures.len() {
+            return;
+        }
+        
+        self.save_state(true);
+        let struct_data = self.structures[self.structure_selected].clone();
+        
+        let mut insert_idx = self.cursor_y;
+        
+        // If current line isn't empty, insert after it
+        if insert_idx < self.lines.len() && !self.lines[insert_idx].trim().is_empty() {
+            insert_idx += 1;
+        }
+
+        for beat in &struct_data.beats {
+            self.lines.insert(insert_idx, format!("# {}", beat.label));
+            self.revised_lines.insert(insert_idx, self.revision_mode);
+            insert_idx += 1;
+            
+            self.lines.insert(insert_idx, format!("= {}", beat.description));
+            self.revised_lines.insert(insert_idx, self.revision_mode);
+            insert_idx += 1;
+            
+            for _ in 0..3 {
+                self.lines.insert(insert_idx, String::new());
+                self.revised_lines.insert(insert_idx, self.revision_mode);
+                insert_idx += 1;
+            }
+        }
+        
+        self.cursor_y = insert_idx;
+        self.cursor_x = 0;
+        self.dirty = true;
+        self.mode = AppMode::Normal;
+        self.set_status(&format!("Imported {} structure into current buffer", struct_data.name));
+    }
 }
 
 fn parse_structures(content: &str) -> Vec<Structure> {

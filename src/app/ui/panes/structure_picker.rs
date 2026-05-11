@@ -29,10 +29,18 @@ pub fn draw_structure_picker(f: &mut Frame, app: &mut App) {
         .border_type(BorderType::Rounded)
         .border_style(Style::default().fg(accent))
         .style(Style::default().bg(normal_bg).fg(normal_fg))
-        .title(Span::styled(
+        .title_top(Span::styled(
             " [ select structure ] ",
             Style::default().fg(accent).add_modifier(Modifier::BOLD),
-        ));
+        ))
+        .title_bottom(ratatui::text::Line::from(Span::styled(
+            if app.previous_mode == crate::app::AppMode::Home {
+                " [Enter] Open in new buffer "
+            } else {
+                " [Enter] Import into current buffer  [Shift+Enter] Open in new buffer "
+            },
+            Style::default().fg(accent),
+        )).centered());
     f.render_widget(block, modal_area);
 
     let inner = modal_area.inner(ratatui::layout::Margin {

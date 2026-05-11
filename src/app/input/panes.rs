@@ -687,7 +687,11 @@ impl App {
                             }
                         }
                         KeyCode::Enter => {
-                            self.apply_selected_structure();
+                            if self.previous_mode == AppMode::Home || shift {
+                                self.apply_selected_structure();
+                            } else {
+                                self.import_selected_structure();
+                            }
                             self.parse_document();
                             self.update_autocomplete();
                             self.update_layout();

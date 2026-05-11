@@ -1418,6 +1418,19 @@ impl App {
             "xray" => {
                 self.compute_xray();
             }
+            "structure" => {
+                if self.structures.is_empty() {
+                    self.load_structures();
+                }
+                if self.structures.is_empty() {
+                    self.set_error("No structures found");
+                } else {
+                    self.previous_mode = self.mode.clone();
+                    self.mode = AppMode::StructurePicker;
+                    self.structure_selected = 0;
+                    self.set_status("Select a structure to import");
+                }
+            }
             "prodtags" => {
                 self.config.show_production_tags = !self.config.show_production_tags;
                 let status = if self.config.show_production_tags { "ENABLED" } else { "DISABLED" };
