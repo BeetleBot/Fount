@@ -104,32 +104,32 @@ fn parse_structures(content: &str) -> Vec<Structure> {
             continue;
         }
         
-        if line.starts_with("## ") {
-            if let Some(beat) = current_beat.take() {
-                if let Some(ref mut s) = current_struct {
-                    s.beats.push(beat);
-                }
+        if let Some(rest) = line.strip_prefix("## ") {
+            if let Some(beat) = current_beat.take()
+                && let Some(ref mut s) = current_struct
+            {
+                s.beats.push(beat);
             }
             current_beat = Some(StructureBeat {
-                label: line[3..].trim().to_string(),
+                label: rest.trim().to_string(),
                 description: String::new(),
             });
-        } else if line.starts_with("# ") {
-            if let Some(beat) = current_beat.take() {
-                if let Some(ref mut s) = current_struct {
-                    s.beats.push(beat);
-                }
+        } else if let Some(rest) = line.strip_prefix("# ") {
+            if let Some(beat) = current_beat.take()
+                && let Some(ref mut s) = current_struct
+            {
+                s.beats.push(beat);
             }
             if let Some(s) = current_struct.take() {
                 structures.push(s);
             }
             current_struct = Some(Structure {
-                name: line[2..].trim().to_string(),
+                name: rest.trim().to_string(),
                 description: String::new(),
                 beats: Vec::new(),
             });
-        } else if line.starts_with("= ") {
-            let desc = line[2..].trim().to_string();
+        } else if let Some(rest) = line.strip_prefix("= ") {
+            let desc = rest.trim().to_string();
             if let Some(ref mut beat) = current_beat {
                 if beat.description.is_empty() {
                     beat.description = desc;
@@ -148,10 +148,10 @@ fn parse_structures(content: &str) -> Vec<Structure> {
         }
     }
     
-    if let Some(beat) = current_beat.take() {
-        if let Some(ref mut s) = current_struct {
-            s.beats.push(beat);
-        }
+    if let Some(beat) = current_beat.take()
+        && let Some(ref mut s) = current_struct
+    {
+        s.beats.push(beat);
     }
     if let Some(s) = current_struct.take() {
         structures.push(s);

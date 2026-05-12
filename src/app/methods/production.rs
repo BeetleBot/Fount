@@ -2,6 +2,9 @@ use crate::app::App;
 use crate::types::LineType;
 
 impl App {
+    /// Auto-assigns suffixed scene numbers to un-numbered scene headings
+    /// when `production_lock` is ON. Scenes between locked `#N#` and `#N+1#`
+    /// get `#NA#`, `#NB#`, etc.
     pub fn auto_number_locked_scenes(&mut self) {
         // Collect all scene heading indices and their current tags
         let scene_indices: Vec<usize> = (0..self.lines.len())
@@ -84,6 +87,10 @@ impl App {
         }
     }
 
+    /// Numbers ALL scene headings chronologically. Respects non-integer custom
+    /// overrides (e.g. `14B`) — those scenes keep their tag, subsequent integer
+    /// scenes are re-indexed. Ignores `production_lock`; this is an explicit
+    /// on-demand action.
     pub fn renumber_all_scenes(&mut self) {
         let mut count = 1usize;
         let mut changed = false;
@@ -96,9 +103,9 @@ impl App {
             // Detect existing custom (non-integer) tag
             let existing_custom: Option<String> = {
                 let t = self.lines[i].trim_end();
-                if t.ends_with('#') {
-                    t[..t.len() - 1].rfind('#').and_then(|o| {
-                        let inner = &t[o + 1..t.len() - 1];
+                if let Some(stripped) = t.strip_suffix('#') {
+                    stripped.rfind('#').and_then(|o| {
+                        let inner = &stripped[o + 1..];
                         if !inner.is_empty()
                             && !inner.contains(' ')
                             && !inner.chars().all(|c| c.is_ascii_digit())
@@ -133,10 +140,16 @@ impl App {
         }
     }
 
+    /// Injects or updates the scene number **only for the line the cursor is on**.
+    /// Does nothing if the current line is not a scene heading.
+    /// Respects `production_lock`: if locked, this call is still allowed (it's
+    /// triggered explicitly by the user).
+    /// Unlike `renumber_all_scenes`, this only touches one line.
     pub fn inject_current_scene_number(&mut self) {
         self.inject_scene_number_tag(None);
     }
 
+    /// Inject a specific scene number tag `#tag#` or auto-compute one.
     pub fn inject_scene_number_tag(&mut self, tag: Option<&str>) {
         let mut y = self.cursor_y.min(self.types.len().saturating_sub(1));
         while y > 0 && self.types[y] != LineType::SceneHeading {
@@ -154,9 +167,9 @@ impl App {
             // Preserve existing non-integer custom tag
             let existing_custom: Option<String> = {
                 let t = self.lines[y].trim_end();
-                if t.ends_with('#') {
-                    t[..t.len() - 1].rfind('#').and_then(|o| {
-                        let inner = &t[o + 1..t.len() - 1];
+                if let Some(stripped) = t.strip_suffix('#') {
+                    stripped.rfind('#').and_then(|o| {
+                        let inner = &stripped[o + 1..];
                         if !inner.is_empty()
                             && !inner.contains(' ')
                             && !inner.chars().all(|c| c.is_ascii_digit())
@@ -183,6 +196,8 @@ impl App {
         }
     }
 
+    /// Removes `#num#` tags from ALL scene headings. Always allowed, even with
+    /// `production_lock` on.
     pub fn strip_all_scene_numbers(&mut self) {
         let mut changed = false;
         for i in 0..self.lines.len() {

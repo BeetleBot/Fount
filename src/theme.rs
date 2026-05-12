@@ -79,10 +79,7 @@ impl HexColor {
             let luminance = 0.299 * r as f32 + 0.587 * g as f32 + 0.114 * b as f32;
             return luminance > 128.0;
         }
-        match self.0.to_lowercase().as_str() {
-            "white" | "yellow" | "lightcyan" | "lightgreen" | "lightyellow" | "lightblue" | "lightmagenta" | "lightred" | "cyan" | "silver" => true,
-            _ => false,
-        }
+        matches!(self.0.to_lowercase().as_str(), "white" | "yellow" | "lightcyan" | "lightgreen" | "lightyellow" | "lightblue" | "lightmagenta" | "lightred" | "cyan" | "silver")
     }
 }
 

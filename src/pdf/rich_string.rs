@@ -955,7 +955,7 @@ mod tests {
 
         fn test_parse<'a>(input: &str, expected: impl IntoIterator<Item = (&'a str, Attributes)>) {
             let rs = RichString::from(input);
-            for (elem, expected) in rs.elements.iter().zip(expected.into_iter()) {
+            for (elem, expected) in rs.elements.iter().zip(expected) {
                 assert_eq!(elem.text, expected.0);
                 assert_eq!(elem.attributes, expected.1);
             }

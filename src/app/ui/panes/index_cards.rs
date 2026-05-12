@@ -133,7 +133,7 @@ pub fn draw_index_cards(f: &mut Frame, app: &mut App, area: Rect) {
             let header_label = if let Some(ref num) = card.scene_num {
                 format!(" SCENE {} ", num)
             } else {
-                format!(" SCENE ")
+                " SCENE ".to_string()
             };
 
             let label_style = if let Some(c) = card.color { 

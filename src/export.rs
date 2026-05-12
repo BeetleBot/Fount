@@ -239,8 +239,10 @@ mod export_tests {
     fn test_export_force_ascii_page_break() {
         use crate::types::LineType;
 
-        let mut config = Config::default();
-        config.force_ascii = true;
+        let config = Config {
+            force_ascii: true,
+            ..Default::default()
+        };
 
         let lines = vec!["===".to_string()];
         let types = vec![LineType::PageBreak];
@@ -350,8 +352,10 @@ mod export_tests {
         use crate::config::{Config, MirrorOption};
         use crate::types::LineType;
 
-        let mut config = Config::default();
-        config.mirror_scene_numbers = MirrorOption::Always;
+        let config = Config {
+            mirror_scene_numbers: MirrorOption::Always,
+            ..Default::default()
+        };
 
         let lines = vec!["INT. ROOM - DAY".to_string()];
         let types = vec![LineType::SceneHeading];

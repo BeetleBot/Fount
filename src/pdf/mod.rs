@@ -27,27 +27,31 @@ pub fn parse_reader(mut r: impl std::io::Read) -> std::io::Result<Screenplay> {
     Ok(parser::parse(&src))
 }
 
+pub struct PdfExportConfig {
+    pub paper_size: PaperSize,
+    pub bold_scene_headings: bool,
+    pub mirror_scene_numbers: crate::config::MirrorOption,
+    pub export_sections: bool,
+    pub export_synopses: bool,
+    pub export_font: String,
+    pub revised_lines: Vec<bool>,
+}
+
 /// Exports Fountain text to a PDF file.
 pub fn export_to_pdf(
     fountain_text: &str,
     path: &std::path::Path,
-    paper_size: PaperSize,
-    bold_scene_headings: bool,
-    mirror_scene_numbers: crate::config::MirrorOption,
-    export_sections: bool,
-    export_synopses: bool,
-    export_font: String,
-    revised_lines: Vec<bool>,
+    config: PdfExportConfig,
 ) -> std::io::Result<()> {
     let screenplay = parse(fountain_text);
     let exporter = PdfExporter {
-        paper_size,
-        bold_scene_headings,
-        mirror_scene_numbers,
-        sections: export_sections,
-        synopses: export_synopses,
-        export_font,
-        revised_lines,
+        paper_size: config.paper_size,
+        bold_scene_headings: config.bold_scene_headings,
+        mirror_scene_numbers: config.mirror_scene_numbers,
+        sections: config.export_sections,
+        synopses: config.export_synopses,
+        export_font: config.export_font,
+        revised_lines: config.revised_lines,
     };
     exporter.export_to_file(&screenplay, path)
 }

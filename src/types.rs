@@ -347,10 +347,10 @@ pub fn get_marker_color(note_text: &str, theme: &Theme) -> Option<Color> {
     };
 
     if first_word == "marker" {
-        if let Some(second_word) = words.next() {
-            if let Some(c) = color_from_str(&second_word.to_lowercase()) {
-                return Some(c);
-            }
+        if let Some(second_word) = words.next()
+            && let Some(c) = color_from_str(&second_word.to_lowercase())
+        {
+            return Some(c);
         }
         return Some(Color::Rgb(255, 165, 0));
     }

@@ -105,8 +105,10 @@ impl crate::app::App {
         if is_scene_type || upper_line.starts_with('.') {
             let mut input = upper_line.trim_start();
 
-            if input.starts_with('.') && !input.starts_with("..") {
-                input = &input[1..];
+            if let Some(rest) = input.strip_prefix('.')
+                && !input.starts_with("..")
+            {
+                input = rest;
             } else {
                 let prefixes = [
                     "INT. ",
@@ -143,7 +145,7 @@ impl crate::app::App {
                 for loc in &self.locations {
                     if loc.starts_with(input)
                         && loc.len() > input.len()
-                        && best_match.map_or(true, |b| loc.len() < b.len())
+                        && best_match.is_none_or(|b| loc.len() < b.len())
                     {
                         best_match = Some(loc);
                     }

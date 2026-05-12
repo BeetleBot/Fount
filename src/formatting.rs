@@ -76,7 +76,7 @@ impl LineFormatting {
 
     #[inline]
     pub fn has_style(&self, idx: usize, style: StyleBits) -> bool {
-        self.char_styles.get(idx).map_or(false, |bits| bits.contains(style))
+        self.char_styles.get(idx).is_some_and(|bits| bits.contains(style))
     }
 
     #[inline]
@@ -781,8 +781,10 @@ mod formatting_tests {
     #[test]
     fn test_render_inline_exclude_comments() {
         let fmt = parse_formatting("Action /* hidden */", &crate::theme::Theme::adaptive());
-        let mut cfg = RenderConfig::default();
-        cfg.exclude_comments = true;
+        let cfg = RenderConfig {
+            exclude_comments: true,
+            ..Default::default()
+        };
         let hl = HashSet::new();
 
         let spans = render_inline("Action /* hidden */", Style::default(), &fmt, cfg, &hl, &HashSet::new());

@@ -21,6 +21,7 @@ use crossterm::event::{KeyCode, KeyModifiers};
         
         app.mode = AppMode::Normal;
         app.theme = crate::theme::Theme::adaptive();
+        app.config.show_production_tags = true;
         app.update_layout();
         app
     }

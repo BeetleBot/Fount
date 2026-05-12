@@ -462,7 +462,7 @@ pub fn draw_export_modal(f: &mut Frame, app: &App) {
         .split(inner_area);
 
     // 1. Tabs
-    let tab_titles = vec![" 1. Screenplay ", " 2. Reports "];
+    let tab_titles = [" 1. Screenplay ", " 2. Reports "];
     let tabs_spans: Vec<Span> = tab_titles
         .iter()
         .enumerate()

@@ -308,7 +308,7 @@ pub fn draw(f: &mut Frame, app: &mut App) {
         let (vis_row, _vis_x) = find_visual_cursor(&app.layout, app.cursor_y, app.cursor_x);
 
         if app.config.typewriter_mode {
-            let center_offset = (height / 2) as usize;
+            let center_offset = height / 2;
             if vis_row < center_offset {
                 pad_top = center_offset - vis_row;
             }

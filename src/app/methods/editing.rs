@@ -519,7 +519,7 @@ impl App {
                     for c in &self.characters {
                         if c.starts_with(&upper_prefix)
                             && c.len() > upper_prefix.len()
-                            && best_match.map_or(true, |b| c.len() < b.len())
+                            && best_match.is_none_or(|b| c.len() < b.len())
                         {
                             best_match = Some(c);
                         }
@@ -766,9 +766,10 @@ impl App {
     }
 
     pub fn replace_current_match(&mut self, replacement: &str) -> bool {
-        if let Some(idx) = self.current_match_idx {
-            if idx < self.search_matches.len() {
-                let (y, x) = self.search_matches[idx];
+        if let Some(idx) = self.current_match_idx
+            && idx < self.search_matches.len()
+        {
+            let (y, x) = self.search_matches[idx];
                 let search_len = self.last_search.chars().count();
 
                 self.save_state(true);
@@ -788,7 +789,6 @@ impl App {
                 self.current_match_idx = None;
 
                 return true;
-            }
         }
         false
     }

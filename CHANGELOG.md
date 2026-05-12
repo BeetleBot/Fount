@@ -1,6 +1,16 @@
 # Changelog
 
-## [0.9.5]
+##  - Unreleased
+
+### Improvements
+- **Zero-Warning Codebase**: Achieved a clean, zero-warning Clippy status for the entire library and binary, ensuring long-term maintainability and stability.
+- **Structural Code Refactoring**: Successfully resolved "too many arguments" and "needless update" warnings by implementing clean context structs and idiomatic patterns across the PDF export and UI rendering engines.
+
+### Fixes
+- **Borrow Checker Resolutions**: Fixed complex mutable borrow conflicts in the file picker and input handling logic.
+- **Search Cancellation Logic**: Corrected a regression where the `Esc` key failed to cancel search mode without a `Ctrl` modifier.
+
+## [0.9.5] - 2026-05-11
 
 ### New features
 - **Story Structure Templates**: Added the `/structure` command to instantly import narrative frameworks directly into your script. Included new templates: John Truby's 7 Key Steps, Michael Hauge's 6-Stage Journey, and The Sequence Approach.

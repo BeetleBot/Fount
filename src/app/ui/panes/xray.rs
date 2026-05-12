@@ -105,10 +105,18 @@ pub fn draw_xray(f: &mut Frame, app: &mut App) {
     let content_area = tab_layout[2];
 
     if let Some(ref data) = app.xray_data {
+        let ctx = XrayRenderContext {
+            accent,
+            dim,
+            normal_fg,
+            theme: &theme,
+            use_nerd_fonts: app.config.use_nerd_fonts,
+        };
+
         match app.xray_tab {
-            0 => draw_dialogue_tab(f, content_area, data, app.xray_scroll, accent, dim, normal_fg, &theme),
-            1 => draw_pacing_tab(f, content_area, data, app.xray_scroll, accent, dim, normal_fg, &theme),
-            2 => draw_scenes_tab(f, content_area, data, app.xray_scroll, accent, dim, normal_fg, &theme, app.config.use_nerd_fonts),
+            0 => draw_dialogue_tab(f, content_area, data, app.xray_scroll, &ctx),
+            1 => draw_pacing_tab(f, content_area, data, app.xray_scroll, &ctx),
+            2 => draw_scenes_tab(f, content_area, data, app.xray_scroll, &ctx),
             3 => draw_breakdown_tab(f, content_area, app),
             _ => {}
         }
@@ -133,16 +141,25 @@ pub fn draw_xray(f: &mut Frame, app: &mut App) {
     );
 }
 
+struct XrayRenderContext<'a> {
+    pub accent: Color,
+    pub dim: Color,
+    pub normal_fg: Color,
+    pub theme: &'a crate::theme::Theme,
+    pub use_nerd_fonts: bool,
+}
+
 fn draw_dialogue_tab(
     f: &mut Frame,
     area: Rect,
     data: &crate::app::XRayData,
     scroll: usize,
-    accent: Color,
-    _dim: Color,
-    normal_fg: Color,
-    theme: &crate::theme::Theme,
+    ctx: &XrayRenderContext,
 ) {
+    let accent = ctx.accent;
+    let normal_fg = ctx.normal_fg;
+    let theme = ctx.theme;
+
     let mut lines = Vec::new();
 
     lines.push(Line::from(Span::styled(
@@ -203,11 +220,11 @@ fn draw_pacing_tab(
     area: Rect,
     data: &crate::app::XRayData,
     scroll: usize,
-    accent: Color,
-    _dim: Color,
-    _normal_fg: Color,
-    theme: &crate::theme::Theme,
+    ctx: &XrayRenderContext,
 ) {
+    let accent = ctx.accent;
+    let theme = ctx.theme;
+
     let mut lines = Vec::new();
 
     lines.push(Line::from(Span::styled(
@@ -271,12 +288,14 @@ fn draw_scenes_tab(
     area: Rect,
     data: &crate::app::XRayData,
     scroll: usize,
-    accent: Color,
-    dim: Color,
-    normal_fg: Color,
-    theme: &crate::theme::Theme,
-    use_nerd_fonts: bool,
+    ctx: &XrayRenderContext,
 ) {
+    let accent = ctx.accent;
+    let dim = ctx.dim;
+    let normal_fg = ctx.normal_fg;
+    let theme = ctx.theme;
+    let use_nerd_fonts = ctx.use_nerd_fonts;
+
     let mut lines = Vec::new();
 
     lines.push(Line::from(Span::styled(

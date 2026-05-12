@@ -550,9 +550,8 @@ impl Config {
                 let _ = fs::write(&path, DEFAULT_CONFIG);
             }
 
-            match fs::read_to_string(&path) {
-                Ok(content) => config.parse_config_str(&content),
-                _ => {}
+            if let Ok(content) = fs::read_to_string(&path) {
+                config.parse_config_str(&content);
             }
         }
 
@@ -665,9 +664,11 @@ mod config_tests {
 
     #[test]
     fn test_force_ansi_overrides_no_color() {
-        let mut config = Config::default();
-        config.no_color = true;
-        config.force_ansi = true;
+        let mut config = Config {
+            no_color: true,
+            force_ansi: true,
+            ..Default::default()
+        };
         
         // Simulating the logic in load()
         if config.force_ansi {

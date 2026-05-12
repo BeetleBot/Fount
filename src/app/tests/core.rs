@@ -285,11 +285,12 @@ use super::*;
 
     #[test]
     fn test_app_deduplicate_files() {
-        let mut cli = Cli::default();
-        cli.files = vec![
-            std::path::PathBuf::from("test.fountain"),
-            std::path::PathBuf::from("test.fountain"),
-        ];
+        let cli = Cli {
+            files: vec![
+                std::path::PathBuf::from("test.fountain"),
+                std::path::PathBuf::from("test.fountain"),
+            ],
+        };
         let app = App::new(cli);
         assert_eq!(app.buffers.len(), 1, "Duplicate files should be removed");
     }

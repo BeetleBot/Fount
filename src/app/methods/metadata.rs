@@ -49,10 +49,8 @@ impl App {
                 .filter(|s| !s.is_empty())
                 .collect();
             
-            if !values.is_empty() {
-                if let Some(s_idx) = scene_idx {
-                    metadata.add_entry(s_idx, key, values, line_idx);
-                }
+            if !values.is_empty() && let Some(s_idx) = scene_idx {
+                metadata.add_entry(s_idx, key, values, line_idx);
             }
         }
     }
@@ -67,12 +65,11 @@ impl App {
             if s_idx >= self.index_cards.len() { continue; }
             
             for entry in entries {
-                if entry.key == "sceneclr" {
-                    if let Some(color_name) = entry.values.first() {
-                        if let Some(color) = get_marker_color(color_name, &self.theme) {
-                            self.index_cards[s_idx].color = Some(color);
-                        }
-                    }
+                if entry.key == "sceneclr"
+                    && let Some(color_name) = entry.values.first()
+                    && let Some(color) = get_marker_color(color_name, &self.theme)
+                {
+                    self.index_cards[s_idx].color = Some(color);
                 }
             }
         }

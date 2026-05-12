@@ -125,13 +125,15 @@ impl App {
         crate::pdf::export_to_pdf(
             &fountain_text,
             path,
-            paper_size,
-            self.config.export_bold_scene_headings,
-            self.config.mirror_scene_numbers.clone(),
-            self.config.export_sections,
-            self.config.export_synopses,
-            self.config.export_font.clone(),
-            self.revised_lines.clone(),
+            crate::pdf::PdfExportConfig {
+                paper_size,
+                bold_scene_headings: self.config.export_bold_scene_headings,
+                mirror_scene_numbers: self.config.mirror_scene_numbers.clone(),
+                export_sections: self.config.export_sections,
+                export_synopses: self.config.export_synopses,
+                export_font: self.config.export_font.clone(),
+                revised_lines: self.revised_lines.clone(),
+            },
         )
     }
 
@@ -279,7 +281,7 @@ impl App {
 
         let total_words: usize = chars.values().map(|c| c.words).sum();
         let mut sorted: Vec<_> = chars.into_iter().collect();
-        sorted.sort_by(|a, b| b.1.words.cmp(&a.1.words));
+        sorted.sort_by_key(|b| std::cmp::Reverse(b.1.words));
 
         for (name, data) in sorted {
             let pct = if total_words > 0 { (data.words as f64 / total_words as f64) * 100.0 } else { 0.0 };
@@ -346,7 +348,7 @@ impl App {
         }
 
         let mut sorted: Vec<_> = locations.into_iter().collect();
-        sorted.sort_by(|a, b| b.1.scenes.len().cmp(&a.1.scenes.len()));
+        sorted.sort_by_key(|b| std::cmp::Reverse(b.1.scenes.len()));
 
         for ((loc, int_ext, time), data) in sorted {
             let est_pages = format!("{:.1}", data.total_lines as f32 / 56.0);
@@ -475,16 +477,25 @@ impl App {
                     scene_data.push(s);
                 }
 
-                let mut s = SceneBreakdown::default();
-                s.num = row.scene_num.clone().unwrap_or_default();
                 let heading = crate::layout::strip_sigils(&row.raw_text, row.line_type).to_uppercase();
-                if let Some((ie, rest)) = heading.split_once('.') {
-                    s.int_ext = ie.trim().to_string();
+                let (int_ext, location, time) = if let Some((ie, rest)) = heading.split_once('.') {
+                    let ie = ie.trim().to_string();
                     if let Some((l, t)) = rest.split_once('-') {
-                        s.location = l.trim().to_string();
-                        s.time = t.trim().to_string();
-                    } else { s.location = rest.trim().to_string(); }
-                } else { s.location = heading; }
+                        (ie, l.trim().to_string(), t.trim().to_string())
+                    } else {
+                        (ie, rest.trim().to_string(), String::new())
+                    }
+                } else {
+                    (String::new(), heading, String::new())
+                };
+
+                let s = SceneBreakdown {
+                    num: row.scene_num.clone().unwrap_or_default(),
+                    int_ext,
+                    location,
+                    time,
+                    ..Default::default()
+                };
 
                 current_scene = Some(s);
                 scene_visual_lines = 1;
@@ -511,10 +522,10 @@ impl App {
         // Pass 2: Collect tags from raw lines and associate with scenes
         let mut scene_idx = 0;
         for (i, (line, &lt)) in self.lines.iter().zip(self.types.iter()).enumerate() {
-            if lt == crate::types::LineType::SceneHeading && i > 0 {
-                if scene_idx + 1 < scene_data.len() {
-                    scene_idx += 1;
-                }
+            if lt == crate::types::LineType::SceneHeading && i > 0
+                && scene_idx + 1 < scene_data.len()
+            {
+                scene_idx += 1;
             }
 
             if let Some(s) = scene_data.get_mut(scene_idx) {

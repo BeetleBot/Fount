@@ -368,19 +368,18 @@ pub fn build_layout(
             | LineType::Lyrics => {
                 in_dual_dialogue = false;
             }
-            LineType::Empty => {
-                if i > 0
-                    && !matches!(
-                        types[i - 1],
-                        LineType::Character
-                            | LineType::DualDialogueCharacter
-                            | LineType::Dialogue
-                            | LineType::Parenthetical
-                    )
-                {
-                    in_dual_dialogue = false;
-                }
+            LineType::Empty if i > 0
+                && !matches!(
+                    types[i - 1],
+                    LineType::Character
+                        | LineType::DualDialogueCharacter
+                        | LineType::Dialogue
+                        | LineType::Parenthetical
+                ) =>
+            {
+                in_dual_dialogue = false;
             }
+            LineType::Empty => {}
             _ => {}
         }
 
@@ -999,8 +998,10 @@ mod layout_tests {
 
     #[test]
     fn test_layout_page_break_force_ascii() {
-        let mut config = Config::default();
-        config.force_ascii = true;
+        let config = Config {
+            force_ascii: true,
+            ..Default::default()
+        };
         let lines = vec!["===".to_string()];
         let types = vec![LineType::PageBreak];
         let layout = build_layout(&lines, &types, 99, &config, &Theme::default(), &mut Vec::new());
@@ -1085,8 +1086,10 @@ mod layout_tests {
 
     #[test]
     fn test_layout_no_break_actions() {
-        let mut config = Config::default();
-        config.break_actions = false;
+        let config = Config {
+            break_actions: false,
+            ..Default::default()
+        };
 
         let mut lines = vec!["".to_string(); 54];
         let mut types = vec![LineType::Empty; 54];
@@ -1155,8 +1158,10 @@ mod layout_tests {
 
     #[test]
     fn test_layout_show_scene_numbers_disabled() {
-        let mut config = Config::default();
-        config.show_scene_numbers = false;
+        let config = Config {
+            show_scene_numbers: false,
+            ..Default::default()
+        };
 
         let lines = vec!["INT. SCENE ONE".to_string()];
         let types = vec![LineType::SceneHeading];
@@ -1170,8 +1175,10 @@ mod layout_tests {
 
     #[test]
     fn test_layout_show_page_numbers_disabled() {
-        let mut config = Config::default();
-        config.show_page_numbers = false;
+        let config = Config {
+            show_page_numbers: false,
+            ..Default::default()
+        };
 
         let lines = vec!["Action line".to_string()];
         let types = vec![LineType::Action];
@@ -1186,8 +1193,10 @@ mod layout_tests {
 
     #[test]
     fn test_layout_auto_contd_disabled() {
-        let mut config = Config::default();
-        config.auto_contd = false;
+        let config = Config {
+            auto_contd: false,
+            ..Default::default()
+        };
 
         let lines = vec![
             "CHARLOTTE".to_string(),
@@ -1212,8 +1221,10 @@ mod layout_tests {
 
     #[test]
     fn test_layout_break_actions_enabled() {
-        let mut config = Config::default();
-        config.break_actions = true;
+        let config = Config {
+            break_actions: true,
+            ..Default::default()
+        };
 
         let mut lines = vec!["".to_string(); 54];
         let mut types = vec![LineType::Empty; 54];
@@ -1471,7 +1482,7 @@ mod layout_tests {
         let layout = build_layout(&lines, &types, 999, &config, &Theme::default(), &mut Vec::new());
         let phantoms: Vec<_> = layout.iter().filter(|r| r.is_phantom).collect();
 
-        assert!(phantoms.len() > 0);
+        assert!(!phantoms.is_empty());
     }
 
     #[test]

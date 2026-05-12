@@ -10,8 +10,8 @@ impl App {
             start_words,
             start_lines,
         }) = self.active_goal
+            && start_time.elapsed() >= duration
         {
-            if start_time.elapsed() >= duration {
                 let current_words = self.total_word_count();
                 let words_written = current_words.saturating_sub(start_words);
                 let current_lines = self.lines.len();
@@ -42,13 +42,12 @@ impl App {
                 self.active_goal = None;
                 self.flash_timer = Some(Instant::now());
             }
-        }
 
         // Handle flash timer
-        if let Some(flash) = self.flash_timer {
-            if flash.elapsed() > Duration::from_millis(200) {
-                self.flash_timer = None;
-            }
+        if let Some(flash) = self.flash_timer
+            && flash.elapsed() > Duration::from_millis(200)
+        {
+            self.flash_timer = None;
         }
     }
 }

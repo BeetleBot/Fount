@@ -112,7 +112,7 @@ impl SnapshotManager {
             }
         }
 
-        snapshots.sort_by(|a, b| b.timestamp.cmp(&a.timestamp));
+        snapshots.sort_by_key(|b| std::cmp::Reverse(b.timestamp));
         snapshots
     }
 
@@ -133,7 +133,7 @@ impl SnapshotManager {
             }
         }
 
-        snapshots.sort_by(|a, b| b.1.cmp(&a.1));
+        snapshots.sort_by_key(|b| std::cmp::Reverse(b.1));
 
         let now = SystemTime::now();
         let max_age = std::time::Duration::from_secs(max_days * 24 * 60 * 60);
@@ -187,7 +187,7 @@ mod tests {
         }
 
         // Check for specific file
-        let snapshots = manager.list_snapshots(&Path::new("test0.fountain"));
+        let snapshots = manager.list_snapshots(Path::new("test0.fountain"));
         assert_eq!(snapshots.len(), 1);
 
         // Prune logic test: create 5 for same stem (using simulated time delay is hard, so we'll just test the call)

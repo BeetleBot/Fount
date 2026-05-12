@@ -433,10 +433,10 @@ impl<'a> Parser<'a> {
                 let trimmed = line.trim();
 
                 // Forced transition
-                if let Some(inner) = trimmed.strip_prefix('>') {
-                    if !trimmed.ends_with('<') {
-                        return Some(inner.trim());
-                    }
+                if let Some(inner) = trimmed.strip_prefix('>')
+                    && !trimmed.ends_with('<')
+                {
+                    return Some(inner.trim());
                 }
 
                 let transition_ending = trimmed.ends_with("TO:") || trimmed.ends_with("TO.");

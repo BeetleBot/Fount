@@ -204,16 +204,14 @@ impl App {
                         }
                     }
                 }
-                MouseEventKind::Drag(MouseButton::Left) => {
-                    if self.mode == AppMode::Normal {
-                        self.handle_mouse_cursor(
-                            mouse_event.row,
-                            mouse_event.column,
-                            cursor_moved,
-                            update_target_x,
-                        );
-                        *cursor_moved = true;
-                    }
+                MouseEventKind::Drag(MouseButton::Left) if self.mode == AppMode::Normal => {
+                    self.handle_mouse_cursor(
+                        mouse_event.row,
+                        mouse_event.column,
+                        cursor_moved,
+                        update_target_x,
+                    );
+                    *cursor_moved = true;
                 }
                 _ => {}
             }

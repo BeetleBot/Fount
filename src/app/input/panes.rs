@@ -31,19 +31,21 @@ impl App {
                             let next = (current + 1) % self.metadata_suggestions.len().max(1);
                             self.metadata_state.select(Some(next));
                         }
+                        KeyCode::Enter | KeyCode::Tab if let Some(selected) = self.metadata_state.selected()
+                            && let Some(tag) = self.metadata_suggestions.get(selected).cloned() =>
+                        {
+                            // Insert the rest of the tag
+                            let query_len = self.metadata_query.len();
+                            let remaining = &tag[query_len..];
+                            self.insert_str(remaining);
+
+                            *text_changed = true;
+                            *cursor_moved = true;
+                            *update_target_x = true;
+                            self.mode = AppMode::Normal;
+                            self.metadata_query.clear();
+                        }
                         KeyCode::Enter | KeyCode::Tab => {
-                            if let Some(selected) = self.metadata_state.selected() {
-                                if let Some(tag) = self.metadata_suggestions.get(selected).cloned() {
-                                    // Insert the rest of the tag
-                                    let query_len = self.metadata_query.len();
-                                    let remaining = &tag[query_len..];
-                                    self.insert_str(remaining);
-                                    
-                                    *text_changed = true;
-                                    *cursor_moved = true;
-                                    *update_target_x = true;
-                                }
-                            }
                             self.mode = AppMode::Normal;
                             self.metadata_query.clear();
                         }
@@ -348,21 +350,17 @@ impl App {
                                 self.selected_setting = 0;
                             }
                             KeyCode::Char('f') if ctrl => {}
-                            KeyCode::Tab | KeyCode::Right | KeyCode::Char('l') => {
-                                if total_cats > 0 {
-                                    self.shortcuts_selected_tab = (self.shortcuts_selected_tab + 1) % total_cats;
-                                    self.shortcuts_state.select(Some(0));
-                                }
+                            KeyCode::Tab | KeyCode::Right | KeyCode::Char('l') if total_cats > 0 => {
+                                self.shortcuts_selected_tab = (self.shortcuts_selected_tab + 1) % total_cats;
+                                self.shortcuts_state.select(Some(0));
                             }
-                            KeyCode::BackTab | KeyCode::Left | KeyCode::Char('h') => {
-                                if total_cats > 0 {
-                                    self.shortcuts_selected_tab = if self.shortcuts_selected_tab == 0 {
-                                        total_cats - 1
-                                    } else {
-                                        self.shortcuts_selected_tab - 1
-                                    };
-                                    self.shortcuts_state.select(Some(0));
-                                }
+                            KeyCode::BackTab | KeyCode::Left | KeyCode::Char('h') if total_cats > 0 => {
+                                self.shortcuts_selected_tab = if self.shortcuts_selected_tab == 0 {
+                                    total_cats - 1
+                                } else {
+                                    self.shortcuts_selected_tab - 1
+                                };
+                                self.shortcuts_state.select(Some(0));
                             }
                             KeyCode::Up | KeyCode::Char('k') => {
                                 let i = self.shortcuts_state.selected().unwrap_or(0);
@@ -400,17 +398,13 @@ impl App {
                         KeyCode::Char('c') | KeyCode::Char('e') | KeyCode::Char('g') if ctrl => {
                             self.mode = AppMode::Normal;
                         }
-                        KeyCode::Left | KeyCode::Char('h') => {
-                            if self.export_tab > 0 {
-                                self.export_tab -= 1;
-                                self.selected_export_option = 0;
-                            }
+                        KeyCode::Left | KeyCode::Char('h') if self.export_tab > 0 => {
+                            self.export_tab -= 1;
+                            self.selected_export_option = 0;
                         }
-                        KeyCode::Right | KeyCode::Char('l') => {
-                            if self.export_tab < 1 {
-                                self.export_tab += 1;
-                                self.selected_export_option = 0;
-                            }
+                        KeyCode::Right | KeyCode::Char('l') if self.export_tab < 1 => {
+                            self.export_tab += 1;
+                            self.selected_export_option = 0;
                         }
                         KeyCode::Char('1') => {
                             self.export_tab = 0;
@@ -529,11 +523,9 @@ impl App {
                 AppMode::Home => {
                     let home_items = 5 + self.recent_files.len().min(5);
                     match key.code {
-                        KeyCode::Esc => {
+                        KeyCode::Esc if self.file.is_some() || !self.lines.iter().all(|l| l.is_empty()) => {
                             // If there's an actual file loaded, dismiss home
-                            if self.file.is_some() || !self.lines.iter().all(|l| l.is_empty()) {
-                                self.mode = AppMode::Normal;
-                            }
+                            self.mode = AppMode::Normal;
                         }
                         KeyCode::Char('c') | KeyCode::Char('g') if ctrl => {
                             // Ctrl+C/G always dismisses
@@ -681,10 +673,8 @@ impl App {
                                 self.structure_selected = self.structures.len().saturating_sub(1);
                             }
                         }
-                        KeyCode::Down | KeyCode::Char('j') => {
-                            if !self.structures.is_empty() {
-                                self.structure_selected = (self.structure_selected + 1) % self.structures.len();
-                            }
+                        KeyCode::Down | KeyCode::Char('j') if !self.structures.is_empty() => {
+                            self.structure_selected = (self.structure_selected + 1) % self.structures.len();
                         }
                         KeyCode::Enter => {
                             if self.previous_mode == AppMode::Home || shift {
@@ -703,39 +693,39 @@ impl App {
                     return Ok(false);
                 }
                 AppMode::FilePicker => {
-                    if let Some(ref mut state) = self.file_picker {
-                        if state.show_overwrite_confirm {
-                            match key.code {
-                                KeyCode::Left | KeyCode::Right | KeyCode::Char('h') | KeyCode::Char('l') => {
-                                    state.overwrite_confirmed = !state.overwrite_confirmed;
-                                }
-                                KeyCode::Enter => {
-                                    if state.overwrite_confirmed {
-                                        state.show_overwrite_confirm = false;
-                                        if let Some(path) = state.target_path.clone() {
-                                            if let Err(e) = self.handle_file_picker_choice(path) {
-                                                self.set_error(&format!("Error: {}", e));
-                                            }
-                                        }
-                                    } else {
-                                        state.show_overwrite_confirm = false;
-                                    }
-                                }
-                                KeyCode::Char('y') | KeyCode::Char('Y') => {
-                                    state.show_overwrite_confirm = false;
-                                    if let Some(path) = state.target_path.clone() {
-                                        if let Err(e) = self.handle_file_picker_choice(path) {
-                                            self.set_error(&format!("Error: {}", e));
-                                        }
-                                    }
-                                }
-                                KeyCode::Char('n') | KeyCode::Char('N') | KeyCode::Esc => {
-                                    state.show_overwrite_confirm = false;
-                                }
-                                _ => {}
+                    let mut choice = None;
+                    if let Some(ref mut state) = self.file_picker
+                        && state.show_overwrite_confirm
+                    {
+                        match key.code {
+                            KeyCode::Left | KeyCode::Right | KeyCode::Char('h') | KeyCode::Char('l') => {
+                                state.overwrite_confirmed = !state.overwrite_confirmed;
                             }
+                            KeyCode::Enter if state.overwrite_confirmed => {
+                                choice = state.target_path.clone();
+                            }
+                            KeyCode::Enter => {
+                                state.show_overwrite_confirm = false;
+                            }
+                            KeyCode::Char('y') | KeyCode::Char('Y') => {
+                                choice = state.target_path.clone();
+                            }
+                            KeyCode::Char('n') | KeyCode::Char('N') | KeyCode::Esc => {
+                                state.show_overwrite_confirm = false;
+                            }
+                            _ => {}
+                        }
+                        
+                        if choice.is_none() {
                             return Ok(false);
                         }
+                    }
+
+                    if let Some(path) = choice {
+                        if let Err(e) = self.handle_file_picker_choice(path) {
+                            self.set_error(&format!("Error: {}", e));
+                        }
+                        return Ok(false);
                     }
 
                     match key.code {
@@ -802,17 +792,13 @@ impl App {
                         KeyCode::Esc => {
                             self.mode = AppMode::Normal;
                         }
-                        KeyCode::Up | KeyCode::Char('k') => {
+                        KeyCode::Up | KeyCode::Char('k') if self.snapshot_list_state.selected().unwrap_or(0) > 0 => {
                             let current = self.snapshot_list_state.selected().unwrap_or(0);
-                            if current > 0 {
-                                self.snapshot_list_state.select(Some(current - 1));
-                            }
+                            self.snapshot_list_state.select(Some(current - 1));
                         }
-                        KeyCode::Down | KeyCode::Char('j') => {
+                        KeyCode::Down | KeyCode::Char('j') if self.snapshot_list_state.selected().unwrap_or(0) + 1 < self.snapshots.len() => {
                             let current = self.snapshot_list_state.selected().unwrap_or(0);
-                            if current + 1 < self.snapshots.len() {
-                                self.snapshot_list_state.select(Some(current + 1));
-                            }
+                            self.snapshot_list_state.select(Some(current + 1));
                         }
                         KeyCode::Enter | KeyCode::Char('r') => {
                             let selected = self.snapshot_list_state.selected().unwrap_or(0);
@@ -833,17 +819,13 @@ impl App {
                 AppMode::SprintStat => {
                     match key.code {
                         KeyCode::Esc | KeyCode::Char('q') => self.mode = AppMode::Normal,
-                        KeyCode::Up | KeyCode::Char('k') => {
+                        KeyCode::Up | KeyCode::Char('k') if self.sprint_stats_state.selected().unwrap_or(0) > 0 => {
                             let current = self.sprint_stats_state.selected().unwrap_or(0);
-                            if current > 0 {
-                                self.sprint_stats_state.select(Some(current - 1));
-                            }
+                            self.sprint_stats_state.select(Some(current - 1));
                         }
-                        KeyCode::Down | KeyCode::Char('j') => {
+                        KeyCode::Down | KeyCode::Char('j') if self.sprint_stats_state.selected().unwrap_or(0) + 1 < self.sprint_history.len() => {
                             let current = self.sprint_stats_state.selected().unwrap_or(0);
-                            if current + 1 < self.sprint_history.len() {
-                                self.sprint_stats_state.select(Some(current + 1));
-                            }
+                            self.sprint_stats_state.select(Some(current + 1));
                         }
                         KeyCode::Char('e') => self.export_sprint_data(),
                         _ => {}
@@ -856,17 +838,13 @@ impl App {
                             self.mode = AppMode::Normal;
                             self.xray_data = None;
                         }
-                        KeyCode::Left => {
-                            if self.xray_tab > 0 {
-                                self.xray_tab -= 1;
-                                self.xray_scroll = 0;
-                            }
+                        KeyCode::Left if self.xray_tab > 0 => {
+                            self.xray_tab -= 1;
+                            self.xray_scroll = 0;
                         }
-                        KeyCode::Right => {
-                            if self.xray_tab < 3 {
-                                self.xray_tab += 1;
-                                self.xray_scroll = 0;
-                            }
+                        KeyCode::Right if self.xray_tab < 3 => {
+                            self.xray_tab += 1;
+                            self.xray_scroll = 0;
                         }
                         KeyCode::Char('1') => { self.xray_tab = 0; self.xray_scroll = 0; }
                         KeyCode::Char('2') => { self.xray_tab = 1; self.xray_scroll = 0; }
@@ -874,11 +852,11 @@ impl App {
                         KeyCode::Char('4') => { self.xray_tab = 3; self.xray_scroll = 0; }
                         KeyCode::Up => {
                             if self.xray_tab == 3 {
-                                if let Some(_data) = &self.xray_data {
-                                    if self.xray_breakdown_idx > 0 {
-                                        self.xray_breakdown_idx -= 1;
-                                        self.xray_breakdown_state.select(Some(self.xray_breakdown_idx));
-                                    }
+                                if let Some(_data) = &self.xray_data
+                                    && self.xray_breakdown_idx > 0
+                                {
+                                    self.xray_breakdown_idx -= 1;
+                                    self.xray_breakdown_state.select(Some(self.xray_breakdown_idx));
                                 }
                             } else {
                                 self.xray_scroll = self.xray_scroll.saturating_sub(1);
@@ -886,11 +864,11 @@ impl App {
                         }
                         KeyCode::Down => {
                             if self.xray_tab == 3 {
-                                if let Some(data) = &self.xray_data {
-                                    if self.xray_breakdown_idx + 1 < data.scene_breakdown.len() {
-                                        self.xray_breakdown_idx += 1;
-                                        self.xray_breakdown_state.select(Some(self.xray_breakdown_idx));
-                                    }
+                                if let Some(data) = &self.xray_data
+                                    && self.xray_breakdown_idx + 1 < data.scene_breakdown.len()
+                                {
+                                    self.xray_breakdown_idx += 1;
+                                    self.xray_breakdown_state.select(Some(self.xray_breakdown_idx));
                                 }
                             } else {
                                 self.xray_scroll += 1;
@@ -1041,10 +1019,8 @@ impl App {
                             KeyCode::Left => {
                                 self.selected_card_idx = self.selected_card_idx.saturating_sub(1);
                             }
-                            KeyCode::Right => {
-                                if self.selected_card_idx + 1 < cards_count {
-                                    self.selected_card_idx += 1;
-                                }
+                            KeyCode::Right if self.selected_card_idx + 1 < cards_count => {
+                                self.selected_card_idx += 1;
                             }
                             KeyCode::Enter => {
                                 if let Some(card) = cards.get(self.selected_card_idx) {
@@ -1069,17 +1045,13 @@ impl App {
                                 self.command_input.clear();
                                 self.command_error = false;
                             }
-                            KeyCode::Char('z') if ctrl && shift => {
-                                if self.redo() {
-                                    self.set_status("Redo applied");
-                                    *text_changed = true;
-                                }
+                            KeyCode::Char('z') if ctrl && shift && self.redo() => {
+                                self.set_status("Redo applied");
+                                *text_changed = true;
                             }
-                            KeyCode::Char('z') if ctrl => {
-                                if self.undo() {
-                                    self.set_status("Undo applied");
-                                    *text_changed = true;
-                                }
+                            KeyCode::Char('z') if ctrl && self.undo() => {
+                                self.set_status("Undo applied");
+                                *text_changed = true;
                             }
                             KeyCode::Delete | KeyCode::Backspace => {
                                 self.delete_card(self.selected_card_idx);
@@ -1114,19 +1086,20 @@ impl App {
                             };
                             self.theme_picker_state.select(Some(new_idx));
                         }
-                        KeyCode::Enter => {
-                            if let Some(idx) = self.theme_picker_state.selected() {
-                                if idx < themes.len() {
-                                    let name = themes[idx].clone();
-                                    if self.theme_manager.set_theme(&name) {
-                                        self.theme = self.theme_manager.current_theme.clone();
-                                        self.config.theme = self.theme.name.clone();
-                                        let _ = crate::config::Config::save_string_setting("theme", &self.theme.name);
-                                        self.set_status(&format!("Theme set to {}", self.theme.name));
-                                        self.update_layout();
-                                    }
-                                }
+                        KeyCode::Enter if let Some(idx) = self.theme_picker_state.selected()
+                            && idx < themes.len() =>
+                        {
+                            let name = themes[idx].clone();
+                            if self.theme_manager.set_theme(&name) {
+                                self.theme = self.theme_manager.current_theme.clone();
+                                self.config.theme = self.theme.name.clone();
+                                let _ = crate::config::Config::save_string_setting("theme", &self.theme.name);
+                                self.set_status(&format!("Theme set to {}", self.theme.name));
+                                self.update_layout();
                             }
+                            self.mode = AppMode::Normal;
+                        }
+                        KeyCode::Enter => {
                             self.mode = AppMode::Normal;
                         }
                         _ => {}

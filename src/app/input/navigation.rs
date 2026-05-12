@@ -26,29 +26,25 @@ impl App {
                         KeyCode::Char('p') if ctrl => {
                             self.mode = AppMode::SettingsPane;
                         }
-                        KeyCode::Up | KeyCode::Char('k') => {
-                            if self.selected_scene > 0 {
-                                self.selected_scene -= 1;
-                                self.navigator_state.select(Some(self.selected_scene));
-                                
-                                let line_idx = self.scenes[self.selected_scene].line_idx;
-                                self.cursor_y = line_idx;
-                                self.cursor_x = 0;
-                                *cursor_moved = true;
-                                *update_target_x = true;
-                            }
+                        KeyCode::Up | KeyCode::Char('k') if self.selected_scene > 0 => {
+                            self.selected_scene -= 1;
+                            self.navigator_state.select(Some(self.selected_scene));
+                            
+                            let line_idx = self.scenes[self.selected_scene].line_idx;
+                            self.cursor_y = line_idx;
+                            self.cursor_x = 0;
+                            *cursor_moved = true;
+                            *update_target_x = true;
                         }
-                        KeyCode::Down | KeyCode::Char('j') => {
-                            if self.selected_scene + 1 < self.scenes.len() {
-                                self.selected_scene += 1;
-                                self.navigator_state.select(Some(self.selected_scene));
-                                
-                                let line_idx = self.scenes[self.selected_scene].line_idx;
-                                self.cursor_y = line_idx;
-                                self.cursor_x = 0;
-                                *cursor_moved = true;
-                                *update_target_x = true;
-                            }
+                        KeyCode::Down | KeyCode::Char('j') if self.selected_scene + 1 < self.scenes.len() => {
+                            self.selected_scene += 1;
+                            self.navigator_state.select(Some(self.selected_scene));
+                            
+                            let line_idx = self.scenes[self.selected_scene].line_idx;
+                            self.cursor_y = line_idx;
+                            self.cursor_x = 0;
+                            *cursor_moved = true;
+                            *update_target_x = true;
                         }
                         KeyCode::Enter => {
                             let line_idx = self.scenes[self.selected_scene].line_idx;

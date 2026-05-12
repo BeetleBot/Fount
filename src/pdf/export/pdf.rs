@@ -742,13 +742,15 @@ fn write_element_custom_top_margin(
         };
         write_line(
             ctx,
-            left_margin,
-            (FONT_SIZE * *ctx.line_index + top_margin) as f32,
+            LineDrawOptions {
+                x: left_margin,
+                y: (FONT_SIZE * *ctx.line_index + top_margin) as f32,
+                text_direction,
+                margin,
+            },
             content,
             start_index,
             breakpoints.get(*breakpoint_index),
-            text_direction,
-            margin,
         )?;
         *breakpoint_index += 1;
         *ctx.line_index += 1;
@@ -756,16 +758,25 @@ fn write_element_custom_top_margin(
     Ok(std::option::Option::None)
 }
 
+struct LineDrawOptions<'a> {
+    pub x: f32,
+    pub y: f32,
+    pub text_direction: Alignment,
+    pub margin: &'a Margin,
+}
+
 fn write_line(
     ctx: &mut DrawContext<'_, '_>,
-    mut x: f32,
-    y: f32,
+    options: LineDrawOptions,
     content: &RichString,
     mut start_index: usize,
     breakpoint: Option<&BreakPoint>,
-    text_direction: Alignment,
-    margin: &Margin,
 ) -> std::io::Result<()> {
+    let mut x = options.x;
+    let y = options.y;
+    let text_direction = options.text_direction;
+    let margin = options.margin;
+
     match content.get_char(start_index) {
         Some(c) => {
             if c == '\n' {

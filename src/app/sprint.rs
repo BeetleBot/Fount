@@ -41,7 +41,7 @@ impl SprintManager {
         let mut records = self.get_records().unwrap_or_default();
         records.push(record);
         let wrapper = RecordsWrapper { sprints: records };
-        let toml_str = toml::to_string(&wrapper).map_err(|e| io::Error::new(io::ErrorKind::Other, e))?;
+        let toml_str = toml::to_string(&wrapper).map_err(io::Error::other)?;
         fs::write(&self.path, toml_str)
     }
 
@@ -50,7 +50,7 @@ impl SprintManager {
             return Ok(Vec::new());
         }
         let content = fs::read_to_string(&self.path)?;
-        let wrapper: RecordsWrapper = toml::from_str(&content).map_err(|e| io::Error::new(io::ErrorKind::Other, e))?;
+        let wrapper: RecordsWrapper = toml::from_str(&content).map_err(io::Error::other)?;
         Ok(wrapper.sprints)
     }
 

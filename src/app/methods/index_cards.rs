@@ -190,7 +190,7 @@ impl App {
         
         if !syn_found {
             self.lines.insert(card.start_line + 1, format!("= {}", synopsis));
-            if card.start_line + 1 <= self.revised_lines.len() {
+            if card.start_line + 1 < self.revised_lines.len() {
                 self.revised_lines.insert(card.start_line + 1, false);
             }
         }
@@ -222,7 +222,7 @@ impl App {
                 card_rects.push(Rect::new(2, current_y, area.width.saturating_sub(4), section_h));
                 current_y += section_h;
             } else {
-                let x = 2 + (current_col as u16 * (card_w + gutter));
+                let x = 2 + (current_col * (card_w + gutter));
                 card_rects.push(Rect::new(x, current_y, card_w, scene_h - 1));
                 current_col += 1;
                 if current_col >= columns {

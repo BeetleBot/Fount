@@ -814,10 +814,6 @@ impl App {
         chars.into_iter().collect()
     }
 
-    /// Auto-assigns suffixed scene numbers to un-numbered scene headings
-    /// when `production_lock` is ON. Scenes between locked `#N#` and `#N+1#`
-    /// get `#NA#`, `#NB#`, etc.
-
     /// Calculates what scene-number integer a given scene index should receive,
     /// walking all scene headings up to `target_idx` and applying the same
     /// cascading logic used by the full renumber pass.
@@ -831,9 +827,9 @@ impl App {
             // Check if a non-integer override is already present
             let existing: Option<&str> = {
                 let t = self.lines[i].trim_end();
-                if t.ends_with('#') {
-                    t[..t.len() - 1].rfind('#').and_then(|o| {
-                        let inner = &t[o + 1..t.len() - 1];
+                if let Some(stripped) = t.strip_suffix('#') {
+                    stripped.rfind('#').and_then(|o| {
+                        let inner = &stripped[o + 1..];
                         if !inner.is_empty() && !inner.contains(' ') {
                             Some(inner)
                         } else {
@@ -865,22 +861,6 @@ impl App {
         }
         count
     }
-
-    /// Numbers ALL scene headings chronologically. Respects non-integer custom
-    /// overrides (e.g. `14B`) — those scenes keep their tag, subsequent integer
-    /// scenes are re-indexed. Ignores `production_lock`; this is an explicit
-    /// on-demand action.
-
-    /// Injects or updates the scene number **only for the line the cursor is on**.
-    /// Does nothing if the current line is not a scene heading.
-    /// Respects `production_lock`: if locked, this call is still allowed (it's
-    /// triggered explicitly by the user).
-    /// Unlike `renumber_all_scenes`, this only touches one line.
-
-    /// Inject a specific scene number tag `#tag#` or auto-compute one.
-
-    /// Removes `#num#` tags from ALL scene headings. Always allowed, even with
-    /// `production_lock` on.
 
     /// Inserts a Fountain title page block at the very top of the buffer.
     /// If a title page already exists (first non-empty line is metadata), warns
@@ -934,11 +914,6 @@ impl App {
 
     // ── Selection Helpers ────────────────────────────────────────────────────
 
-    /// Returns (start, end) in document order, where each is (line, char).
-
-    /// Delete the selected region and place cursor at selection start.
-    /// Returns true if anything was deleted.
-
     /// Select entire document.
     pub fn select_all(&mut self) {
         self.selection_anchor = Some((0, 0));
@@ -946,8 +921,6 @@ impl App {
         self.cursor_y = last_line;
         self.cursor_x = self.lines[last_line].chars().count();
     }
-
-    /// Helper to save the current buffer to a new path.
 
     pub fn execute_command(
         &mut self,
@@ -1209,7 +1182,7 @@ impl App {
                 }
             }
             // Jump to scene number: /s50 or /s 50
-            "s" | _ if cmd.starts_with('s') && (cmd.len() == 1 || cmd[1..].chars().all(|c| c.is_ascii_digit())) => {
+            _ if cmd.starts_with('s') && (cmd.len() == 1 || cmd[1..].chars().all(|c| c.is_ascii_digit())) => {
                 let scene_num_str = if cmd.len() > 1 {
                     &cmd[1..]
                 } else {
@@ -1425,7 +1398,7 @@ impl App {
                 if self.structures.is_empty() {
                     self.set_error("No structures found");
                 } else {
-                    self.previous_mode = self.mode.clone();
+                    self.previous_mode = self.mode;
                     self.mode = AppMode::StructurePicker;
                     self.structure_selected = 0;
                     self.set_status("Select a structure to import");

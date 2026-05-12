@@ -63,16 +63,15 @@ impl App {
 
         for row in &self.layout {
             // Pick up explicit scene colors from notes
-            if row.line_type == LineType::Note {
-                if let Some(start) = row.raw_text.find("[[") {
-                    if let Some(end) = row.raw_text[start..].find("]]") {
-                        let content = &row.raw_text[start + 2..start + end];
-                        if content.to_lowercase().starts_with("sceneclr:") {
-                            if let Some(ref mut s) = current_scene {
-                                s.color = row.override_color;
-                            }
-                        }
-                    }
+            if row.line_type == LineType::Note
+                && let Some(start) = row.raw_text.find("[[")
+                && let Some(end) = row.raw_text[start..].find("]]")
+            {
+                let content = &row.raw_text[start + 2..start + end];
+                if content.to_lowercase().starts_with("sceneclr:")
+                    && let Some(ref mut s) = current_scene
+                {
+                    s.color = row.override_color;
                 }
             }
 
@@ -112,12 +111,12 @@ impl App {
                     synopses: Vec::new(),
                     color: row.override_color,
                 });
-            } else if row.line_type == LineType::Synopsis {
-                if let Some(ref mut s) = current_scene {
-                    let note_text = strip_sigils(&row.raw_text, row.line_type).to_string();
-                    if !note_text.is_empty() {
-                        s.synopses.push(note_text);
-                    }
+            } else if row.line_type == LineType::Synopsis
+                && let Some(ref mut s) = current_scene
+            {
+                let note_text = strip_sigils(&row.raw_text, row.line_type).to_string();
+                if !note_text.is_empty() {
+                    s.synopses.push(note_text);
                 }
             }
         }
@@ -248,7 +247,7 @@ impl App {
         let mut last_scene_label = String::new();
         let mut last_scene_num = None;
 
-        for (_i, (line, &lt)) in self.lines.iter().zip(self.types.iter()).enumerate() {
+        for (line, &lt) in self.lines.iter().zip(self.types.iter()) {
             if lt == LineType::SceneHeading {
                 if !last_scene_label.is_empty() || !current_scene_tags.is_empty() {
                     scene_breakdowns.push(XRaySceneBreakdown {
@@ -430,7 +429,7 @@ impl App {
                 }
             })
             .collect();
-        characters.sort_by(|a, b| b.word_count.cmp(&a.word_count));
+        characters.sort_by_key(|b| std::cmp::Reverse(b.word_count));
 
         // Build pacing blocks
         let max_page = pacing_map.keys().max().copied().unwrap_or(1);
@@ -451,7 +450,7 @@ impl App {
             total_dialogue_words,
             scenes,
             pacing_map: pacing,
-            global_breakdown: global_breakdown,
+            global_breakdown,
             scene_breakdown: scene_breakdowns,
         });
         self.xray_scroll = 0;
