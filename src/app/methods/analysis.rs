@@ -1,5 +1,5 @@
 use crate::formatting::StringCaseExt;
-use crate::app::{App, AppMode, EnsembleItem, CharacterItem, NavigatorItem};
+use crate::app::{App, AppMode, EnsembleItem, CharacterItem, SceneTreeItem};
 use crate::layout::{strip_sigils, find_visual_cursor};
 use crate::types::LineType;
 use crate::parser::Parser;
@@ -56,10 +56,10 @@ impl App {
         1
     }
 
-    pub fn open_scene_navigator(&mut self) {
+    pub fn open_scene_tree(&mut self) {
         self.nav_original_pos = Some((self.cursor_y, self.cursor_x));
         self.scenes.clear();
-        let mut current_scene: Option<NavigatorItem> = None;
+        let mut current_scene: Option<SceneTreeItem> = None;
 
         for row in &self.layout {
             // Pick up explicit scene colors from notes
@@ -82,7 +82,7 @@ impl App {
                 let label = strip_sigils(&row.raw_text, row.line_type)
                     .trim()
                     .to_string();
-                current_scene = Some(NavigatorItem {
+                current_scene = Some(SceneTreeItem {
                     line_idx: row.line_idx,
                     label,
                     is_section: true,
@@ -103,7 +103,7 @@ impl App {
                     }
                 }
                 let label = raw_heading.trim().to_uppercase_1to1();
-                current_scene = Some(NavigatorItem {
+                current_scene = Some(SceneTreeItem {
                     line_idx: row.line_idx,
                     label,
                     is_section: false,
@@ -127,7 +127,7 @@ impl App {
         if self.scenes.is_empty() {
             self.set_status("No scenes found");
         } else {
-            self.mode = AppMode::SceneNavigator;
+            self.mode = AppMode::SceneTree;
             self.selected_scene = 0;
             for (idx, item) in self.scenes.iter().enumerate() {
                 if item.line_idx <= self.cursor_y {
@@ -136,7 +136,7 @@ impl App {
                     break;
                 }
             }
-            self.navigator_state.select(Some(self.selected_scene));
+            self.tree_state.select(Some(self.selected_scene));
         }
     }
 
@@ -616,12 +616,12 @@ impl App {
 }
 
 impl crate::app::App {
-    pub fn calculate_scene_height(&self, item: &NavigatorItem) -> usize {
+    pub fn calculate_scene_height(&self, item: &SceneTreeItem) -> usize {
         if item.is_section {
             return 2; // Section name + spacer
         }
 
-        let max_w: usize = 45; // Match the wider navigator sidebar
+        let max_w: usize = 45; // Match the wider tree sidebar
         let mut height: usize = 0;
 
         // Heading wrapping

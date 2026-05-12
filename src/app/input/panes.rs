@@ -342,8 +342,8 @@ impl App {
                                 self.is_shortcuts_searching = true;
                                 self.shortcuts_query.clear();
                             }
-                            KeyCode::Char('h') if ctrl => {
-                                self.open_scene_navigator();
+                            KeyCode::Char('t') if ctrl => {
+                                self.open_scene_tree();
                             }
                             KeyCode::Char('p') if ctrl => {
                                 self.mode = AppMode::SettingsPane;

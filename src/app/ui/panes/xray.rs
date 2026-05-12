@@ -24,7 +24,7 @@ pub fn draw_xray(f: &mut Frame, app: &mut App) {
         }
     }
 
-    let accent = Color::from(theme.ui.navigator_mode_bg.clone());
+    let accent = Color::from(theme.ui.tree_mode_bg.clone());
     let dim = Color::from(theme.ui.dim.clone());
     let normal_fg = theme.primary_fg();
     let normal_bg = theme.primary_bg();
@@ -397,7 +397,7 @@ fn draw_breakdown_tab(
         None => return,
     };
     
-    let accent = Color::from(app.theme.ui.navigator_mode_bg.clone());
+    let accent = Color::from(app.theme.ui.tree_mode_bg.clone());
     let dim = Color::from(app.theme.ui.dim.clone());
     let theme = &app.theme;
 

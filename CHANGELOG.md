@@ -26,7 +26,7 @@
 - **Production-Grade CSV Exports**: Massively enhanced CSV reports (Scene List, Character, Location, Notes) with page numbers, synopsis data, character dialogue statistics, and inline note extraction. Dialogue export now generates professional rehearsal sides.
 - **Nerd Font Integration**: Added optional Nerd Font icon support across UI elements and status indicators for a highly polished look.
 - **Intelligent Auto-Save Cycler**: The Auto-Save setting now cycles through precise intervals (`[1 min]`, `[3 min]`, `[5 min]`, `[10 min]`, `[OFF]`) directly from the Settings Modal.
-- **Modernized Scene Navigator**: Transformed the navigator into a clean, tree-structured outliner. Removed heavy horizontal rules in favor of minimalist tree-line spacing, eliminated "no synopsis" placeholder clutter, and implemented intelligent word-wrapping for long scene headings to prevent truncation.
+- **Modernized Scene Tree**: Transformed the navigator into a clean, tree-structured outliner. Removed heavy horizontal rules in favor of minimalist tree-line spacing, eliminated "no synopsis" placeholder clutter, and implemented intelligent word-wrapping for long scene headings to prevent truncation.
 - **Index Cards Overhaul**: Upgraded the basic grid to a premium card-like interface with visual depth effects, while drastically improving real-time character typing responsiveness.
 - **Settings Modal Consolidation**: Migrated the Settings interface from a static side-pane to a sleek, centered, floating modal window that mirrors the Export and Snapshot screens.
 - **Dynamic Shortcuts Registry**: The Cheat Sheet (`F1`) has been transformed into a source-driven, tabbed UI component. All shortcuts are now compiled directly into the binary, removing the need for external asset files.
@@ -106,7 +106,7 @@
     - **Synopses** are rendered in ***italics*** for better readability.
 - **UI/UX Refinement**:
     - **Sticky Scene Heading**: The current scene heading is now "sticky" in the status bar, providing constant orientation within long scripts.
-    - **Live Navigator Preview**: The main editor now automatically scrolls to the selected scene as you browse the Scene Navigator sidebar, allowing for quick "peeks" before jumping.
+    - **Live Navigator Preview**: The main editor now automatically scrolls to the selected scene as you browse the Scene Tree sidebar, allowing for quick "peeks" before jumping.
 
 ## [0.8.6] - 2026-04-27
 
@@ -144,7 +144,7 @@
     - Buffer tabs moved to the left side for better focus.
     - App mode and version moved to the right side.
     - Removed theme name from the header to reduce clutter.
-- **Scene Navigator Aesthetics**:
+- **Scene Tree Aesthetics**:
     - Scene headings are now bolded for better hierarchy.
     - Selection bar is now a neutral, adaptive gray.
     - Color markers are preserved even when a scene is selected.
@@ -274,7 +274,7 @@
 
 ### Added
 - **TUI File Picker**: Native, high-performance file selection with zero GUI dependencies, featuring scrolling support and home directory defaults.
-- **Structural Thread Navigation**: Completely refined scene navigator with new **Structural Thread** support, integrating Sections, Scenes, and Synopses for advanced script organization.
+- **Structural Thread Navigation**: Completely refined scene tree with new **Structural Thread** support, integrating Sections, Scenes, and Synopses for advanced script organization.
 - **Character Reports Pane**: Dedicated new pane for comprehensive character analysis and reporting.
 - **Interactive Tutorial**: Dedicated tutorial mode with rewritten documentation using the new engine features.
 
@@ -301,7 +301,7 @@
 - **Home Screen**: New aesthetic main menu for quick access to recent scripts and help.
 - **Production Reports**: Expanded Export UI with options for production-ready reports.
 - **Shortcuts Mode**: Dedicated shortcuts status indicator in the UI.
-- **Color-Coded Scene Navigator**: Scene headings now adopt the color of `[[color]]` markers placed anywhere in the scene.
+- **Color-Coded Scene Tree**: Scene headings now adopt the color of `[[color]]` markers placed anywhere in the scene.
 - **Proper Installation Channels**: Added Windows MSI installer support and automated release workflows.
 
 ### Changed
@@ -312,7 +312,7 @@
 
 ### Fixed
 - **Robust Marker Detection**: Enhanced the scene parser to correctly identify marker colors even when separated by notes or empty lines.
-- **Heading Cleaning**: Stripped metadata markers from scene navigator headings for a cleaner display.
+- **Heading Cleaning**: Stripped metadata markers from scene tree headings for a cleaner display.
 - Resolved cursor misalignment in certain terminal environments.
 - Fixed navigation issue where selection wouldn't update correctly when switching panes.
 
@@ -323,7 +323,7 @@
 - **Command Mode**: Implement a modernized command interface (`/`) with tab completion, migrating shortcut actions to command-based execution.
 - **Format Pane**: Introduce FormatPane for document formatting and scene number management.
 - **PDF Export**: Re-implement robust PDF screenplay export functionality.
-- **Mouse Support**: Added 'Click with mouse' and 'Scroll with mouse' to the scene navigator.
+- **Mouse Support**: Added 'Click with mouse' and 'Scroll with mouse' to the scene tree.
 - **Word Wrap**: Added word wrap for Scene headings.
 
 ### Changed
@@ -339,7 +339,7 @@
 - **Unified Footer**: Consolidated status messages, real-time word/page counts, and shortcut hints into a single, clean bar.
 - **Shortcuts Sidebar**: Interactive right-side pane (F1) for keybinding reference, keeping the main editor area uncluttered.
 - **Vertical Pane Borders**: Added `│` separators for better visual pane isolation.
-- **Selection Cursors**: Interactive `»` focus indicators in the Scene Navigator.
+- **Selection Cursors**: Interactive `»` focus indicators in the Scene Tree.
 - **Adaptive Contrast**: Automated theme detection (Light/Dark) using `Modifier::DIM` and standard terminal colors (Color::Reset) instead of hardcoded white/black.
 
 ### Changed
@@ -365,7 +365,7 @@
 ## [0.1.2] - 2026-04-04
 
 ### Added
-- **Scene Navigator**: Quick navigation through scenes with `Ctrl+H`.
+- **Scene Tree**: Quick navigation through scenes with `Ctrl+T`.
 - **Settings Pane**: Interactive settings configuration with `Ctrl+P`.
 - **Multi-Buffer Support**: Open and switch between multiple Fountain files.
 - **Auto-Title Page**: Automatically generate title page metadata for new files.

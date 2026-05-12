@@ -38,7 +38,7 @@ pub fn draw_home(f: &mut Frame, app: &mut App) {
 
     let stops = vec![
         hex_to_rgb(&theme.ui.normal_mode_bg.0),
-        hex_to_rgb(&theme.ui.navigator_mode_bg.0),
+        hex_to_rgb(&theme.ui.tree_mode_bg.0),
         hex_to_rgb(&theme.ui.search_mode_bg.0),
     ];
 

@@ -7,7 +7,7 @@ impl App {
         let ctrl = key.modifiers.contains(KeyModifiers::CONTROL);
         let _shift = key.modifiers.contains(KeyModifiers::SHIFT);
         match self.mode {
-                AppMode::SceneNavigator => {
+                AppMode::SceneTree => {
                     match key.code {
                         KeyCode::Esc => {
                             if let Some((y, x)) = self.nav_original_pos.take() {
@@ -19,7 +19,7 @@ impl App {
                             self.mode = AppMode::Normal;
                             self.set_status("Cancelled");
                         }
-                        KeyCode::Char(h) if ctrl && h == 'h' => {
+                        KeyCode::Char('t') if ctrl => {
                             self.nav_original_pos = None;
                             self.mode = AppMode::Normal;
                         }
@@ -28,7 +28,7 @@ impl App {
                         }
                         KeyCode::Up | KeyCode::Char('k') if self.selected_scene > 0 => {
                             self.selected_scene -= 1;
-                            self.navigator_state.select(Some(self.selected_scene));
+                            self.tree_state.select(Some(self.selected_scene));
                             
                             let line_idx = self.scenes[self.selected_scene].line_idx;
                             self.cursor_y = line_idx;
@@ -38,7 +38,7 @@ impl App {
                         }
                         KeyCode::Down | KeyCode::Char('j') if self.selected_scene + 1 < self.scenes.len() => {
                             self.selected_scene += 1;
-                            self.navigator_state.select(Some(self.selected_scene));
+                            self.tree_state.select(Some(self.selected_scene));
                             
                             let line_idx = self.scenes[self.selected_scene].line_idx;
                             self.cursor_y = line_idx;

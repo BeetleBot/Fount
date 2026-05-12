@@ -599,7 +599,7 @@ use super::*;
     }
 
     #[test]
-    fn test_open_scene_navigator_colors() {
+    fn test_open_scene_tree_colors() {
         let mut app = create_empty_app();
         app.lines = vec![
             "EXT. WOODS - DAY [[sceneclr: red]]".to_string(),
@@ -612,7 +612,7 @@ use super::*;
         ];
         app.parse_document();
         app.update_layout();
-        app.open_scene_navigator();
+        app.open_scene_tree();
 
         assert_eq!(app.scenes.len(), 2);
         assert_eq!(app.scenes[0].label, "EXT. WOODS - DAY");
@@ -627,7 +627,7 @@ use super::*;
         ];
         app.parse_document();
         app.update_layout();
-        app.open_scene_navigator();
+        app.open_scene_tree();
         assert_eq!(app.scenes[0].color, Some(Color::Magenta));
     }
 

@@ -52,13 +52,13 @@ pub fn draw(f: &mut Frame, app: &mut App) {
             },
             Color::from(theme.ui.command_mode_bg.clone()),
         ),
-        AppMode::SceneNavigator => (
+        AppMode::SceneTree => (
             if app.config.use_nerd_fonts {
-                " 󰙅 Navigator "
+                " 󰙅 Scene Tree "
             } else {
-                " Navigator "
+                " Scene Tree "
             },
-            Color::from(theme.ui.navigator_mode_bg.clone()),
+            Color::from(theme.ui.tree_mode_bg.clone()),
         ),
         AppMode::SettingsPane => (
             if app.config.use_nerd_fonts {
@@ -114,7 +114,7 @@ pub fn draw(f: &mut Frame, app: &mut App) {
             } else {
                 " Snapshots "
             },
-            Color::from(theme.ui.navigator_mode_bg.clone()),
+            Color::from(theme.ui.tree_mode_bg.clone()),
         ),
         AppMode::SprintStat => (
             if app.config.use_nerd_fonts {
@@ -130,7 +130,7 @@ pub fn draw(f: &mut Frame, app: &mut App) {
             } else {
                 " X-Ray "
             },
-            Color::from(theme.ui.navigator_mode_bg.clone()),
+            Color::from(theme.ui.tree_mode_bg.clone()),
         ),
         AppMode::IndexCards => (
             if app.config.use_nerd_fonts {
@@ -138,7 +138,7 @@ pub fn draw(f: &mut Frame, app: &mut App) {
             } else {
                 " Index Cards "
             },
-            Color::from(theme.ui.navigator_mode_bg.clone()),
+            Color::from(theme.ui.tree_mode_bg.clone()),
         ),
         AppMode::ReplaceOne | AppMode::ReplaceAll => (
             if app.config.use_nerd_fonts {
@@ -273,7 +273,7 @@ pub fn draw(f: &mut Frame, app: &mut App) {
     }
 
     app.sidebar_area = Rect::default();
-    if app.mode == AppMode::SceneNavigator || app.mode == AppMode::CharacterNavigator {
+    if app.mode == AppMode::SceneTree || app.mode == AppMode::CharacterNavigator {
         let side_chunks = Layout::default()
             .direction(Direction::Horizontal)
             .constraints([
@@ -566,7 +566,7 @@ pub fn draw(f: &mut Frame, app: &mut App) {
         f.render_widget(Paragraph::new(visible), text_area);
     }
 
-    if app.mode == AppMode::SceneNavigator {
+    if app.mode == AppMode::SceneTree {
         let selected_bg = Color::from(theme.ui.selection_bg.clone());
         let selected_fg = Color::from(theme.ui.selection_fg.clone());
         let header_color = theme
@@ -849,7 +849,7 @@ pub fn draw(f: &mut Frame, app: &mut App) {
                 horizontal: 0,
                 vertical: 1,
             }),
-            &mut app.navigator_state,
+            &mut app.tree_state,
         );
     }
 

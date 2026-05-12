@@ -57,8 +57,8 @@ impl App {
                 *cursor_moved = true;
             }
 
-            KeyCode::Char('h') if ctrl => {
-                self.open_scene_navigator();
+            KeyCode::Char('t') if ctrl => {
+                self.open_scene_tree();
             }
             KeyCode::Char('l') if ctrl => {
                 self.open_character_sidebar();

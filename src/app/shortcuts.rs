@@ -58,7 +58,7 @@ pub fn get_all_shortcuts() -> Vec<Shortcut> {
         sc!("Essential Controls", "^O", "Open", "Open file picker", Accent),
         sc!("Essential Controls", "^N", "New file", "Create empty buffer", Success),
         sc!("Essential Controls", "^F", "Search", "Find in current buffer", Info),
-        sc!("Essential Controls", "^H", "Scene Navigator", "Jump to scenes", Info),
+        sc!("Essential Controls", "^T", "Scene Tree", "Jump to scenes", Info),
         sc!("Essential Controls", "^L", "Ensemble", "Character stats", Info),
         sc!("Essential Controls", "Tab", "Autocomplete", "Accept suggestion", Accent),
         sc!("Essential Controls", "/theme", "Theme Picker", "Open selection modal", Accent),

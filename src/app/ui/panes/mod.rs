@@ -211,7 +211,7 @@ pub fn draw_file_picker(f: &mut Frame, app: &mut App, area: Rect) {
                     } else {
                         "[D] "
                     },
-                    app.theme.ui.navigator_mode_bg.clone().into(),
+                    app.theme.ui.tree_mode_bg.clone().into(),
                 )
             } else {
                 (

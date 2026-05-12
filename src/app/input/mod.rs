@@ -47,12 +47,12 @@ impl App {
 
             match mouse_event.kind {
                 MouseEventKind::ScrollUp => {
-                    if self.mode == AppMode::SceneNavigator
+                    if self.mode == AppMode::SceneTree
                         && mouse_event.column < self.sidebar_area.x + self.sidebar_area.width
                     {
                         if self.selected_scene > 0 {
                             self.selected_scene -= 1;
-                            self.navigator_state.select(Some(self.selected_scene));
+                            self.tree_state.select(Some(self.selected_scene));
                         }
                     } else {
                         self.clear_selection();
@@ -61,12 +61,12 @@ impl App {
                     }
                 }
                 MouseEventKind::ScrollDown => {
-                    if self.mode == AppMode::SceneNavigator
+                    if self.mode == AppMode::SceneTree
                         && mouse_event.column < self.sidebar_area.x + self.sidebar_area.width
                     {
                         if self.selected_scene < self.scenes.len() - 1 {
                             self.selected_scene += 1;
-                            self.navigator_state.select(Some(self.selected_scene));
+                            self.tree_state.select(Some(self.selected_scene));
                         }
                     } else {
                         self.clear_selection();
@@ -146,7 +146,7 @@ impl App {
                                 }
                             }
                         }
-                    } else if self.mode == AppMode::SceneNavigator {
+                    } else if self.mode == AppMode::SceneTree {
                         let x = mouse_event.column;
                         let y = mouse_event.row;
                         if x < self.sidebar_area.x + self.sidebar_area.width
@@ -154,13 +154,13 @@ impl App {
                             && y < self.sidebar_area.y + self.sidebar_area.height
                         {
                             let mut current_y = self.sidebar_area.y as usize + 1;
-                            let offset = self.navigator_state.offset();
-                            if self.mode == AppMode::SceneNavigator {
+                            let offset = self.tree_state.offset();
+                            if self.mode == AppMode::SceneTree {
                                 for i in offset..self.scenes.len() {
                                     let h = self.calculate_scene_height(&self.scenes[i]);
                                     if (y as usize) < current_y + h {
                                         self.selected_scene = i;
-                                        self.navigator_state.select(Some(i));
+                                        self.tree_state.select(Some(i));
 
                                         let line_idx = self.scenes[i].line_idx;
                                         self.cursor_y = line_idx;
@@ -239,7 +239,7 @@ impl App {
             match self.mode {
                 AppMode::Normal => return self.handle_normal(key, update_target_x, text_changed, cursor_moved),
                 AppMode::Command | AppMode::ReplaceOne | AppMode::ReplaceAll => return self.handle_command(key, update_target_x, text_changed, cursor_moved),
-                AppMode::SceneNavigator | AppMode::CharacterNavigator => return self.handle_navigation(key, update_target_x, text_changed, cursor_moved),
+                AppMode::SceneTree | AppMode::CharacterNavigator => return self.handle_navigation(key, update_target_x, text_changed, cursor_moved),
                 _ => return self.handle_panes(key, update_target_x, text_changed, cursor_moved),
             }
         }

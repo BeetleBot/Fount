@@ -20,7 +20,7 @@ use crate::{
 };
 
 #[derive(Clone, Debug, Default)]
-pub struct NavigatorItem {
+pub struct SceneTreeItem {
     pub line_idx: usize,
     pub label: String,
     pub is_section: bool,
@@ -95,7 +95,7 @@ pub enum AppMode {
 
     PromptFilename,
 
-    SceneNavigator,
+    SceneTree,
 
     CharacterNavigator,
 
@@ -306,7 +306,7 @@ pub struct App {
     pub search_matches: Vec<(usize, usize)>,
     pub current_match_idx: Option<usize>,
 
-    pub scenes: Vec<NavigatorItem>,
+    pub scenes: Vec<SceneTreeItem>,
     pub nav_original_pos: Option<(usize, usize)>,
 
     pub selected_scene: usize,
@@ -332,7 +332,7 @@ pub struct App {
 
     pub settings_area: Rect,
 
-    pub navigator_state: ListState,
+    pub tree_state: ListState,
 
     pub shortcuts_state: TableState,
     pub shortcuts_query: String,
@@ -532,7 +532,7 @@ impl App {
             selected_export_option: 0,
             sidebar_area: Rect::default(),
             settings_area: Rect::default(),
-            navigator_state: ListState::default(),
+            tree_state: ListState::default(),
             shortcuts_state: TableState::default(),
             shortcuts_query: String::new(),
             is_shortcuts_searching: false,
@@ -1387,6 +1387,9 @@ impl App {
             }
             "sprintstat" => {
                 self.open_sprint_stats();
+            }
+            "tree" | "treeview" => {
+                self.open_scene_tree();
             }
             "xray" => {
                 self.compute_xray();

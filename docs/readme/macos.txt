@@ -16,7 +16,7 @@ Fount stores settings in: ~/.config/fount/fount.conf
 
 SHORTCUTS:
 - Ctrl+S: Save
-- Ctrl+H: Scene Navigator (Story Map)
+- Ctrl+T: Scene Tree
 - Ctrl+L: Character Sidebar
 - / (slash): Open command bar (type /help)
 

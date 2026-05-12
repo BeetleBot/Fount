@@ -56,7 +56,7 @@ Cycle through curated themes like **Catppuccin**, **Nord**, **Everforest**, and 
 ---
 
 ### 🗺️ Story-Map Navigation
-Toggle the **Scene Navigator (`Ctrl+H`)** or **Character Sidebar (`Ctrl+L`)** to jump through your screenplay's structure or analyze character presence.
+Toggle the **Scene Tree (`Ctrl+T`)** or **Character Sidebar (`Ctrl+L`)** to jump through your screenplay's structure or analyze character presence.
 ![Navigator](assets/demo/navigator.gif)
 
 ---
