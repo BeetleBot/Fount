@@ -1,288 +1,109 @@
-Title: FOUNT: DEFINITIVE TUTORIAL
+Title: FOUNT: BLOCKBUSTERS IN TERMINAL
 Credit: Written by
 Author: Beetle and Bee
-Source: Based on the Fount Screenwriting Software
-Draft date: April 27, 2026
-Contact: beetle@idonhaveadomainyet.com
-Notes: This document is both a screenplay and a technical manual. Read it to learn everything about Fount.
+Source: Based on Fount v0.9.7
+Draft date: May 14, 2026
+Contact: beetle@zenstudio.io
+Notes: This tutorial is an interactive screenplay. Read it to master Fount's professional production tools.
 
-
-# ACT I: THE HEARTBEAT
-
-INT. THE APARTMENT - NIGHT
-
-=Beetle and Bee sit in the soft glow of a terminal. The cursor blinks like a steady pulse, a green spark in the dark.
-
-A single laptop sits on a wooden desk. The room is quiet, the only sound the distant hum of the city and the rhythmic tapping of keys. 
-
-BEETLE (20s) leans in, his face illuminated by the screen. BEE (20s) rests her head on his shoulder, her breath warm against his neck.
-
-BEE
-It’s so... quiet. Like the world stopped.
-
-BEETLE
-That’s the magic of it. No menus, no ribbons, no noise. Just the heartbeat.
-
-Beetle types a period at the start of a line.
-
-.THE BEGINNING OF US
-
-BEETLE (CONT'D)
-See that dot? That’s a forced scene heading. If our location doesn't start with INT. or EXT., just add a dot. Fount hides it when you move away, leaving the page clean.
-
-BEE
-(whispering)
-And where are we?
-
-BEETLE
-Check the status bar at the bottom. It shows our **W**ord count, **L**ine count, and where we are in the universe. It’s subtle, so you don't lose focus.
-
-!Beetle taps a key. The status bar flickers and disappears.
-
-BEE
-Wait, where did it go?
-
-BEETLE
-Focus Mode. `/set focus`. It strips away everything but the words. We can even toggle Typewriter Mode with `/set typewriter` to keep our active line perfectly centered.
-
-BEE
-It feels like we’re *italics* floating in **bold** space.
-
-BEETLE
-(smiling)
-Even the emphasis is simple. One star for italics, two for bold, three for ***both***. And if we want to shout...
-
-!!THE CAMERA SWINGS WIDE
-
-BEETLE (CONT'D)
-Double exclamation marks for a SHOT. 
-
-
-# ACT II: THE SKELETON
-
-INT. THE APARTMENT - LATER
-
-= They begin to map out the structure of their story using Sections and Index Cards.
-
-Beetle hits `Ctrl+H`. A sidebar slides out on the left.
-
-BEETLE
-The Scene Navigator. It picks up every heading, section, and synopsis. 
-
-BEE
-Wait, why is that scene heading red?
-
-BEETLE
-Markers. Double brackets with a color name. 
-
-[[red]]
-
-BEETLE (CONT'D)
-It tints the entry in the navigator and the index cards. It’s how we track the mood of each scene. Red for passion, blue for sorrow.
-
-BEE
-(running her fingers over the keys)
-And these hashtags?
-
-BEETLE
-Sections. Type one or more `#` symbols. It’s the skeleton of the script. It won't print in the PDF, but it keeps us organized.
-
-Beetle types `/ic`. The screen transforms into a grid of cards, each representing a scene.
-
-BEE
-Oh, Beetle... it’s like our corkboard in the old studio.
-
-BEETLE
-This is the Story Architect. Every scene is an index card. Use the `Arrow Keys` to move, or `Shift+Arrows` to swap them. Swapping the cards moves the actual text in the script.
-
-BEE
-(pointing)
-Look, I can edit the synopsis right here. 
-
-BEETLE
-Press `Enter`. Change the heading, then the synopsis. It’s like we’re rearranging our memories before they even happen.
-
-BEE
-What about the parts we aren't ready for yet? The things we want to hide?
-
-/*
-This is the Boneyard.
-A place for deleted scenes, half-formed thoughts,
-and the words we aren't brave enough to say yet.
-Everything in here is ignored by the exporter.
-*/
-
-BEETLE
-The Boneyard. A safe place for our ghosts.
-
-
-# ACT III: THE ECHO
+# ACT I: THE ZEN STUDIO
 
 INT. THE APARTMENT - NIGHT
 
-= Demonstrating the rhythm of dialogue, dual dialogue, and the Ensemble Sidebar.
-
-Bee takes the keyboard. Her fingers move with a newfound confidence.
-
-BEE
-I want to hear us talk. Truly talk.
-
-BEE
-Are we real? Or just characters in a machine?
-
-BEETLE ^
-As real as the ink. As real as the pulse.
-
-BEE (CONT'D)
-The `^` at the end of your name... Dual Dialogue. We’re speaking at the same time, overlapping like a song.
+= Beetle and Bee sit in the soft glow of a terminal. The cursor blinks like a steady pulse.
 
 BEETLE
-Speaking of songs...
-
-Bee types a tilde.
-
-~ We’re just echoes in a terminal...
-~ Lost in the lines of code...
-~ Writing our way back home.
-
-> THE END OF THE SONG <
+Welcome home.
 
 BEE
-Centered text for the finale. Just use the brackets.
-
-Bee hits `Ctrl+L`. A list of characters appears on the right.
-
-BEE (CONT'D)
-The Ensemble Sidebar. It shows every character, how many words they’ve spoken, and where they appear. It’s a map of everyone we’ve ever imagined.
+(looking at the screen)
+It's different. cleaner. The dashboard... I just tapped `Tab` and `Enter` to get here from the start screen.
 
 BEETLE
-And if you ever get lost, just press `F1`. The Cheat Sheet shows every shortcut we have.
+That's the new Home Dashboard. Threaded, simple, and fast.
 
+Beetle types a command. The text around the cursor stays bright, while everything else dims into a soft grey.
 
-# ACT IV: THE PERSPECTIVE
+BEETLE (CONT'D)
+`/set highlight`. It's called **Active Block Focus**. It keeps your mind on the paragraph you're actually writing.
+
+BEE
+It feels like... the world just fell away.
+
+# ACT II: THE ARCHITECT'S SKELETON
 
 INT. THE APARTMENT - LATER
 
-= Using X-Ray Mode to analyze the pacing and balance of their creation.
-
-The script has grown into a thick stack of virtual pages. Beetle types `/xray`. 
+= They begin to map out the structure of their story using professional templates.
 
 BEETLE
-Let’s see the soul of this thing. The X-Ray doesn't lie.
+We aren't just writing lines anymore. We're building a structure.
+
+Beetle types `/structure`. A picker appears. He selects "Michael Hauge's 6 Stage Journey".
 
 BEE
-What am I looking at? It looks like a heartbeat monitor.
+Wait, the script just... populated itself?
 
 BEETLE
-The Pacing Map. Action vs. Dialogue. If it’s too heavy on one side, the rhythm of the story is off. We need to find the balance between the silence and the sound.
+Exactly. It imported the beats. You see those `#` symbols? Those are **Sections**. They build the navigator on the left (`Ctrl+T`). And those `=` lines? **Synopses**. They fill the **Index Cards** (`/ic`).
 
 BEE
-(navigating with `1`, `2`, `3`)
-And the Character Analysis... it says I dominate the dialogue.
+(pointing to a line)
+And these double brackets? `[[props: A silver locket]]`.
 
 BEETLE
-(teasing)
-By 15% now. 
+**Production Tags**. Departmental metadata. VFX, SFX, Wardrobe, Props. We're tracking the physical world while we imagine the emotional one.
 
-BEE
-I’m the heart, Beetle. You’re the logic.
-
-BEETLE
-Press `3`. Scene Analysis. It estimates the page count for each scene. It flagged scene 12 as "Over-Limit". We’re lingering too long in the rain.
-
-
-# ACT V: THE FEVER DREAM
+# ACT III: THE REVISION MARKS
 
 INT. THE APARTMENT - DEEP NIGHT
 
-= The intensity of Writing Sprints, the safety of Snapshots, and the mood of Themes.
-
-Rain streaks the window in long, jagged lines. Bee is typing with frantic, beautiful energy. A timer in the status bar ticks down like a bomb.
-
-BEE
-Don't stop me. I’m in a Sprint. I can feel the words coming.
+= The intensity of writing increases. Beetle toggles a new mode.
 
 BEETLE
-`/sprint 15`. Fifteen minutes to say everything we’ve been holding back. 
+We're in the second draft now. `/revision on`.
+
+Beetle edits a line of dialogue. A bright yellow `*` appears in the right margin.
 
 BEE
-(frantic)
-What if I break it? What if I change something I can't take back?
+What's that star?
 
 BEETLE
-Type `/snap`. 
-
-A gallery of time-stamped versions appears. 
-
-BEETLE (CONT'D)
-Automated Session Snapshots. Fount saves a copy every time we hit save, or every 30 seconds if we're too busy to think. Press `Enter` to restore, or `o` to open it in a new buffer and compare. You can never truly lose your way.
+A **Revision Mark**. Every line we touch while Revision Mode is active gets flagged. It tells the director and the cast exactly what changed since the last print.
 
 BEE
-(breathless)
-I want it to feel different. I want it to feel like the deep ocean.
+And when we're happy with it?
 
 BEETLE
-Press `Ctrl+P`. Navigate to the Theme option. Or just type `/theme moonlight`. 
+`/revision bake`. The marks disappear, the changes are locked, and we move forward.
 
-The screen shifts from the stark terminal white to a deep, vibrant blue. 
+# ACT IV: THE X-RAY AUDIT
 
-BEE
-There. Now the words can breathe.
+INT. THE APARTMENT - DAWN
 
+= Using X-Ray Mode to analyze the production breakdown.
 
-# ACT VI: THE FINAL POLISH
-
-EXT. THE BALCONY - DAWN
-
-= The final touches: Search & Replace, Production Tools, and the Export.
-
-The sun begins to peek over the horizon, painting the city in shades of gold and grey. Beetle and Bee sit together on the small balcony, the laptop resting on their laps.
+Beetle types `/xray` and hits `4`.
 
 BEETLE
-One last thing. We need to change the name of the protagonist. "The Writer" is too distant.
+Tab 4. The **Production Breakdown**. 
 
 BEE
-(nodding)
-Search for "The Writer". Replace it with "Us".
-
-Beetle types `/search The Writer`. The screen lights up with yellow highlights on every page. 
+It's a list of everything we need! Every prop, every wardrobe change... it's all indexed from those tags we wrote.
 
 BEETLE
-Use `Alt+Up` and `Alt+Down` to find each one. Press `r` to replace this one, or `R` to replace them all at once. And if we need to see what we did last... `Alt+/` recalls our last command.
+Fount doesn't just read your story; it understands your production. Pacing (`Tab 2`), Word Counts (`Tab 1`), and now, the Physical Reality of the set.
 
 BEE
-And the scene numbers? For the director?
+(smiling)
+It's time to export.
 
 BEETLE
-`/renum`. It numbers everything sequentially. If we were heading to set tomorrow, we’d use `/locknum` to freeze them, so any new scenes would be 14A, 14B... 
+Press `Ctrl+E`. Choose PDF. Your revision marks, your scene numbers, and your bold headings... they're all there.
 
 BEE
-It’s time to let it go.
-
-BEETLE
-Wait. One more thing.
-
-Beetle types `/addtitle`. A title page block appears at the top. He fills in their names.
-
-BEE
-Now?
-
-BEETLE
-Now.
-
-===
-
-BEE
-A page break for the end.
-
-Beetle types `/export` or presses `Ctrl+E`. The Export Pane appears, offering PDF, CSV, and Character Reports.
-
-BEETLE
-Where should we send it?
-
-BEE
-To anyone who’s ever been afraid to start.
+Let's send it to the world.
 
 > FADE OUT.
 
-[End of Tutorial. Use `/home` to go back to the start screen. Happy writing!]
+[End of Tutorial. Use `/home` to go back to the dashboard. Happy writing!]
