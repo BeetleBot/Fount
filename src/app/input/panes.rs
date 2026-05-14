@@ -525,15 +525,22 @@ impl App {
                     return Ok(false);
                 }
                 AppMode::Home => {
-                    let home_items = 5 + self.recent_files.len().min(5);
+                    let recent_count = self.recent_files.len().min(4);
+                    let home_items = 5 + recent_count + 2; // Menu(5) + Recent(max 4) + Wiki + GitHub
                     match key.code {
                         KeyCode::Esc if self.file.is_some() || !self.lines.iter().all(|l| l.is_empty()) => {
-                            // If there's an actual file loaded, dismiss home
                             self.mode = AppMode::Normal;
                         }
                         KeyCode::Char('c') | KeyCode::Char('g') if ctrl => {
-                            // Ctrl+C/G always dismisses
                             self.mode = AppMode::Normal;
+                        }
+                        KeyCode::Tab => {
+                            // Cycle between Main Menu and Footer
+                            if self.home_selected < 5 + recent_count {
+                                self.home_selected = 5 + recent_count; // Jump to footer
+                            } else {
+                                self.home_selected = 0; // Jump to start
+                            }
                         }
                         KeyCode::Up | KeyCode::Char('k') => {
                             if self.home_selected > 0 {
@@ -620,6 +627,18 @@ impl App {
                                 4 => {
                                     // Exit App
                                     return Ok(true);
+                                }
+                                _ if self.home_selected == 5 + recent_count => {
+                                    // Wiki
+                                    std::thread::spawn(|| {
+                                        let _ = open::that("https://github.com/beetlebot/founttui/wiki");
+                                    });
+                                }
+                                _ if self.home_selected == 5 + recent_count + 1 => {
+                                    // GitHub
+                                    std::thread::spawn(|| {
+                                        let _ = open::that("https://github.com/beetlebot/founttui");
+                                    });
                                 }
                                 _ => {
                                     // Recent Files
@@ -1033,9 +1052,6 @@ impl App {
                                     self.card_input_buffer = card.heading.clone();
                                     self.set_status("Editing Title... [Enter] to next");
                                 }
-                            }
-                            KeyCode::Char('?') => {
-                                self.show_quick_help = true;
                             }
                             KeyCode::Char('n') | KeyCode::Char('N') => {
                                 let is_section = shift || key.code == KeyCode::Char('N');

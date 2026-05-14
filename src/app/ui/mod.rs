@@ -158,6 +158,11 @@ pub fn draw(f: &mut Frame, app: &mut App) {
         ),
         _ => (" Prompt ", Color::from(theme.ui.command_mode_bg.clone())),
     };
+    
+    if app.mode == AppMode::Home {
+        draw_home(f, app);
+        return;
+    }
 
     let is_prompt = app.mode != AppMode::Normal;
     let has_status = app.status_msg.is_some();
@@ -1218,8 +1223,13 @@ pub fn draw(f: &mut Frame, app: &mut App) {
         }
         
         right_spans.push(Span::styled(sep, sep_style));
+        let help_text = if current_context_mode == AppMode::IndexCards {
+            if app.config.use_nerd_fonts { " 󰌌 ? Quick Help " } else { " ? Quick Help " }
+        } else {
+            if app.config.use_nerd_fonts { " 󰌌 F1 Help " } else { " F1 Help " }
+        };
         right_spans.push(Span::styled(
-            if app.config.use_nerd_fonts { " 󰌌 F1 Help " } else { " F1 Help " },
+            help_text,
             Style::default().fg(mode_bg).add_modifier(Modifier::BOLD),
         ));
 
@@ -1372,10 +1382,6 @@ pub fn draw(f: &mut Frame, app: &mut App) {
         }
     }
 
-    // -- Minimalist Home Screen --
-    if app.mode == AppMode::Home {
-        draw_home(f, app);
-    }
 
     if app.mode == AppMode::FilePicker {
         draw_file_picker(f, app, area);

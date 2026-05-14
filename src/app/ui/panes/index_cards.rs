@@ -47,10 +47,17 @@ pub fn draw_index_cards(f: &mut Frame, app: &mut App, area: Rect) {
         }
 
         // Calculate visible part of the card
-        let draw_y = (area.y as i32 + relative_y).max(area.y as i32);
+        let mut draw_y = area.y as i32 + relative_y;
         let mut draw_h = raw_rect.height as i32;
 
-        // Clip the height if it overflows the bottom
+        // Clip the top
+        if draw_y < area.y as i32 {
+            let diff = area.y as i32 - draw_y;
+            draw_h -= diff;
+            draw_y = area.y as i32;
+        }
+
+        // Clip the bottom
         if draw_y + draw_h > (area.y + area.height) as i32 {
             draw_h = (area.y + area.height) as i32 - draw_y;
         }
@@ -79,7 +86,7 @@ pub fn draw_index_cards(f: &mut Frame, app: &mut App, area: Rect) {
             
             let block = Block::default()
                 .borders(Borders::ALL)
-                .border_type(if is_selected { BorderType::Double } else { BorderType::Plain })
+                .border_type(BorderType::Rounded)
                 .border_style(border_style)
                 .style(base_style);
             
@@ -122,7 +129,7 @@ pub fn draw_index_cards(f: &mut Frame, app: &mut App, area: Rect) {
             
             let block = Block::default()
                 .borders(Borders::ALL)
-                .border_type(if is_selected { BorderType::Thick } else { BorderType::Plain })
+                .border_type(BorderType::Rounded)
                 .border_style(border_style)
                 .style(base_style);
                 

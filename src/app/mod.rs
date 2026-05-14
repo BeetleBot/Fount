@@ -1112,7 +1112,6 @@ impl App {
             }
             "ic" => {
                 self.mode = AppMode::IndexCards;
-                self.set_status("Index Cards Mode: [Arrows] Navigate, [Enter] Edit, [n] New, [Shift+Arrows] Swap, [Del] Remove, [?] Help, [/] Command");
             }
             "editor" | "ed" => {
                 self.mode = AppMode::Normal;
