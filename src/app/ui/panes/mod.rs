@@ -209,7 +209,7 @@ pub fn draw_file_picker(f: &mut Frame, app: &mut App, area: Rect) {
                     if app.config.use_nerd_fonts {
                         "󰉋  "
                     } else {
-                        "[D] "
+                        " "
                     },
                     app.theme.ui.tree_mode_bg.clone().into(),
                 )
@@ -218,7 +218,7 @@ pub fn draw_file_picker(f: &mut Frame, app: &mut App, area: Rect) {
                     if app.config.use_nerd_fonts {
                         "󰈙  "
                     } else {
-                        "    "
+                        " "
                     },
                     app.theme.primary_fg(),
                 )
@@ -234,9 +234,9 @@ pub fn draw_file_picker(f: &mut Frame, app: &mut App, area: Rect) {
                 Span::styled(
                     if is_selected {
                         if app.config.use_nerd_fonts {
-                            " 󰁔 "
+                            "󰁔 "
                         } else {
-                            " > "
+                            "> "
                         }
                     } else {
                         "   "
@@ -513,9 +513,9 @@ pub fn draw_export_modal(f: &mut Frame, app: &App) {
             Span::styled(
                 if is_selected {
                     if app.config.use_nerd_fonts {
-                        " 󰁔 "
+                        "󰁔 "
                     } else {
-                        " > "
+                        "> "
                     }
                 } else {
                     "   "
@@ -559,9 +559,9 @@ pub fn draw_export_modal(f: &mut Frame, app: &App) {
             Span::styled(
                 if app.selected_export_option == 8 {
                     if app.config.use_nerd_fonts {
-                        " 󰁔 "
+                        "󰁔 "
                     } else {
-                        " > "
+                        "> "
                     }
                 } else {
                     "   "
@@ -594,9 +594,9 @@ pub fn draw_export_modal(f: &mut Frame, app: &App) {
             Span::styled(
                 if app.selected_export_option == 1 {
                     if app.config.use_nerd_fonts {
-                        " 󰁔 "
+                        "󰁔 "
                     } else {
-                        " > "
+                        "> "
                     }
                 } else {
                     "   "

@@ -227,7 +227,11 @@ pub fn draw(f: &mut Frame, app: &mut App) {
                 .border_type(border_type)
                 .border_style(Style::default().fg(dim_color))
                 .title(Span::styled(
-                    format!("  FountTUI v{} ", env!("CARGO_PKG_VERSION")),
+                    if app.config.use_nerd_fonts {
+                        format!("  FountTUI v{} ", env!("CARGO_PKG_VERSION"))
+                    } else {
+                        format!(" FountTUI v{} ", env!("CARGO_PKG_VERSION"))
+                    },
                     Style::default().fg(mode_bg).add_modifier(Modifier::BOLD),
                 ));
             
@@ -261,7 +265,11 @@ pub fn draw(f: &mut Frame, app: &mut App) {
                 .border_type(BorderType::Rounded)
                 .border_style(Style::default().fg(dim_color))
                 .title(Span::styled(
-                    if app.mode == AppMode::SceneTree { " 󰙅 Scene Tree " } else { " 󰼭 Characters " },
+                    if app.mode == AppMode::SceneTree {
+                        if app.config.use_nerd_fonts { " 󰙅 Scene Tree " } else { " Scene Tree " }
+                    } else {
+                        if app.config.use_nerd_fonts { " 󰼭 Characters " } else { " Characters " }
+                    },
                     Style::default().fg(mode_bg).add_modifier(Modifier::BOLD),
                 ));
             f.render_widget(sidebar_block.clone(), app.sidebar_area);
@@ -276,7 +284,11 @@ pub fn draw(f: &mut Frame, app: &mut App) {
             .border_type(BorderType::Rounded)
             .border_style(Style::default().fg(dim_color))
             .title(Span::styled(
-                if app.mode == AppMode::IndexCards { " 󰄬 Index Cards " } else { "  Script Editor " },
+                if app.mode == AppMode::IndexCards {
+                    if app.config.use_nerd_fonts { " 󰄬 Index Cards " } else { " Index Cards " }
+                } else {
+                    if app.config.use_nerd_fonts { "  Editor " } else { " Editor " }
+                },
                 Style::default().fg(mode_bg).add_modifier(Modifier::BOLD),
             ));
         
@@ -602,7 +614,7 @@ pub fn draw(f: &mut Frame, app: &mut App) {
                             if first_line {
                                 lines.push(Line::from(vec![
                                     Span::styled(prefix, style),
-                                    Span::styled(if app.config.use_nerd_fonts { "󰉋 " } else { "◆ " }, style),
+                                    Span::styled(if app.config.use_nerd_fonts { "󰉋 " } else { "" }, style),
                                     Span::styled(current_line.clone(), style),
                                 ]));
                                 first_line = false;
@@ -625,7 +637,7 @@ pub fn draw(f: &mut Frame, app: &mut App) {
                         if first_line {
                             lines.push(Line::from(vec![
                                 Span::styled(prefix, style),
-                                Span::styled(if app.config.use_nerd_fonts { "󰉋 " } else { "◆ " }, style),
+                                Span::styled(if app.config.use_nerd_fonts { "󰉋 " } else { "" }, style),
                                 Span::styled(current_line, style),
                             ]));
                         } else {
