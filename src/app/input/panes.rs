@@ -31,23 +31,25 @@ impl App {
                             let next = (current + 1) % self.metadata_suggestions.len().max(1);
                             self.metadata_state.select(Some(next));
                         }
-                        KeyCode::Enter | KeyCode::Tab if let Some(selected) = self.metadata_state.selected()
-                            && let Some(tag) = self.metadata_suggestions.get(selected).cloned() =>
-                        {
-                            // Insert the rest of the tag
-                            let query_len = self.metadata_query.len();
-                            let remaining = &tag[query_len..];
-                            self.insert_str(remaining);
-
-                            *text_changed = true;
-                            *cursor_moved = true;
-                            *update_target_x = true;
-                            self.mode = AppMode::Normal;
-                            self.metadata_query.clear();
-                        }
                         KeyCode::Enter | KeyCode::Tab => {
-                            self.mode = AppMode::Normal;
-                            self.metadata_query.clear();
+                            if let Some(tag) = self.metadata_state.selected()
+                                .and_then(|idx| self.metadata_suggestions.get(idx))
+                                .cloned()
+                            {
+                                // Insert the rest of the tag
+                                let query_len = self.metadata_query.len();
+                                let remaining = &tag[query_len..];
+                                self.insert_str(remaining);
+
+                                *text_changed = true;
+                                *cursor_moved = true;
+                                *update_target_x = true;
+                                self.mode = AppMode::Normal;
+                                self.metadata_query.clear();
+                            } else {
+                                self.mode = AppMode::Normal;
+                                self.metadata_query.clear();
+                            }
                         }
                         KeyCode::Backspace => {
                             if self.metadata_query.is_empty() {
@@ -1109,20 +1111,19 @@ impl App {
                             };
                             self.theme_picker_state.select(Some(new_idx));
                         }
-                        KeyCode::Enter if let Some(idx) = self.theme_picker_state.selected()
-                            && idx < themes.len() =>
-                        {
-                            let name = themes[idx].clone();
-                            if self.theme_manager.set_theme(&name) {
-                                self.theme = self.theme_manager.current_theme.clone();
-                                self.config.theme = self.theme.name.clone();
-                                let _ = crate::config::Config::save_string_setting("theme", &self.theme.name);
-                                self.set_status(&format!("Theme set to {}", self.theme.name));
-                                self.update_layout();
-                            }
-                            self.mode = AppMode::Normal;
-                        }
                         KeyCode::Enter => {
+                            if let Some(idx) = self.theme_picker_state.selected() {
+                                if idx < themes.len() {
+                                    let name = themes[idx].clone();
+                                    if self.theme_manager.set_theme(&name) {
+                                        self.theme = self.theme_manager.current_theme.clone();
+                                        self.config.theme = self.theme.name.clone();
+                                        let _ = crate::config::Config::save_string_setting("theme", &self.theme.name);
+                                        self.set_status(&format!("Theme set to {}", self.theme.name));
+                                        self.update_layout();
+                                    }
+                                }
+                            }
                             self.mode = AppMode::Normal;
                         }
                         _ => {}
