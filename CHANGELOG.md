@@ -1,8 +1,9 @@
 # Changelog
 
-## [0.9.6] - 2026-05-14
+## [0.9.7] - 2026-05-14
 
 ### New features
+- **New Icon & Branding**: Rebranded Fount with a fresh, transparent square logo and a professional new tagline: "Blockbusters in Terminal".
 - **FountTUI Overhaul**: Completely modernized the application interface for a more streamlined, focused, and premium aesthetic. This includes a transition to rounded corners, minimalist layered layouts, and a distraction-free full-page Home experience.
 - **Full-Page Dashboard**: Transformed the Home screen from a modal into a dedicated full-screen landing page with a centered gradient logo, minimalist navigation, and an interactive footer.
 - **Interactive Footer Links**: Added selectable Wiki and GitHub links to the Home screen, supporting `Tab` navigation for a professional dashboard experience.
@@ -15,6 +16,7 @@
 - **Zero-Warning Codebase**: Finalized a clean, warning-free build state across all core modules.
 
 ### Fixes
+- **CI Build Resolution**: Resolved a critical build failure in version 0.9.6 by replacing experimental `if let` guards with stable Rust syntax, ensuring cross-platform build stability.
 - **Robust Scrolling Logic**: Fixed a critical clipping bug in Index Card mode that caused cards to overlap when partially scrolled off the top of the viewport.
 - **Search Cancellation**: Corrected a regression where the `Esc` key failed to cancel search mode without a `Ctrl` modifier.
 - **Structural Code Polish**: Resolved "too many arguments" and "needless update" warnings through context struct refactoring.
