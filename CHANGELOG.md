@@ -1,14 +1,23 @@
 # Changelog
 
-##  - Unreleased
+## [0.9.6] - 2026-05-14
+
+### New features
+- **FountTUI Overhaul**: Completely modernized the application interface for a more streamlined, focused, and premium aesthetic. This includes a transition to rounded corners, minimalist layered layouts, and a distraction-free full-page Home experience.
+- **Full-Page Dashboard**: Transformed the Home screen from a modal into a dedicated full-screen landing page with a centered gradient logo, minimalist navigation, and an interactive footer.
+- **Interactive Footer Links**: Added selectable Wiki and GitHub links to the Home screen, supporting `Tab` navigation for a professional dashboard experience.
+- **Threaded Browser Integration**: External links now open in background OS threads, preventing the TUI from hanging while waiting for the browser to launch.
+- **Stress Testing Suite**: Introduced a comprehensive 10-page screenplay complexity test (`src/app/tests/performance.rs`) to ensure high-performance parsing and stability under pressure.
 
 ### Improvements
-- **Zero-Warning Codebase**: Achieved a clean, zero-warning Clippy status for the entire library and binary, ensuring long-term maintainability and stability.
-- **Structural Code Refactoring**: Successfully resolved "too many arguments" and "needless update" warnings by implementing clean context structs and idiomatic patterns across the PDF export and UI rendering engines.
+- **Modernized Index Cards**: Updated the Index Card UI with premium **rounded corners** and standardized border styles to align with the "Bagels" design language.
+- **Interface Decluttering**: Cleaned up the Index Cards footer and status bar, removing redundant hint text in favor of a persistent `? Quick Help` indicator.
+- **Zero-Warning Codebase**: Finalized a clean, warning-free build state across all core modules.
 
 ### Fixes
-- **Borrow Checker Resolutions**: Fixed complex mutable borrow conflicts in the file picker and input handling logic.
-- **Search Cancellation Logic**: Corrected a regression where the `Esc` key failed to cancel search mode without a `Ctrl` modifier.
+- **Robust Scrolling Logic**: Fixed a critical clipping bug in Index Card mode that caused cards to overlap when partially scrolled off the top of the viewport.
+- **Search Cancellation**: Corrected a regression where the `Esc` key failed to cancel search mode without a `Ctrl` modifier.
+- **Structural Code Polish**: Resolved "too many arguments" and "needless update" warnings through context struct refactoring.
 
 ## [0.9.5] - 2026-05-11
 
