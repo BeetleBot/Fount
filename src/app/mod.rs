@@ -1045,11 +1045,6 @@ impl App {
                     self.set_error("No filename");
                 }
             }
-            "progressbar" => {
-                self.config.show_progress_bar = !self.config.show_progress_bar;
-                let _ = crate::config::Config::save_setting("progressbar", self.config.show_progress_bar);
-                self.set_status(&format!("Progress bar {}", if self.config.show_progress_bar { "enabled" } else { "disabled" }));
-            }
             "set" => {
                 if args.len() >= 2 {
                     let opt = args[0];
@@ -1068,7 +1063,6 @@ impl App {
                         "highlight" => self.config.highlight_active_action = val,
                         "line" | "linenums" => self.config.show_line_numbers = val,
                         "prodtags" => self.config.show_production_tags = val,
-                        "progressbar" => self.config.show_progress_bar = val,
                         _ => self.set_error(&format!("Unknown option: {}", opt)),
                     }
                     *text_changed = true;
@@ -1099,9 +1093,6 @@ impl App {
                         }
                         "prodtags" => {
                             self.config.show_production_tags = !self.config.show_production_tags
-                        }
-                        "progressbar" => {
-                            self.config.show_progress_bar = !self.config.show_progress_bar
                         }
                         _ => self.set_error(&format!("Unknown option: {}", opt)),
                     }

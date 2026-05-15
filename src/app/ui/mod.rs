@@ -1295,20 +1295,7 @@ pub fn draw(f: &mut Frame, app: &mut App) {
             } else if app.save_indicator_timer.is_some_and(|t| t.elapsed().as_secs_f32() < 2.0) {
                 let saved_msg = if app.config.use_nerd_fonts { "   Saved  " } else { "  [X] Saved  " };
                 mid_spans.push(Span::styled(saved_msg, theme.success_style().add_modifier(Modifier::BOLD)));
-            } else if is_writing_mode && app.config.show_progress_bar && mid_width > 12 {
-                let total_lines = app.lines.len();
-                let current_line = app.cursor_y + 1;
-                let pct = if total_lines > 0 { (current_line as f32 / total_lines as f32).clamp(0.0, 1.0) } else { 0.0 };
-                
-                let bar_width = mid_width.saturating_sub(10);
-                let filled = (pct * bar_width as f32) as usize;
-                let empty = bar_width.saturating_sub(filled);
-                
-                mid_spans.push(Span::styled(format!(" {:>3.0}% ", pct * 100.0), dim_style));
-                mid_spans.push(Span::styled("█".repeat(filled), Style::default().fg(mode_bg)));
-                mid_spans.push(Span::styled("░".repeat(empty), Style::default().fg(dim_color)));
             }
-
             let mid_content_width: usize = mid_spans.iter().map(|s| UnicodeWidthStr::width(s.content.as_ref())).sum::<usize>();
             let total_pad = mid_width.saturating_sub(mid_content_width);
             let left_pad = total_pad / 2;
