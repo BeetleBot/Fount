@@ -62,15 +62,18 @@ pub fn get_all_shortcuts() -> Vec<Shortcut> {
         sc!("Essential Controls", "^L", "Ensemble", "Character stats", Info),
         sc!("Essential Controls", "Tab", "Autocomplete", "Accept suggestion", Accent),
         sc!("Essential Controls", "/theme", "Theme Picker", "Open selection modal", Accent),
-        sc!("Essential Controls", "/theme [name]", "Switch theme", "Change UI colors", Dim),
         sc!("Essential Controls", "/editor", "Normal editor", "Return to editor", Dim),
-        sc!("Essential Controls", "/progressbar", "Progress bar", "Toggle visual progress", Accent),
 
         // ── Edit & History ──
-        sc!("Edit & History", "/ud", "Undo", "Undo last change", Warning),
-        sc!("Edit & History", "/rd", "Redo", "Redo last change", Warning),
         sc!("Edit & History", "^Z", "Quick Undo", "Undo last edit", Warning),
         sc!("Edit & History", "^Shift+Z", "Quick Redo", "Redo last edit", Warning),
+        sc!("Edit & History", "^A", "Select all", "Highlight all text", Accent),
+        sc!("Edit & History", "Shift+Arrow", "Extend selection", "Select char/line", Accent),
+        sc!("Edit & History", "Shift+Home", "Select to start", "Select to line start", Accent),
+        sc!("Edit & History", "Shift+End", "Select to end", "Select to line end", Accent),
+        sc!("Edit & History", "^C", "Copy", "Copy to clipboard", Success),
+        sc!("Edit & History", "^X", "Cut", "Cut to clipboard", Warning),
+        sc!("Edit & History", "^V", "Paste", "Paste from clipboard", Success),
 
         // ── File & Project ──
         sc!("File & Project", "/w", "Save", "Save script", Success),
@@ -86,18 +89,6 @@ pub fn get_all_shortcuts() -> Vec<Shortcut> {
         sc!("File & Project", "/wq", "Save & close", "Write then close", Success),
         sc!("File & Project", "/ex", "Exit app", "Close all buffers", Error),
         sc!("File & Project", "/home", "Start screen", "Welcome dashboard", Accent),
-
-        sc!("Edit & History", "^A", "Select all", "Highlight all text", Accent),
-        sc!("Edit & History", "Shift+Arrow", "Extend selection", "Select char/line", Accent),
-        sc!("Edit & History", "Shift+Home", "Select to start", "Select to line start", Accent),
-        sc!("Edit & History", "Shift+End", "Select to end", "Select to line end", Accent),
-        sc!("Edit & History", "^C", "Copy", "Copy to clipboard", Success),
-        sc!("Edit & History", "^X", "Cut", "Cut to clipboard", Warning),
-        sc!("Edit & History", "^V", "Paste", "Paste from clipboard", Success),
-        sc!("Edit & History", "/selectall", "Select all", "Command for ^A", Accent),
-        sc!("Edit & History", "/copy", "Copy", "Command for ^C", Success),
-        sc!("Edit & History", "/cut", "Cut", "Command for ^X", Warning),
-        sc!("Edit & History", "/paste", "Paste", "Command for ^V", Success),
 
         // ── Search & Replace ──
         sc!("Search & Replace", "/search [q]", "Search text", "Find and highlight", Info),
@@ -117,9 +108,6 @@ pub fn get_all_shortcuts() -> Vec<Shortcut> {
         sc!("Navigation & Motion", "/pos", "Cursor position", "Line/Col status", Info),
 
         // ── Production Tools ──
-        sc!("Production Tools", "/sprint [m]", "Start sprint", "Writing timer", Success),
-        sc!("Production Tools", "/cancelsprint", "Stop sprint", "End writing session", Error),
-        sc!("Production Tools", "/sprintstat", "Sprint records", "View history", Info),
         sc!("Production Tools", "/snap", "Snapshots", "Browse auto-saves", Info),
         sc!("Production Tools", "/xray", "Visual analysis", "Pacing & char charts", Info),
         sc!("Production Tools", "/ic", "Index cards", "Scene grid mode", Info),
@@ -146,8 +134,6 @@ pub fn get_all_shortcuts() -> Vec<Shortcut> {
         sc!("Settings", "/set autocomplete", "Autocomplete", "Character/scene hints", Accent),
         sc!("Settings", "/set autobreaks", "Smart breaks", "Auto-paragraph spacing", Accent),
         sc!("Settings", "/set line", "Line numbers", "Show leftmost gutter", Accent),
-        sc!("Settings", "/set progressbar", "Progress bar", "Show footer progress", Accent),
-
     ]
 }
 

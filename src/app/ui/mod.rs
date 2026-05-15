@@ -1079,7 +1079,7 @@ pub fn draw(f: &mut Frame, app: &mut App) {
             let key_color = sc.color.resolve(&theme);
             
             rows.push(Row::new(vec![
-                Cell::from(Span::styled(format!(" {:<10}", sc.key), Style::default().fg(key_color).add_modifier(Modifier::BOLD))),
+                Cell::from(Span::styled(format!(" {:<20}", sc.key), Style::default().fg(key_color).add_modifier(Modifier::BOLD))),
                 Cell::from(Span::styled(format!(" {:<16}", sc.label), Style::default().fg(fg).add_modifier(Modifier::BOLD))),
                 Cell::from(Span::styled(format!(" {}", sc.desc), Style::default().fg(dim_color))),
             ]));
@@ -1099,7 +1099,7 @@ pub fn draw(f: &mut Frame, app: &mut App) {
         let table = Table::new(
             rows,
             [
-                Constraint::Length(14),
+                Constraint::Length(22),
                 Constraint::Length(20),
                 Constraint::Min(20),
             ],
