@@ -4,7 +4,7 @@ use ratatui::{
     layout::{Alignment, Layout, Constraint, Direction},
     style::{Color, Modifier, Style},
     text::{Line, Span},
-    widgets::{Block, Borders, BorderType, Paragraph},
+    widgets::Paragraph,
 };
 
 fn hex_to_rgb(hex: &str) -> (u8, u8, u8) {
@@ -37,28 +37,32 @@ pub fn draw_home(f: &mut Frame, app: &mut App) {
     let theme = &app.theme;
 
     let accent = Color::from(theme.ui.normal_mode_bg.clone());
-    let sel_bg = Color::from(theme.ui.selection_bg.clone());
-    let sel_fg = Color::from(theme.ui.selection_fg.clone());
     let normal_fg = theme.primary_fg();
     let dim = Color::from(theme.ui.dim.clone());
 
-    let stops = vec![
-        hex_to_rgb(&theme.ui.normal_mode_bg.0),
-        hex_to_rgb(&theme.ui.tree_mode_bg.0),
-        hex_to_rgb(&theme.ui.search_mode_bg.0),
-    ];
-
-    // Main Layout
-    let chunks = Layout::default()
+    // Vertical centering
+    let vertical_chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
-            Constraint::Length(10), // Header/Logo
-            Constraint::Min(0),      // Content
-            Constraint::Length(3),  // Footer
+            Constraint::Min(0),
+            Constraint::Length(35), // Height of our dashboard
+            Constraint::Min(0),
         ])
         .split(area);
 
-    // ── HEADER ──
+    // Horizontal centering
+    let horizontal_chunks = Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints([
+            Constraint::Min(0),
+            Constraint::Length(70), // Width of our dashboard
+            Constraint::Min(0),
+        ])
+        .split(vertical_chunks[1]);
+
+    let dashboard_area = horizontal_chunks[1];
+
+    // ── LOGO & VERSION ──
     let logo = [
         "      ░██     ░████                                     ░██    ",
         "     ░██     ░██                                        ░██    ",
@@ -69,7 +73,14 @@ pub fn draw_home(f: &mut Frame, app: &mut App) {
         "░██          ░██     ░███████   ░█████░██ ░██    ░██     ░████ ",
     ];
 
-    let mut logo_lines = Vec::new();
+    let stops = vec![
+        hex_to_rgb(&theme.ui.normal_mode_bg.0),
+        hex_to_rgb(&theme.ui.tree_mode_bg.0),
+    ];
+
+    let mut content = Vec::new();
+    
+    // Logo
     let max_logo_w = logo.iter().map(|r| r.chars().count()).max().unwrap_or(1);
     for row in &logo {
         let mut spans = Vec::new();
@@ -81,87 +92,77 @@ pub fn draw_home(f: &mut Frame, app: &mut App) {
                 spans.push(Span::styled(ch.to_string(), Style::default().fg(gradient_color(&stops, t))));
             }
         }
-        logo_lines.push(Line::from(spans));
-    }
-    logo_lines.push(Line::from(Span::styled(
-        format!("v{} — Blockbusters in Terminal", env!("CARGO_PKG_VERSION")),
-        Style::default().fg(accent).add_modifier(Modifier::ITALIC),
-    )));
-
-    f.render_widget(
-        Paragraph::new(logo_lines)
-            .alignment(Alignment::Center)
-            .block(Block::default()
-                .borders(Borders::BOTTOM)
-                .border_style(Style::default().fg(dim))),
-        chunks[0]
-    );
-
-    // ── CONTENT ──
-    let menu = ["New File", "New file with Structure", "Open File", "Tutorial", "Exit"];
-    let mut menu_lines = Vec::new();
-    menu_lines.push(Line::from(""));
-
-    for (i, label) in menu.iter().enumerate() {
-        let is_sel = i == app.home_selected;
-        if is_sel {
-            menu_lines.push(Line::from(vec![
-                Span::styled(format!("  {}  ", if app.config.use_nerd_fonts { "󰁔" } else { "▸" }), Style::default().fg(sel_fg).bg(sel_bg).add_modifier(Modifier::BOLD)),
-                Span::styled(label.to_string(), Style::default().fg(sel_fg).bg(sel_bg).add_modifier(Modifier::BOLD)),
-            ]));
-        } else {
-            menu_lines.push(Line::from(Span::styled(format!("    {}  ", label), Style::default().fg(normal_fg))));
-        }
-        menu_lines.push(Line::from(""));
+        content.push(Line::from(spans).alignment(Alignment::Center));
     }
 
-    if !app.recent_files.is_empty() {
-        menu_lines.push(Line::from(Span::styled("Recent Files", Style::default().fg(accent).add_modifier(Modifier::BOLD))));
-        menu_lines.push(Line::from(""));
-        for (i, path) in app.recent_files.iter().take(4).enumerate() {
-            let idx = menu.len() + i;
-            let is_sel = idx == app.home_selected;
-            let name = path.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_else(|| "Unknown".to_string());
-            if is_sel {
-                menu_lines.push(Line::from(vec![
-                    Span::styled(format!("  {}  ", if app.config.use_nerd_fonts { "󰁔" } else { "▸" }), Style::default().fg(sel_fg).bg(sel_bg).add_modifier(Modifier::BOLD)),
-                    Span::styled(name, Style::default().fg(sel_fg).bg(sel_bg).add_modifier(Modifier::BOLD)),
-                ]));
-            } else {
-                menu_lines.push(Line::from(Span::styled(format!("    {}  ", name), Style::default().fg(normal_fg))));
-            }
-            menu_lines.push(Line::from(""));
-        }
-    }
+    // Version
+    content.push(Line::from(vec![
+        Span::styled(format!("v{}", env!("CARGO_PKG_VERSION")), Style::default().fg(dim)),
+    ]).alignment(Alignment::Center));
 
-    f.render_widget(Paragraph::new(menu_lines).alignment(Alignment::Center), chunks[1]);
+    content.push(Line::from(""));
+    content.push(Line::from(Span::styled("─".repeat(dashboard_area.width as usize), Style::default().fg(dim))));
+    content.push(Line::from(""));
 
-    // ── FOOTER ──
-    let footer_start_idx = menu.len() + app.recent_files.len().min(4);
-    let wiki_sel = app.home_selected == footer_start_idx;
-    let github_sel = app.home_selected == footer_start_idx + 1;
-
-    let wiki_label = if app.config.use_nerd_fonts { " 󰖟 Wiki " } else { " [Wiki] " };
-    let github_label = if app.config.use_nerd_fonts { " 󰊤 GitHub " } else { " [GitHub] " };
-
-    let wiki_style = if wiki_sel { Style::default().fg(sel_fg).bg(sel_bg).add_modifier(Modifier::BOLD) } else { Style::default().fg(accent) };
-    let github_style = if github_sel { Style::default().fg(sel_fg).bg(sel_bg).add_modifier(Modifier::BOLD) } else { Style::default().fg(accent) };
-
-    let footer_spans = vec![
-        Span::styled("Check out the ", theme.secondary_style()),
-        Span::styled(wiki_label, wiki_style),
-        Span::styled(" for documentation and the ", theme.secondary_style()),
-        Span::styled(github_label, github_style),
-        Span::styled(" repository for updates.", theme.secondary_style()),
+    // ── SHORTCUTS ──
+    let menu_items = [
+        ("n", "New File"),
+        ("s", "New with Structure"),
+        ("o", "Open File"),
+        ("t", "Tutorial"),
+        ("q", "Exit"),
     ];
 
-    f.render_widget(
-        Paragraph::new(Line::from(footer_spans))
-            .alignment(Alignment::Center)
-            .block(Block::default()
-                .borders(Borders::TOP)
-                .border_style(Style::default().fg(dim))
-                .border_type(BorderType::Rounded)),
-        chunks[2],
-    );
+    for (i, (key, label)) in menu_items.iter().enumerate() {
+        let is_sel = i == app.home_selected;
+        let style = if is_sel { Style::default().add_modifier(Modifier::BOLD) } else { Style::default() };
+        
+        content.push(Line::from(vec![
+            Span::styled("type  ", Style::default().fg(dim)),
+            Span::styled(key.to_string(), Style::default().fg(accent).add_modifier(Modifier::BOLD)),
+            Span::styled("  for  ", Style::default().fg(dim)),
+            Span::styled(label.to_string(), style.fg(normal_fg)),
+        ]).alignment(Alignment::Center));
+        content.push(Line::from(""));
+    }
+
+    content.push(Line::from(Span::styled("─".repeat(dashboard_area.width as usize), Style::default().fg(dim))));
+    content.push(Line::from(""));
+
+    // ── RECENT FILES ──
+    if !app.recent_files.is_empty() {
+        for (i, path) in app.recent_files.iter().take(3).enumerate() {
+            let idx = 5 + i;
+            let is_sel = idx == app.home_selected;
+            let style = if is_sel { Style::default().add_modifier(Modifier::BOLD) } else { Style::default() };
+            let name = path.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_else(|| "Unknown".to_string());
+            
+            content.push(Line::from(vec![
+                Span::styled(format!("{}  ", i + 1), Style::default().fg(accent)),
+                Span::styled(name, style.fg(normal_fg)),
+            ]).alignment(Alignment::Center));
+            content.push(Line::from(""));
+        }
+        content.push(Line::from(Span::styled("─".repeat(dashboard_area.width as usize), Style::default().fg(dim))));
+        content.push(Line::from(""));
+    }
+
+    // ── FOOTER ──
+    let recent_count = app.recent_files.len().min(3);
+    let wiki_sel = app.home_selected == 5 + recent_count;
+    let github_sel = app.home_selected == 5 + recent_count + 1;
+
+    content.push(Line::from(vec![
+        Span::styled("type  ", Style::default().fg(dim)),
+        Span::styled("w", Style::default().fg(accent).add_modifier(Modifier::BOLD)),
+        Span::styled("  for  ", Style::default().fg(dim)),
+        Span::styled("Wiki", if wiki_sel { Style::default().fg(normal_fg).add_modifier(Modifier::BOLD) } else { Style::default().fg(normal_fg) }),
+        Span::styled("  |  ", Style::default().fg(dim)),
+        Span::styled("type  ", Style::default().fg(dim)),
+        Span::styled("g", Style::default().fg(accent).add_modifier(Modifier::BOLD)),
+        Span::styled("  for  ", Style::default().fg(dim)),
+        Span::styled("GitHub", if github_sel { Style::default().fg(normal_fg).add_modifier(Modifier::BOLD) } else { Style::default().fg(normal_fg) }),
+    ]).alignment(Alignment::Center));
+
+    f.render_widget(Paragraph::new(content), dashboard_area);
 }

@@ -555,6 +555,9 @@ impl App {
                         KeyCode::Char('n') | KeyCode::Char('N') |
                         KeyCode::Char('o') | KeyCode::Char('O') |
                         KeyCode::Char('t') | KeyCode::Char('T') |
+                        KeyCode::Char('w') | KeyCode::Char('W') |
+                        KeyCode::Char('g') | KeyCode::Char('G') |
+                        KeyCode::Char('1') | KeyCode::Char('2') | KeyCode::Char('3') |
                         KeyCode::Char('q') | KeyCode::Char('Q') => {
                             match key.code {
                                 KeyCode::Char('n') | KeyCode::Char('N') => self.home_selected = 0,
@@ -562,6 +565,11 @@ impl App {
                                 KeyCode::Char('o') | KeyCode::Char('O') => self.home_selected = 2,
                                 KeyCode::Char('t') | KeyCode::Char('T') => self.home_selected = 3,
                                 KeyCode::Char('q') | KeyCode::Char('Q') => self.home_selected = 4,
+                                KeyCode::Char('1') if recent_count >= 1 => self.home_selected = 5,
+                                KeyCode::Char('2') if recent_count >= 2 => self.home_selected = 6,
+                                KeyCode::Char('3') if recent_count >= 3 => self.home_selected = 7,
+                                KeyCode::Char('w') | KeyCode::Char('W') => self.home_selected = 5 + recent_count,
+                                KeyCode::Char('g') | KeyCode::Char('G') => self.home_selected = 5 + recent_count + 1,
                                 _ => {},
                             }
                             match self.home_selected {
