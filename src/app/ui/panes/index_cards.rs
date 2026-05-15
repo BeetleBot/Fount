@@ -86,7 +86,7 @@ pub fn draw_index_cards(f: &mut Frame, app: &mut App, area: Rect) {
             
             let block = Block::default()
                 .borders(Borders::ALL)
-                .border_type(BorderType::Rounded)
+                .border_type(if is_selected { BorderType::Double } else { BorderType::Rounded })
                 .border_style(border_style)
                 .style(base_style);
             
@@ -129,7 +129,7 @@ pub fn draw_index_cards(f: &mut Frame, app: &mut App, area: Rect) {
             
             let block = Block::default()
                 .borders(Borders::ALL)
-                .border_type(BorderType::Rounded)
+                .border_type(if is_selected { BorderType::Double } else { BorderType::Rounded })
                 .border_style(border_style)
                 .style(base_style);
                 
