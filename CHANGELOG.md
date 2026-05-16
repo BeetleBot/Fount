@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.9.8] - 2026-05-16
+
+### New features
+- **Structured Dashboard**: Added a sleek, rounded border to the home screen to give it a more organized and premium "studio" feel.
+- **Smarter Character Tags**: Fount now scans your production tags (like `[[CAST: ...]]`) and automatically adds those characters to your autocompletion list.
+- **The "Clean Script" Tool**: A new `/clean` command that instantly tidies up your screenplay's formatting, fixing double spaces and extra lines in one go.
+- **Fast Navigation**: You can now use `Ctrl+Home` to jump to the very top and `Ctrl+End` to jump to the very bottom of your script instantly.
+
+### Improvements
+- **Stability Polish**: Cleaned up the inner workings of the app to ensure it runs smoother and faster than ever.
+
+
 ## [0.9.7] - 2026-05-14
 
 ### New features
