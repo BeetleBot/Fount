@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.9.9] - 2026-05-16
+
+### Fixes
+- **Home Screen Shortcuts**: Fixed a bug where the `s` (Structure), `o` (Open), and other dashboard shortcuts were not responding to keypresses.
+- **Recent Files Display**: Synced the dashboard to correctly display and navigate up to 4 recent files.
+
+### Improvements
+- **Stability Polish**: Minor internal fixes for a smoother, more reliable experience.
+
+
 ## [0.9.8] - 2026-05-16
 
 ### New features
