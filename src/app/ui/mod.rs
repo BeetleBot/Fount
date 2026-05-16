@@ -1114,14 +1114,6 @@ pub fn draw(f: &mut Frame, app: &mut App) {
         };
         
         if !app.config.focus_mode {
-            let mut style = Style::default().fg(mode_bg);
-            if !app.config.no_formatting {
-                style = style.add_modifier(Modifier::BOLD);
-            }
-            spans.push(Span::styled(
-                format!(" {} ", mode_str.trim()),
-                style,
-            ));
             spans.push(Span::styled(dirty_str, theme.warning_style()));
             spans.push(Span::styled(lock_str, theme.info_style()));
         }
@@ -1265,9 +1257,8 @@ pub fn draw(f: &mut Frame, app: &mut App) {
         }
 
         spans.extend(right_spans);
-        f.render_widget(Paragraph::new(Line::from(spans)), footer_inner);
-
-        // Cursor Handling for Footer Modes
+        // -- Dynamic Cursor Calculation --
+        let mut cur_x_footer = None;
         if matches!(
             app.mode,
             AppMode::Search
@@ -1278,19 +1269,6 @@ pub fn draw(f: &mut Frame, app: &mut App) {
                 | AppMode::ReplaceAll
         )
         {
-            let mut prefix_width = 0;
-            
-            // Width of the left section (Mode label, dirty star, etc.)
-            if !app.config.focus_mode {
-                prefix_width += mode_str.trim().len() + 2; // " MODE "
-                if app.dirty { prefix_width += 1; }
-                if app.config.production_lock {
-                    prefix_width += if app.config.use_nerd_fonts { 2 } else { 4 };
-                }
-            }
-
-            let prefix_w = prefix_width; // Renamed for compatibility with existing logic
-
             let (input_prefix, input_content) = match app.mode {
                 AppMode::Search => {
                     let pb = if app.last_search.is_empty() {
@@ -1310,10 +1288,23 @@ pub fn draw(f: &mut Frame, app: &mut App) {
                 _ => (String::new(), String::new()),
             };
 
-            let cur_x = footer_inner.x
+            let mut prefix_w = 0;
+            for span in &spans {
+                if span.content.contains(input_prefix.trim()) && !input_prefix.trim().is_empty() {
+                    break;
+                }
+                prefix_w += UnicodeWidthStr::width(span.content.as_ref());
+            }
+
+            cur_x_footer = Some(footer_inner.x
                 + (prefix_w
                     + UnicodeWidthStr::width(input_prefix.as_str())
-                    + UnicodeWidthStr::width(input_content.as_str())) as u16;
+                    + UnicodeWidthStr::width(input_content.as_str())) as u16);
+        }
+
+        f.render_widget(Paragraph::new(Line::from(spans)), footer_inner);
+
+        if let Some(cur_x) = cur_x_footer {
             f.set_cursor_position((cur_x, footer_inner.y));
         }
     }
