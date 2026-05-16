@@ -136,6 +136,8 @@ pub struct XRayScene {
     pub page_count: f32,
     pub is_over_limit: bool,
     pub line_idx: usize,
+    pub action_lines: usize,
+    pub dialogue_lines: usize,
 }
 
 #[derive(Clone, Debug)]
@@ -149,10 +151,12 @@ pub struct PacingBlock {
 pub struct XRayData {
     pub characters: Vec<XRayCharacter>,
     pub total_dialogue_words: usize,
+    pub total_words: usize,
     pub scenes: Vec<XRayScene>,
     pub pacing_map: Vec<PacingBlock>,
     pub global_breakdown: std::collections::BTreeMap<String, std::collections::BTreeSet<String>>,
     pub scene_breakdown: Vec<XRaySceneBreakdown>,
+    pub interaction_matrix: std::collections::HashMap<(String, String), usize>,
 }
 
 #[derive(Clone, Debug)]

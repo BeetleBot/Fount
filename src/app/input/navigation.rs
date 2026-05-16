@@ -168,7 +168,34 @@ impl App {
                     }
                     return Ok(false);
                 }
-            _ => {}
+                AppMode::XRay => {
+                    match key.code {
+                        KeyCode::Esc => {
+                            self.mode = AppMode::Normal;
+                        }
+                        KeyCode::Tab if self.xray_tab == 3 => {
+                            self.xray_breakdown_idx = (self.xray_breakdown_idx + 1) % 2;
+                            self.xray_scroll = 0;
+                        }
+                        KeyCode::BackTab if self.xray_tab == 3 => {
+                            self.xray_breakdown_idx = (self.xray_breakdown_idx + 1) % 2;
+                            self.xray_scroll = 0;
+                        }
+                        KeyCode::Char('1') => { self.xray_tab = 0; self.xray_scroll = 0; }
+                        KeyCode::Char('2') => { self.xray_tab = 1; self.xray_scroll = 0; }
+                        KeyCode::Char('3') => { self.xray_tab = 2; self.xray_scroll = 0; }
+                        KeyCode::Char('4') => { self.xray_tab = 3; self.xray_scroll = 0; }
+                        KeyCode::Up => {
+                            self.xray_scroll = self.xray_scroll.saturating_sub(1);
+                        }
+                        KeyCode::Down => {
+                            self.xray_scroll = self.xray_scroll.saturating_add(1);
+                        }
+                        _ => {}
+                    }
+                    return Ok(false);
+                }
+                _ => {}
         }
         Ok(false)
     }

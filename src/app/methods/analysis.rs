@@ -263,6 +263,8 @@ impl App {
         let mut current_scene_num: Option<String> = None;
         let mut current_scene_line_idx: usize = 0;
         let mut current_scene_visual_rows: usize = 0;
+        let mut current_scene_action_lines: usize = 0;
+        let mut current_scene_dialogue_lines: usize = 0;
         let mut in_scene = false;
 
         // Pacing: per-page action vs dialogue counts
@@ -330,16 +332,33 @@ impl App {
             });
         }
 
+        let mut interaction_map: std::collections::HashMap<(String, String), usize> = std::collections::HashMap::new();
+        let mut current_scene_chars: std::collections::HashSet<String> = std::collections::HashSet::new();
+        let mut total_words = 0;
+
         for row in &self.layout {
             // Track page boundaries
             if let Some(p) = row.page_num {
                 current_page = p;
             }
 
+            // Word count (total)
+            if row.line_type != LineType::Parenthetical {
+                total_words += row.raw_text.split_whitespace().count();
+            }
+
             match row.line_type {
                 LineType::SceneHeading => {
-                    // Close previous scene
+                    // Process interactions for the scene that just ended
                     if in_scene {
+                        let chars: Vec<String> = current_scene_chars.drain().collect();
+                        for i in 0..chars.len() {
+                            for j in i + 1..chars.len() {
+                                let pair = if chars[i] < chars[j] { (chars[i].clone(), chars[j].clone()) } else { (chars[j].clone(), chars[i].clone()) };
+                                *interaction_map.entry(pair).or_insert(0) += 1;
+                            }
+                        }
+
                         let page_count = current_scene_visual_rows as f32 / LINES_PER_PAGE as f32;
                         scenes.push(XRayScene {
                             label: current_scene_label.clone(),
@@ -347,8 +366,13 @@ impl App {
                             page_count,
                             is_over_limit: page_count > 3.0,
                             line_idx: current_scene_line_idx,
+                            action_lines: current_scene_action_lines,
+                            dialogue_lines: current_scene_dialogue_lines,
                         });
                     }
+
+                    current_scene_action_lines = 0;
+                    current_scene_dialogue_lines = 0;
 
                     let mut label = strip_sigils(&row.raw_text, row.line_type).to_string();
                     // Strip inline notes
@@ -371,8 +395,9 @@ impl App {
                 LineType::Character | LineType::DualDialogueCharacter => {
                     let raw_name = strip_sigils(&row.raw_text, row.line_type).trim().to_string();
                     let name = Self::normalize_character_name(&raw_name);
-                    current_character = Some(name);
+                    current_character = Some(name.clone());
                     if in_scene {
+                        current_scene_chars.insert(name);
                         current_scene_visual_rows += 1;
                     }
                 }
@@ -385,6 +410,7 @@ impl App {
                     }
                     if in_scene {
                         current_scene_visual_rows += 1;
+                        current_scene_dialogue_lines += 1;
                     }
                     let entry = pacing_map.entry(current_page).or_insert((0, 0));
                     entry.1 += 1; // dialogue line
@@ -392,6 +418,7 @@ impl App {
                 LineType::Parenthetical => {
                     if in_scene {
                         current_scene_visual_rows += 1;
+                        current_scene_dialogue_lines += 1;
                     }
                     let entry = pacing_map.entry(current_page).or_insert((0, 0));
                     entry.1 += 1; // parenthetical counts as dialogue
@@ -400,6 +427,7 @@ impl App {
                     current_character = None;
                     if in_scene {
                         current_scene_visual_rows += 1;
+                        current_scene_action_lines += 1;
                     }
                     let entry = pacing_map.entry(current_page).or_insert((0, 0));
                     entry.0 += 1; // action line
@@ -408,6 +436,7 @@ impl App {
                     current_character = None;
                     if in_scene {
                         current_scene_visual_rows += 1;
+                        current_scene_action_lines += 1;
                     }
                     let entry = pacing_map.entry(current_page).or_insert((0, 0));
                     entry.0 += 1;
@@ -430,6 +459,14 @@ impl App {
 
         // Close last scene
         if in_scene {
+            let chars: Vec<String> = current_scene_chars.drain().collect();
+            for i in 0..chars.len() {
+                for j in i + 1..chars.len() {
+                    let pair = if chars[i] < chars[j] { (chars[i].clone(), chars[j].clone()) } else { (chars[j].clone(), chars[i].clone()) };
+                    *interaction_map.entry(pair).or_insert(0) += 1;
+                }
+            }
+
             let page_count = current_scene_visual_rows as f32 / LINES_PER_PAGE as f32;
             scenes.push(XRayScene {
                 label: current_scene_label.clone(),
@@ -437,6 +474,8 @@ impl App {
                 page_count,
                 is_over_limit: page_count > 3.0,
                 line_idx: current_scene_line_idx,
+                action_lines: current_scene_action_lines,
+                dialogue_lines: current_scene_dialogue_lines,
             });
         }
 
@@ -477,10 +516,12 @@ impl App {
         self.xray_data = Some(XRayData {
             characters,
             total_dialogue_words,
+            total_words,
             scenes,
             pacing_map: pacing,
             global_breakdown,
             scene_breakdown: scene_breakdowns,
+            interaction_matrix: interaction_map,
         });
         self.xray_scroll = 0;
         self.xray_tab = 0;

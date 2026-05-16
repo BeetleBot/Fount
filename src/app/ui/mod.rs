@@ -1,7 +1,7 @@
 pub mod panes;
 use self::panes::{
     draw_file_picker, draw_snapshots, draw_sprint_stats, home::draw_home,
-    index_cards::draw_index_cards, xray::draw_xray, draw_export_modal,
+    index_cards::draw_index_cards, draw_export_modal,
     quick_help::draw_quick_help,
 };
 
@@ -161,6 +161,11 @@ pub fn draw(f: &mut Frame, app: &mut App) {
     
     if app.mode == AppMode::Home {
         draw_home(f, app);
+        return;
+    }
+
+    if app.mode == AppMode::XRay {
+        panes::xray::draw_xray_studio(f, app, area);
         return;
     }
 
@@ -1347,9 +1352,6 @@ pub fn draw(f: &mut Frame, app: &mut App) {
         draw_sprint_stats(f, app);
     }
 
-    if app.mode == AppMode::XRay {
-        draw_xray(f, app);
-    }
 
     if current_view_mode == AppMode::IndexCards {
         draw_index_cards(f, app, text_area);
