@@ -59,40 +59,55 @@ impl App {
     pub fn open_scene_tree(&mut self) {
         self.nav_original_pos = Some((self.cursor_y, self.cursor_x));
         self.scenes.clear();
+        let mut root_items: Vec<SceneTreeItem> = Vec::new();
+        let mut current_section: Option<SceneTreeItem> = None;
         let mut current_scene: Option<SceneTreeItem> = None;
 
         for row in &self.layout {
-            // Pick up explicit scene colors from notes
             if row.line_type == LineType::Note
                 && let Some(start) = row.raw_text.find("[[")
                 && let Some(end) = row.raw_text[start..].find("]]")
             {
                 let content = &row.raw_text[start + 2..start + end];
-                if content.to_lowercase().starts_with("sceneclr:")
-                    && let Some(ref mut s) = current_scene
-                {
-                    s.color = row.override_color;
+                if content.to_lowercase().starts_with("sceneclr:") {
+                    if let Some(ref mut s) = current_scene {
+                        s.color = row.override_color;
+                    } else if let Some(ref mut sec) = current_section {
+                        sec.color = row.override_color;
+                    }
                 }
             }
 
             if row.line_type == LineType::Section {
                 if let Some(s) = current_scene.take() {
-                    self.scenes.push(s);
+                    if let Some(ref mut sec) = current_section {
+                        sec.children.push(s);
+                    } else {
+                        root_items.push(s);
+                    }
+                }
+                if let Some(sec) = current_section.take() {
+                    root_items.push(sec);
                 }
                 let label = strip_sigils(&row.raw_text, row.line_type)
                     .trim()
                     .to_string();
-                current_scene = Some(SceneTreeItem {
+                current_section = Some(SceneTreeItem {
                     line_idx: row.line_idx,
                     label,
                     is_section: true,
+                    scene_num: None,
                     synopses: Vec::new(),
                     color: row.override_color,
-                    ..Default::default()
+                    children: Vec::new(),
                 });
             } else if row.line_type == LineType::SceneHeading {
                 if let Some(s) = current_scene.take() {
-                    self.scenes.push(s);
+                    if let Some(ref mut sec) = current_section {
+                        sec.children.push(s);
+                    } else {
+                        root_items.push(s);
+                    }
                 }
                 let mut raw_heading = strip_sigils(&row.raw_text, row.line_type).to_string();
                 while let Some(start) = raw_heading.find("[[") {
@@ -110,26 +125,40 @@ impl App {
                     scene_num: row.scene_num.clone(),
                     synopses: Vec::new(),
                     color: row.override_color,
+                    children: Vec::new(),
                 });
-            } else if row.line_type == LineType::Synopsis
-                && let Some(ref mut s) = current_scene
-            {
+            } else if row.line_type == LineType::Synopsis {
                 let note_text = strip_sigils(&row.raw_text, row.line_type).to_string();
                 if !note_text.is_empty() {
-                    s.synopses.push(note_text);
+                    if let Some(ref mut s) = current_scene {
+                        s.synopses.push(note_text);
+                    } else if let Some(ref mut sec) = current_section {
+                        sec.synopses.push(note_text);
+                    }
                 }
             }
         }
+        // Push final scene if exists
         if let Some(s) = current_scene {
-            self.scenes.push(s);
+            if let Some(ref mut sec) = current_section {
+                sec.children.push(s);
+            } else {
+                root_items.push(s);
+            }
         }
+        // Push final section if exists
+        if let Some(sec) = current_section {
+            root_items.push(sec);
+        }
+        self.scenes = root_items;
 
         if self.scenes.is_empty() {
             self.set_status("No scenes found");
         } else {
             self.mode = AppMode::SceneTree;
+            let visible = self.get_visible_scenes();
             self.selected_scene = 0;
-            for (idx, item) in self.scenes.iter().enumerate() {
+            for (idx, (item, _)) in visible.iter().enumerate() {
                 if item.line_idx <= self.cursor_y {
                     self.selected_scene = idx;
                 } else {

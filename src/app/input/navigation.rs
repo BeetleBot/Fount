@@ -26,34 +26,48 @@ impl App {
                         KeyCode::Char('p') if ctrl => {
                             self.mode = AppMode::SettingsPane;
                         }
-                        KeyCode::Up | KeyCode::Char('k') if self.selected_scene > 0 => {
+                        KeyCode::Up if self.selected_scene > 0 => {
                             self.selected_scene -= 1;
                             self.tree_state.select(Some(self.selected_scene));
-                            
-                            let line_idx = self.scenes[self.selected_scene].line_idx;
-                            self.cursor_y = line_idx;
-                            self.cursor_x = 0;
-                            *cursor_moved = true;
-                            *update_target_x = true;
+                            let visible = self.get_visible_scenes();
+                            if let Some((item, _)) = visible.get(self.selected_scene) {
+                                self.cursor_y = item.line_idx;
+                                *cursor_moved = true;
+                            }
                         }
-                        KeyCode::Down | KeyCode::Char('j') if self.selected_scene + 1 < self.scenes.len() => {
-                            self.selected_scene += 1;
-                            self.tree_state.select(Some(self.selected_scene));
-                            
-                            let line_idx = self.scenes[self.selected_scene].line_idx;
-                            self.cursor_y = line_idx;
-                            self.cursor_x = 0;
-                            *cursor_moved = true;
-                            *update_target_x = true;
+                        KeyCode::Up => {}
+                        KeyCode::Down => {
+                            let visible = self.get_visible_scenes();
+                            if self.selected_scene + 1 < visible.len() {
+                                self.selected_scene += 1;
+                                self.tree_state.select(Some(self.selected_scene));
+                                if let Some((item, _)) = visible.get(self.selected_scene) {
+                                    self.cursor_y = item.line_idx;
+                                    *cursor_moved = true;
+                                }
+                            }
                         }
-                        KeyCode::Enter => {
-                            let line_idx = self.scenes[self.selected_scene].line_idx;
-                            self.cursor_y = line_idx;
-                            self.cursor_x = 0;
-                            self.mode = AppMode::Normal;
-                            self.nav_original_pos = None;
-                            *cursor_moved = true;
-                            *update_target_x = true;
+                        KeyCode::Left => {}
+                        KeyCode::Right => {}
+                        KeyCode::Tab | KeyCode::Enter => {
+                            let visible = self.get_visible_scenes();
+                            if let Some((item, _)) = visible.get(self.selected_scene) {
+                                if item.is_section && key.code == KeyCode::Tab {
+                                    if self.collapsed_sections.contains(&item.line_idx) {
+                                        self.collapsed_sections.remove(&item.line_idx);
+                                    } else {
+                                        self.collapsed_sections.insert(item.line_idx);
+                                    }
+                                } else if key.code == KeyCode::Enter || !item.is_section {
+                                    let target_line = item.line_idx;
+                                    self.cursor_y = target_line;
+                                    self.cursor_x = 0;
+                                    self.mode = AppMode::Normal;
+                                    self.nav_original_pos = None;
+                                    *cursor_moved = true;
+                                    *update_target_x = true;
+                                }
+                            }
                         }
                         _ => {}
                     }
@@ -70,7 +84,7 @@ impl App {
                             }
                             self.mode = AppMode::Normal;
                         }
-                        KeyCode::Up | KeyCode::Char('k') => {
+                        KeyCode::Up => {
                             let mut next = self.selected_ensemble_idx;
                             while next > 0 {
                                 next -= 1;
@@ -91,7 +105,7 @@ impl App {
                                 }
                             }
                         }
-                        KeyCode::Down | KeyCode::Char('j') => {
+                        KeyCode::Down => {
                             let mut next = self.selected_ensemble_idx;
                             while next + 1 < self.ensemble_items.len() {
                                 next += 1;
@@ -99,7 +113,7 @@ impl App {
                                     EnsembleItem::CharacterHeader(_) | EnsembleItem::SceneLink(..) => {
                                         self.selected_ensemble_idx = next;
                                         self.ensemble_state.select(Some(self.selected_ensemble_idx));
-
+ 
                                         if let EnsembleItem::SceneLink(_, line_idx, _) = self.ensemble_items[next] {
                                             self.cursor_y = line_idx;
                                             self.cursor_x = 0;

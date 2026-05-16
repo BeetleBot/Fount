@@ -5,7 +5,7 @@ pub mod panes;
 
 use std::io;
 use crossterm::event::{Event, KeyEventKind, KeyModifiers, MouseButton, MouseEventKind};
-use crate::app::{App, AppMode, EnsembleItem};
+use crate::app::{App, AppMode};
 
 impl App {
 
@@ -53,6 +53,11 @@ impl App {
                         if self.selected_scene > 0 {
                             self.selected_scene -= 1;
                             self.tree_state.select(Some(self.selected_scene));
+                            let visible = self.get_visible_scenes();
+                            if let Some((item, _)) = visible.get(self.selected_scene) {
+                                self.cursor_y = item.line_idx;
+                                *cursor_moved = true;
+                            }
                         }
                     } else {
                         self.clear_selection();
@@ -64,9 +69,14 @@ impl App {
                     if self.mode == AppMode::SceneTree
                         && mouse_event.column < self.sidebar_area.x + self.sidebar_area.width
                     {
-                        if self.selected_scene < self.scenes.len() - 1 {
+                        let visible = self.get_visible_scenes();
+                        if self.selected_scene + 1 < visible.len() {
                             self.selected_scene += 1;
                             self.tree_state.select(Some(self.selected_scene));
+                            if let Some((item, _)) = visible.get(self.selected_scene) {
+                                self.cursor_y = item.line_idx;
+                                *cursor_moved = true;
+                            }
                         }
                     } else {
                         self.clear_selection();
@@ -147,61 +157,8 @@ impl App {
                             }
                         }
                     } else if self.mode == AppMode::SceneTree {
-                        let x = mouse_event.column;
-                        let y = mouse_event.row;
-                        if x < self.sidebar_area.x + self.sidebar_area.width
-                            && y >= self.sidebar_area.y
-                            && y < self.sidebar_area.y + self.sidebar_area.height
-                        {
-                            let mut current_y = self.sidebar_area.y as usize + 1;
-                            let offset = self.tree_state.offset();
-                            if self.mode == AppMode::SceneTree {
-                                for i in offset..self.scenes.len() {
-                                    let h = self.calculate_scene_height(&self.scenes[i]);
-                                    if (y as usize) < current_y + h {
-                                        self.selected_scene = i;
-                                        self.tree_state.select(Some(i));
-
-                                        let line_idx = self.scenes[i].line_idx;
-                                        self.cursor_y = line_idx;
-                                        self.cursor_x = 0;
-                                        *cursor_moved = true;
-                                        *update_target_x = true;
-                                        break;
-                                    }
-                                    current_y += h;
-                                    if current_y >= (self.sidebar_area.y + self.sidebar_area.height) as usize {
-                                        break;
-                                    }
-                                }
-                            } else if self.mode == AppMode::CharacterNavigator {
-                                for i in offset..self.ensemble_items.len() {
-                                    let h = 1; // Flat list, 1 line per item
-                                    if (y as usize) < current_y + h {
-                                        match self.ensemble_items[i] {
-                                            EnsembleItem::CharacterHeader(_) | EnsembleItem::SceneLink(..) => {
-                                                self.selected_ensemble_idx = i;
-                                                self.ensemble_state.select(Some(i));
-
-                                                if let EnsembleItem::SceneLink(_, line_idx, _) = self.ensemble_items[i] {
-                                                    self.cursor_y = line_idx;
-                                                    self.cursor_x = 0;
-                                                    self.mode = AppMode::Normal;
-                                                    *cursor_moved = true;
-                                                    *update_target_x = true;
-                                                }
-                                            }
-                                            _ => {}
-                                        }
-                                        break;
-                                    }
-                                    current_y += h;
-                                    if current_y >= (self.sidebar_area.y + self.sidebar_area.height) as usize {
-                                        break;
-                                    }
-                                }
-                            }
-                        }
+                        // Mouse selection for tree is complex due to hierarchical structure.
+                        // Disabling for now to prevent crashes/errors.
                     }
                 }
                 MouseEventKind::Drag(MouseButton::Left) if self.mode == AppMode::Normal => {

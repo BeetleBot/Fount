@@ -27,6 +27,7 @@ pub struct SceneTreeItem {
     pub scene_num: Option<String>,
     pub synopses: Vec<String>,
     pub color: Option<Color>,
+    pub children: Vec<SceneTreeItem>,
 }
 
 #[derive(Clone, Debug, Default)]
@@ -307,6 +308,7 @@ pub struct App {
     pub current_match_idx: Option<usize>,
 
     pub scenes: Vec<SceneTreeItem>,
+    pub collapsed_sections: std::collections::HashSet<usize>,
     pub nav_original_pos: Option<(usize, usize)>,
 
     pub selected_scene: usize,
@@ -521,6 +523,7 @@ impl App {
             search_matches: Vec::new(),
             current_match_idx: None,
             scenes: Vec::new(),
+            collapsed_sections: std::collections::HashSet::new(),
             nav_original_pos: None,
             selected_scene: 0,
             selected_character: 0,
@@ -1512,6 +1515,22 @@ impl App {
         }
 
         (lines, revision_mode, revised_indices)
+    }
+
+    pub fn get_visible_scenes(&self) -> Vec<(SceneTreeItem, usize)> {
+        let mut visible = Vec::new();
+        fn flatten(item: &SceneTreeItem, depth: usize, out: &mut Vec<(SceneTreeItem, usize)>, collapsed: &HashSet<usize>) {
+            out.push((item.clone(), depth));
+            if !collapsed.contains(&item.line_idx) {
+                for child in &item.children {
+                    flatten(child, depth + 1, out, collapsed);
+                }
+            }
+        }
+        for scene in &self.scenes {
+            flatten(scene, 0, &mut visible, &self.collapsed_sections);
+        }
+        visible
     }
 }
 

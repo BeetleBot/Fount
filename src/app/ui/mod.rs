@@ -263,7 +263,7 @@ pub fn draw(f: &mut Frame, app: &mut App) {
         let side_chunks = Layout::default()
             .direction(Direction::Horizontal)
             .constraints([
-                Constraint::Length(35),
+                Constraint::Length(45),
                 Constraint::Min(0),
             ])
             .split(main_area);
@@ -587,207 +587,118 @@ pub fn draw(f: &mut Frame, app: &mut App) {
     if app.mode == AppMode::SceneTree {
         let selected_bg = Color::from(theme.ui.selection_bg.clone());
         let selected_fg = Color::from(theme.ui.selection_fg.clone());
-        let header_color = theme
-            .sidebar
-            .section_header
-            .clone()
-            .map(Color::from)
-            .unwrap_or(mode_bg);
+        let header_color = theme.sidebar.section_header.clone().map(Color::from).unwrap_or(mode_bg);
 
-        let items: Vec<ListItem> = app
-            .scenes
+        let sidebar_chunks = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints([
+                Constraint::Min(0),
+                Constraint::Length(1),
+            ])
+            .split(app.sidebar_area);
+        
+        let tree_area = sidebar_chunks[0];
+        let footer_area = sidebar_chunks[1];
+
+        let visible = app.get_visible_scenes();
+
+        let items: Vec<ListItem> = visible
             .iter()
             .enumerate()
-            .map(|(i, item)| {
+            .map(|(i, (item, depth))| {
                 let is_selected = i == app.selected_scene;
                 let mut lines = Vec::new();
-
-                let line_style = theme.secondary_style();
+                let indent = "  ".repeat(*depth);
 
                 if item.is_section {
                     let style = if is_selected {
-                        Style::default()
-                            .fg(selected_fg)
-                            .bg(selected_bg)
-                            .add_modifier(Modifier::BOLD)
+                        Style::default().fg(selected_fg).bg(selected_bg).add_modifier(Modifier::BOLD)
                     } else {
-                        Style::default()
-                            .fg(header_color)
-                            .add_modifier(Modifier::BOLD)
+                        Style::default().fg(header_color).add_modifier(Modifier::BOLD)
                     };
 
-                    let prefix = "  ";
-                    let max_section_w = 32;
-                    let mut current_line = String::new();
-                    let mut first_line = true;
+                    let is_collapsed = app.collapsed_sections.contains(&item.line_idx);
+                    let arrow = if is_collapsed {
+                        if app.config.use_nerd_fonts { "▶ " } else { "> " }
+                    } else {
+                        if app.config.use_nerd_fonts { "▼ " } else { "v " }
+                    };
+
+                    let mut current_line = format!("{}{}", indent, arrow);
+                    let max_w = (tree_area.width as usize).saturating_sub(4);
 
                     for word in item.label.to_uppercase().split_whitespace() {
-                        if current_line.len() + word.len() + 1 > max_section_w {
-                            if first_line {
-                                lines.push(Line::from(vec![
-                                    Span::styled(prefix, style),
-                                    Span::styled(if app.config.use_nerd_fonts { "󰉋 " } else { "" }, style),
-                                    Span::styled(current_line.clone(), style),
-                                ]));
-                                first_line = false;
-                            } else {
-                                lines.push(Line::from(vec![
-                                    Span::styled("  ", Style::default()),
-                                    Span::styled("│ ", line_style),
-                                    Span::styled(current_line.clone(), style),
-                                ]));
-                            }
-                            current_line = word.to_string();
-                        } else {
-                            if !current_line.is_empty() {
-                                current_line.push(' ');
-                            }
-                            current_line.push_str(word);
+                        if current_line.len() + word.len() + 1 > max_w {
+                            lines.push(Line::from(Span::styled(current_line.clone(), style)));
+                            current_line = format!("{}  ", indent);
                         }
+                        if current_line.len() > indent.len() + 2 { current_line.push(' '); }
+                        current_line.push_str(word);
                     }
                     if !current_line.is_empty() {
-                        if first_line {
-                            lines.push(Line::from(vec![
-                                Span::styled(prefix, style),
-                                Span::styled(if app.config.use_nerd_fonts { "󰉋 " } else { "" }, style),
-                                Span::styled(current_line, style),
-                            ]));
-                        } else {
-                            lines.push(Line::from(vec![
-                                Span::styled("  ", Style::default()),
-                                Span::styled("│ ", line_style),
-                                Span::styled(current_line, style),
-                            ]));
-                        }
+                        lines.push(Line::from(Span::styled(current_line, style)));
                     }
 
                     if !item.synopses.is_empty() {
-                        let dim_style = if is_selected { style } else { theme.secondary_style().add_modifier(Modifier::ITALIC) };
+                        let dim_style = if is_selected { Style::default().fg(selected_fg).bg(selected_bg).add_modifier(Modifier::ITALIC) } else { theme.secondary_style().add_modifier(Modifier::ITALIC) };
+                        let bullet = if app.config.use_nerd_fonts { "• " } else { "- " };
+                        let max_w = (tree_area.width as usize).saturating_sub(4);
                         for syn in &item.synopses {
-                            let mut current_line = String::new();
-                            let max_syn_w = 30;
+                            let mut current_syn = format!("{}  {}", indent, bullet);
                             for word in syn.split_whitespace() {
-                                if current_line.len() + word.len() + 1 > max_syn_w {
-                                    lines.push(Line::from(vec![
-                                        Span::styled("  ", Style::default()),
-                                        Span::styled("│  ", line_style),
-                                        Span::styled(current_line.clone(), dim_style),
-                                    ]));
-                                    current_line = word.to_string();
-                                } else {
-                                    if !current_line.is_empty() { current_line.push(' '); }
-                                    current_line.push_str(word);
+                                if current_syn.len() + word.len() + 1 > max_w {
+                                    lines.push(Line::from(Span::styled(current_syn.clone(), dim_style)));
+                                    current_syn = format!("{}    ", indent);
                                 }
+                                if current_syn.len() > indent.len() + 4 { current_syn.push(' '); }
+                                current_syn.push_str(word);
                             }
-                            if !current_line.is_empty() {
-                                lines.push(Line::from(vec![
-                                    Span::styled("  ", Style::default()),
-                                    Span::styled("│  ", line_style),
-                                    Span::styled(current_line, dim_style),
-                                ]));
+                            if !current_syn.is_empty() {
+                                lines.push(Line::from(Span::styled(current_syn, dim_style)));
                             }
                         }
                     }
-
-                    if i + 1 < app.scenes.len() && !app.scenes[i + 1].is_section {
-                        lines.push(Line::from(vec![
-                            Span::styled("  ", Style::default()),
-                            Span::styled("│", line_style),
-                        ]));
-                    } else {
-                        lines.push(Line::from(""));
-                    }
                 } else {
-                    let mut base_style = if is_selected {
-                        Style::default().bg(selected_bg).add_modifier(Modifier::BOLD)
+                    let base_style = if is_selected {
+                        Style::default().fg(selected_fg).bg(selected_bg).add_modifier(Modifier::BOLD)
+                    } else if let Some(c) = item.color {
+                        Style::default().fg(c).add_modifier(Modifier::BOLD)
                     } else {
                         Style::default().add_modifier(Modifier::BOLD)
                     };
 
-                    if let Some(c) = item.color {
-                        base_style = base_style.fg(c);
-                    } else if is_selected {
-                        base_style = base_style.fg(selected_fg);
-                    } else if let Some(c) = &theme.ui.foreground {
-                        base_style = base_style.fg(Color::from(c.clone()));
-                    }
-
-                    let is_last_in_section = i + 1 == app.scenes.len() || app.scenes[i + 1].is_section;
-                    let has_parent_section = app.scenes[..i].iter().rev().any(|s| s.is_section);
-
-                    let connector = if !has_parent_section {
-                        "   "
-                    } else if is_last_in_section {
-                        "╰─ "
-                    } else {
-                        "├─ "
-                    };
-
                     let s_tag = if let Some(ref s) = item.scene_num { format!("{}. ", s) } else { String::new() };
-
-                    let max_heading_w = 33;
-                    let mut current_spans = vec![
-                        Span::styled("  ", Style::default()),
-                        Span::styled(connector, line_style),
-                    ];
-                    let mut current_len = 0;
-
-                    if !s_tag.is_empty() {
-                        current_spans.push(Span::styled(s_tag.clone(), base_style));
-                        current_len += s_tag.len();
-                    }
-
-                    for word in item.label.split_whitespace() {
-                        if current_len + word.len() + 5 > max_heading_w {
-                            lines.push(Line::from(current_spans));
-                            let cont_char = if !has_parent_section || is_last_in_section { "  " } else { "│ " };
-                            current_spans = vec![
-                                Span::styled("  ", Style::default()),
-                                Span::styled(cont_char, line_style),
-                            ];
-                            current_len = 0;
-                        }
-                        if current_len > 0 { current_spans.push(Span::styled(" ", base_style)); current_len += 1; }
-                        current_spans.push(Span::styled(word.to_string(), base_style));
-                        current_len += word.len();
-                    }
-                    lines.push(Line::from(current_spans));
+                    let indent_str = "  ".repeat(*depth);
+                    let prefix = format!("{}  {}{}", indent_str, s_tag, "");
+                    let max_w = (tree_area.width as usize).saturating_sub(4);
+                    
+                    let current_line = if prefix.len() + item.label.len() > max_w {
+                        let label_limit = max_w.saturating_sub(prefix.len() + 3);
+                        let truncated_label: String = item.label.chars().take(label_limit).collect();
+                        format!("{}{}{}", prefix, truncated_label, if item.label.chars().count() > label_limit { "..." } else { "" })
+                    } else {
+                        format!("{}{}", prefix, item.label)
+                    };
+                    lines.push(Line::from(Span::styled(current_line, base_style)));
 
                     if !item.synopses.is_empty() {
-                        let cont_char = if !has_parent_section || is_last_in_section { "  " } else { "│ " };
                         let dim_style = if is_selected { base_style } else { theme.secondary_style().add_modifier(Modifier::ITALIC) };
+                        let bullet = if app.config.use_nerd_fonts { "• " } else { "- " };
+                        let max_w = (tree_area.width as usize).saturating_sub(4);
                         for syn in &item.synopses {
-                            let mut current_line = String::new();
+                            let mut current_syn = format!("{}  {}", indent, bullet);
                             for word in syn.split_whitespace() {
-                                if current_line.len() + word.len() + 5 > max_heading_w {
-                                    lines.push(Line::from(vec![
-                                        Span::styled("  ", Style::default()),
-                                        Span::styled(cont_char, line_style),
-                                        Span::styled(current_line.clone(), dim_style),
-                                    ]));
-                                    current_line = word.to_string();
-                                } else {
-                                    if !current_line.is_empty() { current_line.push(' '); }
-                                    current_line.push_str(word);
+                                if current_syn.len() + word.len() + 1 > max_w {
+                                    lines.push(Line::from(Span::styled(current_syn.clone(), dim_style)));
+                                    current_syn = format!("{}    ", indent);
                                 }
+                                if current_syn.len() > indent.len() + 4 { current_syn.push(' '); }
+                                current_syn.push_str(word);
                             }
-                            if !current_line.is_empty() {
-                                lines.push(Line::from(vec![
-                                    Span::styled("  ", Style::default()),
-                                    Span::styled(cont_char, line_style),
-                                    Span::styled(current_line, dim_style),
-                                ]));
+                            if !current_syn.is_empty() {
+                                lines.push(Line::from(Span::styled(current_syn, dim_style)));
                             }
                         }
-                    }
-
-                    if !is_last_in_section && has_parent_section {
-                        lines.push(Line::from(vec![
-                            Span::styled("  ", Style::default()),
-                            Span::styled("│", line_style),
-                        ]));
-                    } else {
-                        lines.push(Line::from(""));
                     }
                 }
 
@@ -796,14 +707,14 @@ pub fn draw(f: &mut Frame, app: &mut App) {
             .collect();
 
         let list = List::new(items).highlight_style(Style::default());
-        f.render_stateful_widget(
-            list,
-            app.sidebar_area.inner(ratatui::layout::Margin {
-                horizontal: 0,
-                vertical: 1,
-            }),
-            &mut app.tree_state,
-        );
+        f.render_stateful_widget(list, tree_area, &mut app.tree_state);
+
+        let hint_style = theme.secondary_style();
+        let hint = Line::from(vec![
+            Span::styled(" [TAB] ", Style::default().fg(mode_bg).add_modifier(Modifier::BOLD)),
+            Span::styled("Toggle Section", hint_style),
+        ]);
+        f.render_widget(Paragraph::new(hint).alignment(Alignment::Center), footer_area);
     }
 
     if app.mode == AppMode::CharacterNavigator {
