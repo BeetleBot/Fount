@@ -278,8 +278,31 @@ pub fn build_layout(
     active_line: usize,
     config: &Config,
     theme: &Theme,
-    _cache: &mut Vec<Vec<VisualRow>>,
+    cache: &mut Vec<Vec<VisualRow>>,
 ) -> Vec<VisualRow> {
+    use std::cell::RefCell;
+    use std::collections::HashMap;
+    use std::hash::{Hash, Hasher};
+
+    thread_local! {
+        static CACHED_HASHES: RefCell<HashMap<usize, u64>> = RefCell::new(HashMap::new());
+        static LAST_PROD_TAGS: RefCell<bool> = RefCell::new(false);
+    }
+
+    let current_prod_tags = config.show_production_tags;
+    let prod_tags_changed = LAST_PROD_TAGS.with(|v| {
+        let mut val = v.borrow_mut();
+        let changed = *val != current_prod_tags;
+        *val = current_prod_tags;
+        changed
+    });
+
+    if cache.len() != lines.len() || prod_tags_changed {
+        cache.clear();
+        cache.resize(lines.len(), Vec::new());
+        CACHED_HASHES.with(|h| h.borrow_mut().clear());
+    }
+
     let mut rows: Vec<VisualRow> = Vec::with_capacity(lines.len() + 32);
     let mut last_speaking_character = String::new();
     let mut in_dual_dialogue = false;
@@ -296,6 +319,33 @@ pub fn build_layout(
             continue;
         }
         let is_active = i == active_line;
+
+        if lt == LineType::Note {
+            let line_hash = {
+                let mut hasher = std::collections::hash_map::DefaultHasher::new();
+                line.hash(&mut hasher);
+                hasher.finish()
+            };
+
+            let mut cached = None;
+            CACHED_HASHES.with(|hashes| {
+                let hashes = hashes.borrow();
+                if let Some(&h) = hashes.get(&i) {
+                    if h == line_hash && !cache[i].is_empty() {
+                        if cache[i][0].is_active == is_active {
+                            cached = Some(cache[i].clone());
+                        }
+                    }
+                }
+            });
+
+            if let Some(cached_rows) = cached {
+                for r in cached_rows {
+                    rows.push(r);
+                }
+                continue;
+            }
+        }
         let mut scene_num: Option<String> = None;
         let mut raw_line = Cow::Borrowed(line.as_str());
         let mut line_override_color = None;
@@ -732,6 +782,7 @@ pub fn build_layout(
             }
         }
 
+        let mut computed_note_rows = Vec::new();
         for mut r in logical_rows {
             if is_printable(lt) {
                 if page_num_pending && config.show_page_numbers && lt != LineType::Empty {
@@ -744,7 +795,22 @@ pub fn build_layout(
                     page_num_pending = true;
                 }
             }
+            if lt == LineType::Note {
+                computed_note_rows.push(r.clone());
+            }
             rows.push(r);
+        }
+
+        if lt == LineType::Note {
+            let line_hash = {
+                let mut hasher = std::collections::hash_map::DefaultHasher::new();
+                line.hash(&mut hasher);
+                hasher.finish()
+            };
+            CACHED_HASHES.with(|hashes| {
+                hashes.borrow_mut().insert(i, line_hash);
+            });
+            cache[i] = computed_note_rows;
         }
     }
 
