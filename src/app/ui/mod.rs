@@ -215,11 +215,21 @@ pub fn draw(f: &mut Frame, app: &mut App) {
                 &app.buffers[i].file
             };
 
-            let name = file
+            let is_dirty = if i == app.current_buf_idx {
+                app.dirty
+            } else {
+                app.buffers[i].dirty
+            };
+
+            let mut name = file
                 .as_ref()
                 .and_then(|p| p.file_name())
                 .map(|n| n.to_string_lossy().into_owned())
                 .unwrap_or_else(|| "New Script".to_string());
+
+            if is_dirty {
+                name.push('*');
+            }
 
             let label = format!("  {}  ", name); 
 
@@ -1111,15 +1121,13 @@ pub fn draw(f: &mut Frame, app: &mut App) {
         let mut spans = Vec::new();
 
         // --- Left Section (File Info) ---
-        let dirty_str = if app.dirty { "*" } else { "" };
         let lock_str = if app.config.production_lock {
             if app.config.use_nerd_fonts { " " } else { " [L]" }
         } else {
             ""
         };
         
-        if !app.config.focus_mode {
-            spans.push(Span::styled(dirty_str, theme.warning_style()));
+        if !app.config.focus_mode && !lock_str.is_empty() {
             spans.push(Span::styled(lock_str, theme.info_style()));
         }
 

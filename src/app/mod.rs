@@ -197,6 +197,7 @@ pub struct FilePickerState {
     pub overwrite_confirmed: bool,
     pub naming_mode: bool,
     pub target_path: Option<PathBuf>,
+    pub name_input_touched: bool,
 }
 
 #[derive(Clone, Default)]

@@ -114,194 +114,361 @@ pub fn draw_file_picker(f: &mut Frame, app: &mut App, area: Rect) {
         return;
     };
 
-    let block_w = 70u16.min(area.width);
-    let block_h = 24u16.min(area.height);
-    let x = area.x + (area.width - block_w) / 2;
-    let y = area.y + (area.height - block_h) / 2;
-    let block_area = Rect::new(x, y, block_w, block_h);
+    let ext = state.extension_filter.first().cloned().unwrap_or_else(|| "fountain".to_string());
 
-    f.render_widget(Clear, block_area);
+    if state.action != crate::app::FilePickerAction::Open {
+        // SAVE & EXPORT MODES
+        if !state.naming_mode {
+            // ==================== STAGE 1: FOLDER SELECTION STAGE ====================
+            let block_w = 75u16.min(area.width);
+            let block_h = 24u16.min(area.height);
+            let x = area.x + (area.width - block_w) / 2;
+            let y = area.y + (area.height - block_h) / 2;
+            let block_area = Rect::new(x, y, block_w, block_h);
 
-    let title = match state.action {
-        crate::app::FilePickerAction::Open => " [ Open File ] ",
-        crate::app::FilePickerAction::Save => " [ Save As ] ",
-        crate::app::FilePickerAction::ExportReport => " [ Export Report ] ",
-        crate::app::FilePickerAction::ExportScript => " [ Export Script ] ",
-        crate::app::FilePickerAction::ExportSprints => " [ Export Sprints ] ",
-    };
+            f.render_widget(Clear, block_area);
 
-    let mode_bg = Color::from(app.theme.ui.normal_mode_bg.clone());
-    let block = Block::default()
-        .title(Span::styled(
-            title,
-            Style::default()
-                .fg(mode_bg)
-                .add_modifier(Modifier::BOLD),
-        ))
-        .borders(Borders::ALL)
-        .border_type(ratatui::widgets::BorderType::Rounded)
-        .border_style(app.theme.secondary_style())
-        .style(app.theme.normal_style());
- f.render_widget(block, block_area);
+            let title = match state.action {
+                crate::app::FilePickerAction::Save => " [ Save - Choose Folder ] ",
+                crate::app::FilePickerAction::ExportReport => " [ Export Report - Choose Folder ] ",
+                crate::app::FilePickerAction::ExportScript => " [ Export Script - Choose Folder ] ",
+                crate::app::FilePickerAction::ExportSprints => " [ Export Sprints - Choose Folder ] ",
+                _ => " [ Choose Folder ] ",
+            };
 
-    let inner_area = block_area.inner(ratatui::layout::Margin {
-        horizontal: 2,
-        vertical: 1,
-    });
+            let mode_bg = Color::from(app.theme.ui.normal_mode_bg.clone());
+            let block = Block::default()
+                .title(Span::styled(
+                    title,
+                    Style::default()
+                        .fg(mode_bg)
+                        .add_modifier(Modifier::BOLD),
+                ))
+                .borders(Borders::ALL)
+                .border_type(ratatui::widgets::BorderType::Rounded)
+                .border_style(app.theme.secondary_style())
+                .style(app.theme.normal_style());
+            f.render_widget(block, block_area);
 
-    let layout = Layout::default()
-        .direction(Direction::Vertical)
-        .constraints([
-            Constraint::Length(1), // Current Dir
-            Constraint::Min(0),    // List
-            Constraint::Length(1), // Input Label
-            Constraint::Length(1), // Filename Input
-        ])
-        .split(inner_area);
+            let inner_area = block_area.inner(ratatui::layout::Margin {
+                horizontal: 2,
+                vertical: 1,
+            });
 
-    // 1. Current Dir
-    let dir_str = format!(" Dir: {}", state.current_dir.display());
-    let dir_style = if state.naming_mode {
-        app.theme.warning_style().add_modifier(Modifier::BOLD)
-    } else {
-        app.theme.secondary_style().add_modifier(Modifier::ITALIC)
-    };
-    
-    f.render_widget(
-        Paragraph::new(Line::from(vec![
-            Span::styled(dir_str, dir_style),
-            if state.naming_mode {
-                Span::styled(" [LOCKED]", app.theme.error_style().add_modifier(Modifier::BOLD))
+            let layout = Layout::default()
+                .direction(Direction::Vertical)
+                .constraints([
+                    Constraint::Length(2), // Folder display with padding
+                    Constraint::Min(0),    // Directory list
+                    Constraint::Length(1), // Footer instructions
+                ])
+                .split(inner_area);
+
+            // 1. Current Folder Display
+            let folder_label = if app.config.use_nerd_fonts {
+                Line::from(vec![
+                    Span::styled("Destination: 󰉋  ", app.theme.warning_style().add_modifier(Modifier::BOLD)),
+                    Span::styled(state.current_dir.to_string_lossy().into_owned(), app.theme.secondary_style().add_modifier(Modifier::BOLD)),
+                ])
             } else {
-                Span::raw("")
-            }
-        ])),
-        layout[0],
-    );
+                Line::from(vec![
+                    Span::styled("Destination: ", app.theme.warning_style().add_modifier(Modifier::BOLD)),
+                    Span::styled(state.current_dir.to_string_lossy().into_owned(), app.theme.secondary_style().add_modifier(Modifier::BOLD)),
+                ])
+            };
+            f.render_widget(Paragraph::new(folder_label), layout[0]);
 
-    // 2. List of items
-    let items_len = state.items.len();
-    let selected_idx = state.list_state.selected().unwrap_or(0);
-    let mut display_items: Vec<ListItem> = state
-        .items
-        .iter()
-        .enumerate()
-        .map(|(i, path)| {
-            let is_selected = i == selected_idx;
-            let is_dir = path.is_dir();
+            // 2. Directory List
+            let selected_idx = state.list_state.selected().unwrap_or(0);
+            let display_items: Vec<ListItem> = state
+                .items
+                .iter()
+                .enumerate()
+                .map(|(i, path)| {
+                    let is_selected = i == selected_idx;
+                    
+                    let name = if let Some(parent) = state.current_dir.parent() {
+                        if path == parent {
+                            if app.config.use_nerd_fonts {
+                                "󰁝  .. (Parent Directory)".to_string()
+                            } else {
+                                ".. (Parent Directory)".to_string()
+                            }
+                        } else {
+                            path.file_name()
+                                .map(|n| n.to_string_lossy().into_owned())
+                                .unwrap_or_else(|| "/".to_string())
+                        }
+                    } else {
+                        path.file_name()
+                            .map(|n| n.to_string_lossy().into_owned())
+                            .unwrap_or_else(|| "/".to_string())
+                    };
 
-            let name = if let Some(parent) = state.current_dir.parent() {
-                if path == parent {
-                    ".. (Parent Directory)".to_string()
+                    let icon = if app.config.use_nerd_fonts {
+                        if name.starts_with('󰁝') { "" } else { "󰉋  " }
+                    } else {
+                        ""
+                    };
+
+                    let style = if is_selected {
+                        Style::default()
+                            .bg(Color::from(app.theme.ui.selection_bg.clone()))
+                            .fg(Color::from(app.theme.ui.selection_fg.clone()))
+                            .add_modifier(Modifier::BOLD)
+                    } else {
+                        Style::default().fg(Color::from(app.theme.ui.tree_mode_bg.clone()))
+                    };
+
+                    ListItem::new(Line::from(vec![
+                        Span::styled(
+                            if is_selected {
+                                if app.config.use_nerd_fonts { "󰁔 " } else { "> " }
+                            } else {
+                                "  "
+                            },
+                            style,
+                        ),
+                        Span::styled(icon, style),
+                        Span::styled(name, style),
+                    ]))
+                })
+                .collect();
+
+            let list = List::new(display_items).highlight_style(Style::default());
+            f.render_stateful_widget(list, layout[1], &mut state.list_state);
+
+            // 3. Footer instructions
+            let footer = Line::from(vec![
+                Span::styled(" [↑/↓] ", app.theme.secondary_style().add_modifier(Modifier::BOLD)),
+                Span::raw("Navigate   "),
+                Span::styled(" [Enter] ", app.theme.secondary_style().add_modifier(Modifier::BOLD)),
+                Span::raw("Open   "),
+                Span::styled(" [Backspace] ", app.theme.secondary_style().add_modifier(Modifier::BOLD)),
+                Span::raw("Up   "),
+                Span::styled(" [Tab] ", app.theme.success_style().add_modifier(Modifier::BOLD)),
+                Span::styled("Save", app.theme.success_style().add_modifier(Modifier::BOLD)),
+            ]);
+            f.render_widget(Paragraph::new(footer), layout[2]);
+
+        } else {
+            // ==================== STAGE 2: FILENAME SELECTION STAGE ====================
+            let block_w = 65u16.min(area.width);
+            let block_h = 10u16.min(area.height);
+            let x = area.x + (area.width - block_w) / 2;
+            let y = area.y + (area.height - block_h) / 2;
+            let block_area = Rect::new(x, y, block_w, block_h);
+
+            f.render_widget(Clear, block_area);
+
+            let title = match state.action {
+                crate::app::FilePickerAction::Save => " [ Save - Set Filename ] ",
+                crate::app::FilePickerAction::ExportReport => " [ Export Report - Set Filename ] ",
+                crate::app::FilePickerAction::ExportScript => " [ Export Script - Set Filename ] ",
+                crate::app::FilePickerAction::ExportSprints => " [ Export Sprints - Set Filename ] ",
+                _ => " [ Set Filename ] ",
+            };
+
+            let mode_bg = Color::from(app.theme.ui.normal_mode_bg.clone());
+            let block = Block::default()
+                .title(Span::styled(
+                    title,
+                    Style::default()
+                        .fg(mode_bg)
+                        .add_modifier(Modifier::BOLD),
+                ))
+                .borders(Borders::ALL)
+                .border_type(ratatui::widgets::BorderType::Rounded)
+                .border_style(app.theme.warning_style())
+                .style(app.theme.normal_style());
+            f.render_widget(block, block_area);
+
+            let inner_area = block_area.inner(ratatui::layout::Margin {
+                horizontal: 2,
+                vertical: 1,
+            });
+
+            let layout = Layout::default()
+                .direction(Direction::Vertical)
+                .constraints([
+                    Constraint::Length(1), // Locked Destination Info
+                    Constraint::Length(3), // Focused Filename Input Area
+                    Constraint::Length(1), // Footer Hints
+                ])
+                .split(inner_area);
+
+            // 1. Locked Destination Info
+            let folder_label = if app.config.use_nerd_fonts {
+                Line::from(vec![
+                    Span::styled(format!("󰉋  Folder: {} ", state.current_dir.display()), app.theme.secondary_style().add_modifier(Modifier::ITALIC)),
+                    Span::styled(" 󰌾", app.theme.error_style().add_modifier(Modifier::BOLD)),
+                ])
+            } else {
+                Line::from(vec![
+                    Span::styled(format!("Folder: {} ", state.current_dir.display()), app.theme.secondary_style().add_modifier(Modifier::ITALIC)),
+                    Span::styled(" [LOCKED]", app.theme.error_style().add_modifier(Modifier::BOLD)),
+                ])
+            };
+            f.render_widget(Paragraph::new(folder_label), layout[0]);
+
+            // 2. Focused Filename Input Area
+            let input_box = Block::default()
+                .borders(Borders::ALL)
+                .border_type(ratatui::widgets::BorderType::Rounded)
+                .border_style(app.theme.success_style())
+                .title(" Filename ");
+
+            let text_color = Color::from(app.theme.ui.foreground.clone().unwrap_or_else(|| crate::theme::HexColor("white".to_string())));
+            let text_style = Style::default().fg(text_color).add_modifier(Modifier::BOLD);
+            let ext_style = Style::default().fg(Color::from(app.theme.ui.dim.clone()));
+
+            let input_text = Line::from(vec![
+                Span::styled(format!(" {}", state.filename_input), text_style),
+                Span::styled(format!(".{}", ext), ext_style),
+            ]);
+
+            f.render_widget(Paragraph::new(input_text).block(input_box), layout[1]);
+
+            // 3. Footer hints
+            let footer = Line::from(vec![
+                Span::styled(" [Enter] ", app.theme.success_style().add_modifier(Modifier::BOLD)),
+                Span::raw("Save   "),
+                Span::styled(" [Tab] ", app.theme.secondary_style().add_modifier(Modifier::BOLD)),
+                Span::raw("Back   "),
+                Span::styled(" [Esc] ", app.theme.error_style().add_modifier(Modifier::BOLD)),
+                Span::raw("Cancel"),
+            ]);
+            f.render_widget(Paragraph::new(footer), layout[2]);
+
+            // Cursor Pos inside the input box
+            let cursor_x = if state.name_input_touched {
+                layout[1].x + 2 + UnicodeWidthStr::width(state.filename_input.as_str()) as u16
+            } else {
+                layout[1].x + 2 // Cursor is beautifully positioned at the very front
+            };
+            f.set_cursor_position((cursor_x, layout[1].y + 1));
+        }
+
+    } else {
+        // ==================== NORMAL OPEN FILE PICKER (SINGLE-STAGE) ====================
+        let block_w = 70u16.min(area.width);
+        let block_h = 24u16.min(area.height);
+        let x = area.x + (area.width - block_w) / 2;
+        let y = area.y + (area.height - block_h) / 2;
+        let block_area = Rect::new(x, y, block_w, block_h);
+
+        f.render_widget(Clear, block_area);
+
+        let title = " [ Open File ] ";
+        let mode_bg = Color::from(app.theme.ui.normal_mode_bg.clone());
+        let block = Block::default()
+            .title(Span::styled(
+                title,
+                Style::default()
+                    .fg(mode_bg)
+                    .add_modifier(Modifier::BOLD),
+            ))
+            .borders(Borders::ALL)
+            .border_type(ratatui::widgets::BorderType::Rounded)
+            .border_style(app.theme.secondary_style())
+            .style(app.theme.normal_style());
+        f.render_widget(block, block_area);
+
+        let inner_area = block_area.inner(ratatui::layout::Margin {
+            horizontal: 2,
+            vertical: 1,
+        });
+
+        let layout = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints([
+                Constraint::Length(1), // Current Dir
+                Constraint::Min(0),    // List of items
+                Constraint::Length(1), // Footer Hints
+            ])
+            .split(inner_area);
+
+        // 1. Current Dir
+        let dir_str = format!(" Dir: {}", state.current_dir.display());
+        f.render_widget(
+            Paragraph::new(Line::from(vec![
+                Span::styled(dir_str, app.theme.secondary_style().add_modifier(Modifier::ITALIC)),
+            ])),
+            layout[0],
+        );
+
+        // 2. List of items
+        let selected_idx = state.list_state.selected().unwrap_or(0);
+        let display_items: Vec<ListItem> = state
+            .items
+            .iter()
+            .enumerate()
+            .map(|(i, path)| {
+                let is_selected = i == selected_idx;
+                let is_dir = path.is_dir();
+
+                let name = if let Some(parent) = state.current_dir.parent() {
+                    if path == parent {
+                        ".. (Parent Directory)".to_string()
+                    } else {
+                        path.file_name()
+                            .map(|n| n.to_string_lossy().into_owned())
+                            .unwrap_or_else(|| "/".to_string())
+                    }
                 } else {
                     path.file_name()
                         .map(|n| n.to_string_lossy().into_owned())
                         .unwrap_or_else(|| "/".to_string())
-                }
-            } else {
-                path.file_name()
-                    .map(|n| n.to_string_lossy().into_owned())
-                    .unwrap_or_else(|| "/".to_string())
-            };
+                };
 
-            let (icon, color) = if is_dir {
-                (
-                    if app.config.use_nerd_fonts {
-                        "󰉋  "
-                    } else {
-                        " "
-                    },
-                    app.theme.ui.tree_mode_bg.clone().into(),
-                )
-            } else {
-                (
-                    if app.config.use_nerd_fonts {
-                        "󰈙  "
-                    } else {
-                        " "
-                    },
-                    app.theme.primary_fg(),
-                )
-            };
+                let (icon, color) = if is_dir {
+                    (
+                        if app.config.use_nerd_fonts { "󰉋  " } else { "" },
+                        app.theme.ui.tree_mode_bg.clone().into(),
+                    )
+                } else {
+                    (
+                        if app.config.use_nerd_fonts { "󰈙  " } else { "" },
+                        app.theme.primary_fg(),
+                    )
+                };
 
-            let style = if is_selected {
-                Style::default().bg(Color::from(app.theme.ui.selection_bg.clone())).fg(Color::from(app.theme.ui.selection_fg.clone()))
-            } else {
-                Style::default().fg(color)
-            };
+                let style = if is_selected {
+                    Style::default().bg(Color::from(app.theme.ui.selection_bg.clone())).fg(Color::from(app.theme.ui.selection_fg.clone()))
+                } else {
+                    Style::default().fg(color)
+                };
 
-            ListItem::new(Line::from(vec![
-                Span::styled(
-                    if is_selected {
-                        if app.config.use_nerd_fonts {
-                            "󰁔 "
+                ListItem::new(Line::from(vec![
+                    Span::styled(
+                        if is_selected {
+                            if app.config.use_nerd_fonts { "󰁔 " } else { "> " }
                         } else {
-                            "> "
-                        }
-                    } else {
-                        "   "
-                    },
-                    style,
-                ),
-                Span::styled(icon, style),
-                Span::styled(name, style),
-            ]))
-        })
-        .collect();
+                            "  "
+                        },
+                        style,
+                    ),
+                    Span::styled(icon, style),
+                    Span::styled(name, style),
+                ]))
+            })
+            .collect();
 
-    // Add virtual item for custom filename if in Save mode
-    if state.action != crate::app::FilePickerAction::Open && !state.filename_input.is_empty() {
-        let is_selected = selected_idx == items_len;
-        let style = if is_selected {
-            Style::default().bg(Color::from(app.theme.ui.selection_bg.clone())).fg(Color::from(app.theme.ui.selection_fg.clone()))
-        } else {
-            Style::default().fg(Color::from(app.theme.ui.normal_mode_bg.clone()))
-        };
-        display_items.push(ListItem::new(Line::from(vec![
-            Span::styled(if is_selected { " > " } else { "   " }, style),
-            Span::styled("[!] ", style),
-            Span::styled(
-                format!("Confirm: {}", state.filename_input),
-                style.add_modifier(Modifier::BOLD),
-            ),
-        ])));
-    }
+        let list = List::new(display_items).highlight_style(Style::default());
+        f.render_stateful_widget(list, layout[1], &mut state.list_state);
 
-    let list = List::new(display_items).highlight_style(Style::default());
-    f.render_stateful_widget(list, layout[1], &mut state.list_state);
-
-    // 3. Input Label & Hints
-    if state.action != crate::app::FilePickerAction::Open {
-        let hints = if state.naming_mode {
-            Line::from(vec![
-                Span::styled(" Filename: ", Style::default().fg(Color::from(app.theme.ui.normal_mode_bg.clone())).add_modifier(Modifier::BOLD)),
-                Span::styled(" [Enter] ", app.theme.success_style().add_modifier(Modifier::BOLD)),
-                Span::styled("to SAVE to locked folder", app.theme.secondary_style()),
-            ])
-        } else {
-            Line::from(vec![
-                Span::styled(" Filename: ", app.theme.secondary_style()),
-                Span::styled(" [Tab] ", Style::default().fg(Color::from(app.theme.ui.normal_mode_bg.clone())).add_modifier(Modifier::BOLD)),
-                Span::styled("to LOCK folder & type name", app.theme.secondary_style()),
-            ])
-        };
-        f.render_widget(Paragraph::new(hints), layout[2]);
-
-        // 4. Filename Input
-        let input_style = Style::default().fg(Color::from(app.theme.ui.selection_fg.clone())).bg(Color::from(app.theme.ui.selection_bg.clone()));
-        f.render_widget(
-            Paragraph::new(Line::from(vec![Span::styled(
-                format!("  {}", state.filename_input),
-                input_style,
-            )]))
-            .block(Block::default().borders(Borders::NONE)),
-            layout[3],
-        );
-
-        // Cursor for input
-        let cursor_pos =
-            layout[3].x + 2 + UnicodeWidthStr::width(state.filename_input.as_str()) as u16;
-        f.set_cursor_position((cursor_pos, layout[3].y));
+        // 3. Footer hints
+        let footer = Line::from(vec![
+            Span::styled(" [↑/↓] ", app.theme.secondary_style().add_modifier(Modifier::BOLD)),
+            Span::raw("Navigate  "),
+            Span::styled(" [Enter] ", app.theme.secondary_style().add_modifier(Modifier::BOLD)),
+            Span::raw("Open / Select  "),
+            Span::styled(" [Backspace] ", app.theme.secondary_style().add_modifier(Modifier::BOLD)),
+            Span::raw("Parent Directory  "),
+            Span::styled(" [Esc] ", app.theme.error_style().add_modifier(Modifier::BOLD)),
+            Span::raw("Cancel"),
+        ]);
+        f.render_widget(Paragraph::new(footer), layout[2]);
     }
 
     // Overwrite Confirmation Overlay

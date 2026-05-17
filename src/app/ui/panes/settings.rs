@@ -172,6 +172,7 @@ pub fn draw_settings_modal(f: &mut Frame, app: &mut App, area: Rect) {
         if app.config.use_nerd_fonts { "󰄱 ".to_string() } else { "[OFF]".to_string() }
     } else {
         match app.config.auto_save_interval {
+            30 => if app.config.use_nerd_fonts { "󰄲 30s".to_string() } else { "[30s]".to_string() },
             60 => if app.config.use_nerd_fonts { "󰄲 1m".to_string() } else { "[1 min]".to_string() },
             180 => if app.config.use_nerd_fonts { "󰄲 3m".to_string() } else { "[3 min]".to_string() },
             300 => if app.config.use_nerd_fonts { "󰄲 5m".to_string() } else { "[5 min]".to_string() },

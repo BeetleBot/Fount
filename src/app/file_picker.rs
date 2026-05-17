@@ -44,6 +44,7 @@ impl App {
                         overwrite_confirmed: false,
                         naming_mode: false,
                         target_path: None,
+                        name_input_touched: false,
                     });
                     if let Err(e) = self.handle_file_picker_choice(path) {
                         self.set_error(&format!("Error: {}", e));
@@ -61,10 +62,18 @@ impl App {
         }
 
         // FALLBACK: TUI Picker
-        let items = get_dir_items(&default_dir);
+        let only_dirs = action != FilePickerAction::Open;
+        let items = get_dir_items(&default_dir, only_dirs);
         let mut list_state = ListState::default();
         if !items.is_empty() {
             list_state.select(Some(0));
+        }
+
+        // Prefill filename stem instead of the full initial_filename
+        let mut initial_name = String::new();
+        if let Some(ref name) = initial_filename {
+            let path = Path::new(name);
+            initial_name = path.file_stem().map(|s| s.to_string_lossy().into_owned()).unwrap_or_else(|| name.clone());
         }
         
         self.file_picker = Some(FilePickerState {
@@ -72,12 +81,13 @@ impl App {
             items,
             list_state,
             action,
-            filename_input: initial_filename.unwrap_or_default(),
+            filename_input: initial_name,
             extension_filter: filter,
             show_overwrite_confirm: false,
             overwrite_confirmed: false,
             naming_mode: false,
             target_path: None,
+            name_input_touched: false,
         });
         self.mode = AppMode::FilePicker;
     }
@@ -94,9 +104,17 @@ impl App {
     }
 
     fn get_default_directory(&self) -> PathBuf {
-        if let Some(p) = self.file.as_ref().and_then(|p| p.parent()) {
-            return p.to_path_buf();
-        }
+        if let Some(p) = self.file.as_ref().and_then(|p| p.parent())
+            && !p.as_os_str().is_empty() {
+                if let Ok(abs_p) = std::fs::canonicalize(p) {
+                    let abs_str = abs_p.to_string_lossy();
+                    if let Some(stripped) = abs_str.strip_prefix(r"\\?\") {
+                        return PathBuf::from(stripped);
+                    }
+                    return abs_p;
+                }
+                return p.to_path_buf();
+            }
 
         if let Some(dirs) = UserDirs::new() {
             #[cfg(target_os = "linux")]
@@ -111,68 +129,73 @@ impl App {
             }
         }
 
-        std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."))
+        if let Ok(curr) = std::env::current_dir()
+            && let Ok(abs_p) = std::fs::canonicalize(curr) {
+                let abs_str = abs_p.to_string_lossy();
+                if let Some(stripped) = abs_str.strip_prefix(r"\\?\") {
+                    return PathBuf::from(stripped);
+                }
+                return abs_p;
+            }
+        PathBuf::from(".")
     }
 
     pub fn file_picker_enter(&mut self) -> Result<bool, Box<dyn std::error::Error>> {
-        let (selected_path, action, is_dir) = if let Some(ref mut state) = self.file_picker {
-            let items_len = state.items.len();
-            let selected_idx = state.list_state.selected().unwrap_or(0);
-            
-            if selected_idx < items_len {
-                let p = state.items[selected_idx].clone();
-                let is_d = p.is_dir();
-                (Some(p), state.action.clone(), is_d)
-            } else if (state.action == FilePickerAction::Save || state.action == FilePickerAction::ExportReport || state.action == FilePickerAction::ExportScript || state.action == FilePickerAction::ExportSprints) 
-               && !state.filename_input.is_empty() {
-                let p = state.current_dir.join(&state.filename_input);
-                (Some(p), state.action.clone(), false)
-            } else {
-                (None, state.action.clone(), false)
-            }
-        } else {
-            return Ok(false);
-        };
+        let mut action_to_take = None;
 
-        if let Some(path) = selected_path {
-            if let Some(ref mut state) = self.file_picker {
-                // If naming_mode is active, we IGNORE folders and just save.
+        if let Some(ref mut state) = self.file_picker {
+            if state.action != FilePickerAction::Open {
                 if state.naming_mode {
-                    let final_path = if !state.filename_input.is_empty() {
-                        state.current_dir.join(&state.filename_input)
-                    } else {
-                        path
-                    };
+                    let mut filename = state.filename_input.trim().to_string();
+                    if !filename.is_empty() {
+                        let ext = state.extension_filter.first().cloned().unwrap_or_else(|| "fountain".to_string());
+                        let suffix = format!(".{}", ext);
+                        if !filename.ends_with(&suffix) {
+                            filename.push_str(&suffix);
+                        }
+                        let final_path = state.current_dir.join(filename);
 
-                    // Check for overwrite
-                    if final_path.exists() {
-                        state.show_overwrite_confirm = true;
-                        state.target_path = Some(final_path);
-                        state.overwrite_confirmed = false;
-                        return Ok(false);
+                        // Check for overwrite
+                        if final_path.exists() {
+                            state.show_overwrite_confirm = true;
+                            state.target_path = Some(final_path);
+                            state.overwrite_confirmed = false;
+                        } else {
+                            action_to_take = Some(final_path);
+                        }
                     }
-                    
-                    return self.handle_file_picker_choice(final_path);
+                } else {
+                    let selected_idx = state.list_state.selected().unwrap_or(0);
+                    if selected_idx < state.items.len() {
+                        let path = state.items[selected_idx].clone();
+                        if path.is_dir() {
+                            state.current_dir = path;
+                            let only_dirs = state.action != FilePickerAction::Open;
+                            state.items = get_dir_items(&state.current_dir, only_dirs);
+                            state.list_state.select(Some(0));
+                        }
+                    }
                 }
-
-                if is_dir {
-                    state.current_dir = path;
-                    state.items = get_dir_items(&state.current_dir);
-                    state.list_state.select(Some(0));
-                    return Ok(false);
-                }
-
-                if action != FilePickerAction::Open {
-                    // If we haven't locked the folder yet (not in naming_mode), 
-                    // pressing enter on a file just fills the input.
-                    state.filename_input = path.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
-                    return Ok(false);
+            } else {
+                let selected_idx = state.list_state.selected().unwrap_or(0);
+                if selected_idx < state.items.len() {
+                    let path = state.items[selected_idx].clone();
+                    if path.is_dir() {
+                        state.current_dir = path;
+                        let only_dirs = state.action != FilePickerAction::Open;
+                        state.items = get_dir_items(&state.current_dir, only_dirs);
+                        state.list_state.select(Some(0));
+                    } else {
+                        action_to_take = Some(path);
+                    }
                 }
             }
-            self.handle_file_picker_choice(path)
-        } else {
-            Ok(false)
         }
+
+        if let Some(path) = action_to_take {
+            return self.handle_file_picker_choice(path);
+        }
+        Ok(false)
     }
 
     pub fn handle_file_picker_choice(&mut self, path: PathBuf) -> Result<bool, Box<dyn std::error::Error>> {
@@ -250,7 +273,7 @@ impl App {
     }
 }
 
-pub fn get_dir_items(path: &Path) -> Vec<PathBuf> {
+pub fn get_dir_items(path: &Path, only_dirs: bool) -> Vec<PathBuf> {
     let mut items = Vec::new();
     
     // Add parent directory ".." if it exists
@@ -264,7 +287,14 @@ pub fn get_dir_items(path: &Path) -> Vec<PathBuf> {
             .map(|e| e.path())
             .filter(|p| {
                 let name = p.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
-                !name.starts_with('.')
+                if name.starts_with('.') {
+                    return false;
+                }
+                if only_dirs {
+                    p.is_dir()
+                } else {
+                    true
+                }
             })
             .collect();
         

@@ -281,17 +281,18 @@ impl App {
                                 17 => {
                                     if !self.config.auto_save {
                                         self.config.auto_save = true;
-                                        self.config.auto_save_interval = 60;
+                                        self.config.auto_save_interval = 30;
                                     } else {
                                         match self.config.auto_save_interval {
+                                            30 => self.config.auto_save_interval = 60,
                                             60 => self.config.auto_save_interval = 180,
                                             180 => self.config.auto_save_interval = 300,
                                             300 => self.config.auto_save_interval = 600,
                                             600 => {
                                                 self.config.auto_save = false;
-                                                self.config.auto_save_interval = 300;
+                                                self.config.auto_save_interval = 30;
                                             }
-                                            _ => self.config.auto_save_interval = 60,
+                                            _ => self.config.auto_save_interval = 30,
                                         }
                                     }
                                     let _ = crate::config::Config::save_setting("auto_save", self.config.auto_save);
@@ -478,12 +479,17 @@ impl App {
                                         let _ = crate::config::Config::save_setting("include_title_page", self.config.include_title_page);
                                     }
                                     8 => {
-                                        let (ext, default_name) = match self.config.export_format.as_str() {
-                                            "pdf" => ("pdf", "screenplay.pdf"),
-                                            "fountain" => ("fountain", "screenplay.fountain"),
-                                            _ => ("pdf", "screenplay.pdf"),
+                                        let ext = match self.config.export_format.as_str() {
+                                            "pdf" => "pdf",
+                                            "fountain" => "fountain",
+                                            _ => "pdf",
                                         };
-                                        self.open_file_picker(FilePickerAction::ExportScript, vec![ext.to_string()], Some(default_name.to_string()));
+                                        let file_stem = self.file.as_ref()
+                                            .and_then(|p| p.file_stem())
+                                            .map(|s| s.to_string_lossy().into_owned())
+                                            .unwrap_or_else(|| "screenplay".to_string());
+                                        let default_name = format!("{}.{}", file_stem, ext);
+                                        self.open_file_picker(FilePickerAction::ExportScript, vec![ext.to_string()], Some(default_name));
                                     }
                                     _ => {}
                                 }
@@ -500,16 +506,17 @@ impl App {
                                         let _ = crate::config::Config::save_string_setting("report_format", &self.config.report_format);
                                     }
                                     1 => {
-                                        let (ext, default_name) = match self.config.report_format.as_str() {
-                                            "csv_scene" => ("csv", "scene_list.csv"),
-                                            "csv_char" => ("csv", "character_report.csv"),
-                                            "csv_location" => ("csv", "location_report.csv"),
-                                            "csv_notes" => ("csv", "notes_report.csv"),
-                                            "csv_breakdown" => ("csv", "script_breakdown.csv"),
-                                            "txt_dialogue" => ("txt", "dialogue_only.txt"),
-                                            _ => ("csv", "report.csv"),
+                                        let ext = match self.config.report_format.as_str() {
+                                            "csv_scene" | "csv_char" | "csv_location" | "csv_notes" | "csv_breakdown" => "csv",
+                                            "txt_dialogue" => "txt",
+                                            _ => "csv",
                                         };
-                                        self.open_file_picker(FilePickerAction::ExportReport, vec![ext.to_string()], Some(default_name.to_string()));
+                                        let file_stem = self.file.as_ref()
+                                            .and_then(|p| p.file_stem())
+                                            .map(|s| s.to_string_lossy().into_owned())
+                                            .unwrap_or_else(|| "report".to_string());
+                                        let default_name = format!("{}.{}", file_stem, ext);
+                                        self.open_file_picker(FilePickerAction::ExportReport, vec![ext.to_string()], Some(default_name));
                                     }
                                     _ => {}
                                 }
@@ -755,62 +762,125 @@ impl App {
                         return Ok(false);
                     }
 
-                    match key.code {
-                        KeyCode::Esc => {
-                            self.mode = AppMode::Normal;
-                            self.file_picker = None;
-                        }
-                        KeyCode::Tab => {
-                            if let Some(ref mut state) = self.file_picker {
-                                state.filename_input.clear();
-                                state.naming_mode = true;
-                            }
-                        }
-                        KeyCode::Up | KeyCode::Char('k') => {
-                            if let Some(ref mut state) = self.file_picker {
-                                let current = state.list_state.selected().unwrap_or(0);
-                                if current > 0 {
-                                    state.list_state.select(Some(current - 1));
+                    if let Some(ref mut state) = self.file_picker {
+                        if state.action != FilePickerAction::Open {
+                            if !state.naming_mode {
+                                // Stage 1: Folder Selection Mode
+                                match key.code {
+                                    KeyCode::Esc => {
+                                        self.mode = AppMode::Normal;
+                                        self.file_picker = None;
+                                    }
+                                    KeyCode::Tab => {
+                                        state.naming_mode = true;
+                                    }
+                                    KeyCode::Up | KeyCode::Char('k') => {
+                                        let current = state.list_state.selected().unwrap_or(0);
+                                        if current > 0 {
+                                            state.list_state.select(Some(current - 1));
+                                        }
+                                    }
+                                    KeyCode::Down | KeyCode::Char('j') => {
+                                        let current = state.list_state.selected().unwrap_or(0);
+                                        if current + 1 < state.items.len() {
+                                            state.list_state.select(Some(current + 1));
+                                        }
+                                    }
+                                    KeyCode::Enter => {
+                                        match self.file_picker_enter() {
+                                            Ok(true) => return Ok(true),
+                                            Ok(false) => {}
+                                            Err(e) => self.set_error(&format!("Error: {}", e)),
+                                        }
+                                    }
+                                    KeyCode::Backspace => {
+                                        if let Some(parent) = state.current_dir.parent().map(|p| p.to_path_buf()) {
+                                            state.current_dir = parent;
+                                            let only_dirs = state.action != FilePickerAction::Open && !state.naming_mode;
+                                            state.items = crate::app::file_picker::get_dir_items(&state.current_dir, only_dirs);
+                                            state.list_state.select(Some(0));
+                                        }
+                                    }
+                                    _ => {}
+                                }
+                            } else {
+                                // Stage 2: Filename Selection Mode
+                                match key.code {
+                                    KeyCode::Esc => {
+                                        self.mode = AppMode::Normal;
+                                        self.file_picker = None;
+                                    }
+                                    KeyCode::Tab => {
+                                        state.naming_mode = false;
+                                        let only_dirs = state.action != FilePickerAction::Open;
+                                        state.items = crate::app::file_picker::get_dir_items(&state.current_dir, only_dirs);
+                                        state.list_state.select(Some(0));
+                                    }
+                                    KeyCode::Enter => {
+                                        match self.file_picker_enter() {
+                                            Ok(true) => return Ok(true),
+                                            Ok(false) => {}
+                                            Err(e) => self.set_error(&format!("Error: {}", e)),
+                                        }
+                                    }
+                                    KeyCode::Backspace => {
+                                        if !state.name_input_touched {
+                                            state.filename_input.clear();
+                                            state.name_input_touched = true;
+                                        } else {
+                                            state.filename_input.pop();
+                                        }
+                                    }
+                                    KeyCode::Char(c) if !ctrl => {
+                                        if !state.name_input_touched {
+                                            state.filename_input.clear();
+                                            state.name_input_touched = true;
+                                        }
+                                        state.filename_input.push(c);
+                                    }
+                                    KeyCode::Left | KeyCode::Right | KeyCode::Home | KeyCode::End => {
+                                        state.name_input_touched = true;
+                                    }
+                                    _ => {}
                                 }
                             }
-                        }
-                        KeyCode::Down | KeyCode::Char('j') => {
-                            if let Some(ref mut state) = self.file_picker {
-                                let current = state.list_state.selected().unwrap_or(0);
-                                let max = state.items.len() + (if state.action != FilePickerAction::Open && !state.filename_input.is_empty() { 1 } else { 0 });
-                                if current + 1 < max {
-                                    state.list_state.select(Some(current + 1));
+                        } else {
+                            // FilePickerAction::Open (Normal single-stage folder + file picker)
+                            match key.code {
+                                KeyCode::Esc => {
+                                    self.mode = AppMode::Normal;
+                                    self.file_picker = None;
                                 }
-                            }
-                        }
-                        KeyCode::Enter => {
-                            match self.file_picker_enter() {
-                                Ok(true) => return Ok(true),
-                                Ok(false) => {}
-                                Err(e) => self.set_error(&format!("Error: {}", e)),
-                            }
-                        }
-                        KeyCode::Backspace => {
-                            if let Some(ref mut state) = self.file_picker {
-                                if state.action != FilePickerAction::Open {
-                                    state.filename_input.pop();
-                                } else {
-                                    // Navigate up directory
+                                KeyCode::Up | KeyCode::Char('k') => {
+                                    let current = state.list_state.selected().unwrap_or(0);
+                                    if current > 0 {
+                                        state.list_state.select(Some(current - 1));
+                                    }
+                                }
+                                KeyCode::Down | KeyCode::Char('j') => {
+                                    let current = state.list_state.selected().unwrap_or(0);
+                                    if current + 1 < state.items.len() {
+                                        state.list_state.select(Some(current + 1));
+                                    }
+                                }
+                                KeyCode::Enter => {
+                                    match self.file_picker_enter() {
+                                        Ok(true) => return Ok(true),
+                                        Ok(false) => {}
+                                        Err(e) => self.set_error(&format!("Error: {}", e)),
+                                    }
+                                }
+                                KeyCode::Backspace => {
                                     if let Some(parent) = state.current_dir.parent().map(|p| p.to_path_buf()) {
                                         state.current_dir = parent;
-                                        state.items = crate::app::file_picker::get_dir_items(&state.current_dir);
+                                        let only_dirs = state.action != FilePickerAction::Open;
+                                        state.items = crate::app::file_picker::get_dir_items(&state.current_dir, only_dirs);
                                         state.list_state.select(Some(0));
                                     }
                                 }
+                                _ => {}
                             }
                         }
-                        KeyCode::Char(c) => {
-                            if let Some(ref mut state) = self.file_picker
-                                && state.action != FilePickerAction::Open {
-                                    state.filename_input.push(c);
-                                }
-                        }
-                        _ => {}
                     }
                     return Ok(false);
                 }

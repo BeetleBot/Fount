@@ -10,7 +10,7 @@ use crossterm::{
 use ratatui::{Terminal, backend::CrosstermBackend};
 use std::{io, panic, time::Duration};
 
-use fount::app::{App, ui::draw};
+use fount::app::{App, ui::draw, FilePickerAction};
 use fount::config::Cli;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -94,13 +94,21 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         if app.config.auto_save
             && app.dirty
-            && app.file.is_some()
             && last_save.elapsed() >= Duration::from_secs(app.config.auto_save_interval)
         {
-            if let Err(e) = app.save() {
-                app.set_status(&format!("Auto-save failed: {}", e));
-            } else {
-                app.set_status("Auto-saved");
+            if app.file.is_some() {
+                if let Err(e) = app.save() {
+                    app.set_status(&format!("Auto-save failed: {}", e));
+                } else {
+                    app.set_status("Auto-saved");
+                }
+            } else if app.file_picker.is_none() {
+                app.open_file_picker(
+                    FilePickerAction::Save,
+                    vec!["fountain".to_string()],
+                    Some("unnamed.fountain".to_string()),
+                );
+                app.set_status("Please save the file first to enable Auto-save");
             }
             last_save = std::time::Instant::now();
         }
