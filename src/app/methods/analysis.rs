@@ -450,7 +450,7 @@ impl App {
                     if row.line_type != LineType::Parenthetical {
                         current_character = None;
                     }
-                    if in_scene {
+                    if in_scene && crate::layout::is_printable(row.line_type) {
                         current_scene_visual_rows += 1;
                     }
                 }
