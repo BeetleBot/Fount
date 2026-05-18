@@ -807,7 +807,6 @@ dependencies = [
  "regex",
  "serde",
  "supports-color",
- "supports-unicode",
  "tempfile",
  "toml 0.8.23",
  "tui-piechart",
@@ -2118,12 +2117,6 @@ checksum = "c64fc7232dd8d2e4ac5ce4ef302b1d81e0b80d055b9d77c7c4f51f6aa4c867d6"
 dependencies = [
  "is_ci",
 ]
-
-[[package]]
-name = "supports-unicode"
-version = "3.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b7401a30af6cb5818bb64852270bb722533397edcfc7344954a38f420819ece2"
 
 [[package]]
 name = "syn"
