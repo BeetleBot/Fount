@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.10.0] - 2026-05-18
+
+### New features
+- **Smart Delimiter Newlines**: Pressing `Enter` directly before trailing screenplay markup delimiters (like `]]`, `*/`, `**`, `*`, `_`, `<`, `)`, `"`, `'`) now leaves them cleanly on the active line, automatically creating a new paragraph or line below.
+- **Index Cards Vector Synopsis**: Replaced single synopsis inputs with a vector field in the Index Cards modal, allowing interactive editing of multi-paragraph scene synopses.
+- **Horizontal Index Card Reordering**: Added support for horizontally shifting and reordering index cards using `Shift + Left/Right` with active, live visual move indicators.
+- **Dynamic Page Sizing**: Implemented real-time page-specific line calculations and configuration options supporting custom page sizes (A4 vs US Letter).
+- **Modular X-Ray Studio**: Completely upgraded the X-Ray analytics interface to feature sub-panes: **Pulse** (pacing analysis), **Ensemble** (character statistics table), **Blueprint** (scene metrics), and **Inventory** (metadata tracking).
+- **Collapsible Scene Tree**: Added nested sequence collapsible hierarchy support in the sidebar scene tree navigation view.
+- **Active Writing Sprints**: Added active writing session and sprint tracking to the UI with conflict prevention and enhanced footer status indicators.
+
+### Improvements
+- **TUI File Picker & Two-Stage Save**: Completely overhauled the integrated TUI File Picker for opening and saving screenplay files, featuring a safer two-stage saving flow with automatic extension validation and active "dirty" buffer tracking inside UI labels.
+- **Note Rendering Performance**: Drastically improved screenplay rendering loop speeds by implementing dynamic invalidation caches for layout line calculations of hidden/note blocks.
+- **Footer UI Simplification**: Streamlined the bottom footer status displays and refined the dynamic cursor positioning mechanics.
+
+### Under the Hood / Tests
+- **Randomized Monkey Testing**: Integrated a new high-frequency randomized stress testing module for application input stability.
+- **Extensive Test Coverage**: Expanded the unit testing suite with targeted stress and edge cases for Scene Tree parsing, Index Card generation, and X-Ray pacing algorithms.
+
 ## [0.9.9] - 2026-05-16
 
 ### Fixes
