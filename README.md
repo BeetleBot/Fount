@@ -57,55 +57,57 @@ Fount is a dedicated writing environment designed to disappear while you work.
 
 ### 🏠 Homescreen Dashboard
 A walkthrough of the beautiful homescreen dashboard in Fount, showing recent screenplay files and quick actions.
+
 [![asciicast](https://asciinema.org/a/1076515.svg)](https://asciinema.org/a/1076515)
-
----
-
-### 🗺️ Outline & Structures
-Import structural templates (e.g. Hero's Journey, 3-Act Structure) directly into FountTUI to scaffold a screenplay outline instantly.
-[![asciicast](https://asciinema.org/a/1076516.svg)](https://asciinema.org/a/1076516)
-
----
-
-### 🃏 Story Architect (Index Cards View & Scene Editing)
-Plot your story at a high level using the grid-based index cards to organize and edit scene synopses with smooth word-wrap.
-[![asciicast](https://asciinema.org/a/1076517.svg)](https://asciinema.org/a/1076517)
-
----
-
-### 🌲 Scene Tree Navigation
-Interactive side-panel and tree-structured view of scenes and sequences inside the screenplay, with instant search and jump.
-[![asciicast](https://asciinema.org/a/1076518.svg)](https://asciinema.org/a/1076518)
-
----
-
-### ⚡ Smart Screenplay Elements
-Demonstrating Fount's smart autocomplete, automatic character/parenthetical centering, and contextual element wrapping.
-[![asciicast](https://asciinema.org/a/1076519.svg)](https://asciinema.org/a/1076519)
-
----
-
-### ⏱️ Automated Session Snapshots
-Under the hood look at Fount's background snapshotting system that periodically auto-saves buffer states to prevent data loss.
-[![asciicast](https://asciinema.org/a/1076520.svg)](https://asciinema.org/a/1076520)
 
 ---
 
 ### 📝 Fountain Syntax Markup Syntax
 Live editing showcasing bold, italic, underlined, lyrics, centered text, and inline notes syntax rendering in FountTUI.
+
 [![asciicast](https://asciinema.org/a/1076522.svg)](https://asciinema.org/a/1076522)
 
 ---
 
-### 🎨 Theme Customisation
-Cycle through curated themes like **Catppuccin**, **Nord**, **Everforest**, and the new **Lilac** to suit your mood.
-[![asciicast](https://asciinema.org/a/1076523.svg)](https://asciinema.org/a/1076523)
+### 🌲 Scene Tree Navigation
+Interactive side-panel and tree-structured view of scenes and sequences inside the screenplay, with instant search and jump.
+
+[![asciicast](https://asciinema.org/a/1076518.svg)](https://asciinema.org/a/1076518)
+
+---
+
+### 🃏 Story Architect (Index Cards View & Scene Editing)
+Plot your story at a high level using the grid-based index cards to organize and edit scene synopses with smooth word-wrap.
+
+[![asciicast](https://asciinema.org/a/1076517.svg)](https://asciinema.org/a/1076517)
+
+---
+
+### 🗺️ Outline & Structures
+Import structural templates (e.g. Hero's Journey, 3-Act Structure) directly into FountTUI to scaffold a screenplay outline instantly.
+
+[![asciicast](https://asciinema.org/a/1076516.svg)](https://asciinema.org/a/1076516)
 
 ---
 
 ### 📊 Xray Mode
 Visualize your screenplay's pacing, character frequency, and scene length distribution in real-time using X-Ray mode.
+
 [![asciicast](https://asciinema.org/a/1076524.svg)](https://asciinema.org/a/1076524)
+
+---
+
+### 🎨 Theme Customisation
+Cycle through curated themes like **Catppuccin**, **Nord**, **Everforest**, and the new **Lilac** to suit your mood.
+
+[![asciicast](https://asciinema.org/a/1076523.svg)](https://asciinema.org/a/1076523)
+
+---
+
+### ⏱️ Automated Session Snapshots
+Under the hood look at Fount's background snapshotting system that periodically auto-saves buffer states to prevent data loss.
+
+[![asciicast](https://asciinema.org/a/1076520.svg)](https://asciinema.org/a/1076520)
 
 ---
 
