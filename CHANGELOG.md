@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.10.1] - 2026-05-18
+
+### Changes
+- **Windows Mode**: Introduced a dedicated Windows Mode for terminal compatibility, replacing the old ASCII-forcing approach with a smarter, platform-aware rendering strategy.
+- **Removed `force_ascii`**: Dropped the legacy `force_ascii` configuration option in favor of the new Windows Mode.
+
 ## [0.10.0] - 2026-05-18
 
 ### New features
