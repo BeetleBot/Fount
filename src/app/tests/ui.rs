@@ -98,7 +98,8 @@ use super::*;
 
         let buffer = terminal.backend().buffer();
         let mut found = false;
-        for y in 0..23 {
+        // Search the main content area (y > 2) to avoid matching the "1" in "v0.10.0" header
+        for y in 3..23 {
             for x in 0..80 {
                 let cell = &buffer[(x, y)];
                 if cell.symbol() == "1" {

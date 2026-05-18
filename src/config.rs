@@ -252,6 +252,12 @@ pub struct Config {
     /// Mac Mode: Auto-compatibility for Apple_Terminal
     pub mac_mode: bool,
 
+    /// Windows Mode
+    pub windows_mode: bool,
+
+    /// Legacy Windows Console (conhost)
+    pub legacy_windows: bool,
+
     /// Include sections in exports
     pub export_sections: bool,
 
@@ -290,7 +296,7 @@ impl Default for Config {
             heading_spacing: 1,
             shot_style: "bold".to_string(),
 
-            auto_save: true,
+            auto_save: false,
             auto_save_interval: 30,
 
             no_color: false,
@@ -308,8 +314,10 @@ impl Default for Config {
             include_title_page: true,
             production_lock: false,
             theme: "Adaptive".to_string(),
-            use_nerd_fonts: true,
+            use_nerd_fonts: !cfg!(windows),
             mac_mode: false,
+            windows_mode: false,
+            legacy_windows: false,
             export_sections: false,
             export_synopses: false,
             export_font: "courier_prime".to_string(),
@@ -547,7 +555,12 @@ impl Config {
                 if let Some(parent) = path.parent() {
                     let _ = fs::create_dir_all(parent);
                 }
-                let _ = fs::write(&path, DEFAULT_CONFIG);
+                #[cfg(windows)]
+                let default_content = DEFAULT_CONFIG.replace("set use_nerd_fonts", "unset use_nerd_fonts");
+                #[cfg(not(windows))]
+                let default_content = DEFAULT_CONFIG.to_string();
+
+                let _ = fs::write(&path, default_content);
             }
 
             if let Ok(content) = fs::read_to_string(&path) {
@@ -563,10 +576,7 @@ impl Config {
             config.export_format = "pdf".to_string();
         }
 
-        let supports_unicode = supports_unicode::on(supports_unicode::Stream::Stdout);
         let supports_color = supports_color::on(supports_color::Stream::Stdout).is_some();
-
-        config.force_ascii |= !supports_unicode;
 
         if config.force_ansi {
             config.no_color = false;
@@ -582,6 +592,17 @@ impl Config {
             config.no_color = true;
             config.force_ascii = true;
             config.use_nerd_fonts = false;
+        }
+
+        // --- Windows Mode Detection ---
+        #[cfg(target_os = "windows")]
+        {
+            config.windows_mode = true;
+            let is_modern_terminal = std::env::var("WT_SESSION").is_ok() || std::env::var("WT_PROFILE_ID").is_ok();
+            
+            if !is_modern_terminal {
+                config.legacy_windows = true;
+            }
         }
 
         config

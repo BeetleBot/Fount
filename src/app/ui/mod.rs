@@ -1134,7 +1134,8 @@ pub fn draw(f: &mut Frame, app: &mut App) {
 
         let is_writing_mode = app.mode == AppMode::Normal || app.mode == AppMode::MetadataAutocomplete;
         if is_writing_mode && app.mode != AppMode::Home && app.mode != AppMode::IndexCards {
-            spans.push(Span::styled(" 󱞩 ", dim_style));
+            let scene_icon = if app.config.use_nerd_fonts { " 󱞩 " } else { " ↳ " };
+            spans.push(Span::styled(scene_icon, dim_style));
             let scene_name = app.get_current_scene_name();
             spans.push(Span::styled(
                 scene_name,

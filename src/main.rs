@@ -48,10 +48,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     )?;
 
     // Keyboard enhancement might not be supported on all terminals (e.g. legacy Windows Console)
-    let _ = execute!(
-        stdout,
-        PushKeyboardEnhancementFlags(KeyboardEnhancementFlags::DISAMBIGUATE_ESCAPE_CODES)
-    );
+    if !app.config.legacy_windows {
+        let _ = execute!(
+            stdout,
+            PushKeyboardEnhancementFlags(KeyboardEnhancementFlags::DISAMBIGUATE_ESCAPE_CODES)
+        );
+    }
 
     let backend = CrosstermBackend::new(stdout);
     let mut term = Terminal::new(backend)?;
@@ -151,7 +153,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         DisableMouseCapture,
         DisableBracketedPaste,
     )?;
-    let _ = execute!(term.backend_mut(), PopKeyboardEnhancementFlags);
+    if !app.config.legacy_windows {
+        let _ = execute!(term.backend_mut(), PopKeyboardEnhancementFlags);
+    }
 
     if std::env::var("TERM").unwrap_or_default() == "linux" {
         execute!(
