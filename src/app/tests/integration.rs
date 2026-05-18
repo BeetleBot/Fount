@@ -2,37 +2,37 @@ use super::*;
 
     #[test]
     fn test_integration() {
-        let tutorial_text = r#"Title: Fount Tutorial
+        let tutorial_text = r#"Title: Fount Adventure
 Credit: Written by
-Author: René Coignard
-Draft date: Version 0.2.17
+Author: Beetle and Bee
+Draft date: Version 1.0.0
 Contact:
-contact@renecoignard.com
+contact@beetle.and.be
 
-INT. FLAT IN WOLFEN-NORD - DAY
+INT. BEETLE CAVE - DAY
 
-RENÉ sits at his desk, typing.
+BEETLE sits at a glowing terminal, typing.
 
-RENÉ
+BEETLE
 (turning round)
-Oh, hello there. It seems you've found my terminal Rust port of Beat. Sit back and I'll show you how everything works.
+Oh, hello there. It seems you've found Fount, the distraction-free screenplay editor. Sit back and let's craft something amazing.
 
-I sometimes write screenplays on my Gentoo laptop, and doing it in plain nano isn't terribly comfortable (I work entirely in the terminal there). So I decided to put this port of Beat together. I used Beat's source code as a reference when writing Fount, so things work more or less the same way.
+We are writing a beautiful screenplay directly in our terminal using FountTUI. It feels incredibly premium, responsive, and distraction-free.
 
-As you may have already noticed, the navigation is rather reminiscent of nano, because I did look at its source code and took inspiration, for the sake of authenticity. I'm rather fond of it, and I hope you will be too. Not quite as nerdy as vim, but honestly, I'm an average nano enjoyer and I'm not ashamed of it.
+Fount is developed with maximum love and care, with a zero-panic guarantee, clean code, and zero warnings. It is designed to be the ultimate companion for screenwriters.
 
 Anyway, let's get into it.
 
-EXT. NORDPARK - DAY
+EXT. DIGITAL FOREST - DAY
 
-As I mentioned, things work much the same as in Beat. If you start a line with **int.** or **ext.**, Fount will automatically turn it into a scene heading. You can also use tab: on an empty line, it will first turn it into a character cue, then a scene heading, and then a transition. If you simply start typing IN CAPS ON AN EMPTY LINE, LIKE SO, the text will automatically become a character cue.
+As I mentioned, things work beautifully. If you start a line with **int.** or **ext.**, Fount will automatically turn it into a scene heading. You can also use tab: on an empty line, it will first turn it into a character cue, then a scene heading, and then a transition. If you simply start typing IN CAPS ON AN EMPTY LINE, LIKE SO, the text will automatically become a character cue.
 
 You can also use notes...
 
-/* Two sailors are walking along the deck, when one turns to the other and says: */
+/* Two beetles are crawling along the terminal, when one turns to the other and says: */
 
-SAILOR
-I'm not a sailor, actually.
+BEE
+I'm not a bug, actually.
 
 Fount automatically inserts two blank lines after certain elements, just as Beat does, though this can be adjusted in the configuration file. There's a sample config in the repository; do make use of it. Bonus: try enabling typewriter mode and see what happens.
 
@@ -50,15 +50,15 @@ For very, very, very long notes.
 
 */
 
-[[Comments can look like this as well. They don't differ much from other comment types, but for compatibility with Beat, all the same comment types are supported.]]
+[[Comments can look like this as well. They don't differ much from other comment types, but all comment types are fully supported.]]
 
 # This is a new section
 
 = And this is a synopsis.
 
-INT. EDEKA - ABEND
+INT. CODEBASE - EVENING
 
-Unlike Beat, there's no full render or PDF export here, but you can always save your screenplay and open it in Beat to do that. In Beat, synopses wouldn't appear in the rendered script, nor would comments. Which is why they share the same colour here, incidentally.
+Unlike other editors, Fount is built specifically for terminal enthusiasts. Everything is optimized to look stunningly beautiful, modern, and clean.
 
 As you may have noticed, there's support for **bold text**, *italics*, and even _underlined text_. When your cursor isn't on a line containing these markers, they'll be hidden from view. Move onto the line, and you'll see all the asterisks and underscores that produce the formatting.
 
@@ -70,7 +70,7 @@ You can also force transitions...
 
 >AN ABRUPT TRANSITION TO THE NEXT SCENE:
 
-EXT. WOLFEN(BITTERFELD) RAILWAY STATION - MORNING
+EXT. PRODUCTION ENVIRONMENT - MORNING
 
 Lyrics are supported too, using a tilde at the start of the line...
 
@@ -83,16 +83,16 @@ Lyrics are supported too, using a tilde at the start of the line...
 
 That's Wise Guys. Onwards.
 
-EXT. LEIPZIG HBF - MORNING
+EXT. RELEASE BUILD - MORNING
 
 Well, do have a go on it, write something from scratch, or edit this screenplay. You might even turn up a bug or two; if so, please do let me know :-) Everything seemed to behave itself while I was putting this tutorial together, and I hope it all runs just as smoothly for you. I hope you enjoy working in Fount.
 
-[[marker Speaking of which, I named the application after a certain Charlotte I once knew, who wrote quite wonderful screenplays.]]
+[[marker Speaking of which, Fount is a lovely terminal app built for creating the next generation of masterpiece screenplays.]]
 [[marker blue The colour of these comment markers can be changed, as you can see.]]
 
 You can find more information about the Fountain markup language at https://www.fountain.io/
 
-And Beat itself, of course: https://www.beat-app.fi/
+And Fount itself, of course: https://github.com/BeetleBot/FountTUI
 
 > FADE OUT"#;
 
@@ -117,14 +117,14 @@ And Beat itself, of course: https://www.beat-app.fi/
         };
 
         let meta_title_idx = get_idx("Title:");
-        let meta_val_idx = get_idx("contact@renecoignard");
-        let scene1_idx = get_idx("INT. FLAT");
+        let meta_val_idx = get_idx("contact@beetle");
+        let scene1_idx = get_idx("INT. BEETLE CAVE");
 
-        let char1_idx = get_exact_idx("RENÉ");
+        let char1_idx = get_exact_idx("BEETLE");
 
         let paren_idx = get_idx("(turning round)");
         let dial_idx = get_idx("Oh, hello there");
-        let boneyard1_idx = get_idx("/* Two sailors");
+        let boneyard1_idx = get_idx("/* Two beetles");
         let trans1_idx = get_exact_idx("CUT TO:");
         let boneyard_multiline_idx = get_exact_idx("/*");
         let section_idx = get_idx("# This is");
@@ -194,9 +194,9 @@ And Beat itself, of course: https://www.beat-app.fi/
         assert_eq!(layout_trans.indent, expected_indent);
         assert_eq!(layout_trans.raw_text, "CUT TO:");
 
-        assert!(app.characters.contains("RENÉ"));
-        assert!(app.characters.contains("SAILOR"));
-        assert!(app.locations.contains("FLAT IN WOLFEN-NORD - DAY"));
+        assert!(app.characters.contains("BEETLE"));
+        assert!(app.characters.contains("BEE"));
+        assert!(app.locations.contains("BEETLE CAVE - DAY"));
 
         let total_vis_lines = app.layout.len();
         assert!(total_vis_lines > 0, "Layout must not be empty");
@@ -314,14 +314,14 @@ And Beat itself, of course: https://www.beat-app.fi/
         app.cursor_y = app
             .lines
             .iter()
-            .position(|l| l.starts_with("INT. FLAT"))
+            .position(|l| l.starts_with("INT. BEETLE CAVE"))
             .unwrap();
         app.cursor_x = 0;
         app.update_layout();
         app.report_cursor_position();
         assert_eq!(
             app.status_msg.as_deref(),
-            Some("line 8/93 (8%), col 1/31 (3%), char 126/4082 (3%)")
+            Some("line 8/93 (8%), col 1/23 (4%), char 124/3644 (3%)")
         );
 
         app.cursor_y = app
@@ -334,7 +334,7 @@ And Beat itself, of course: https://www.beat-app.fi/
         app.report_cursor_position();
         assert_eq!(
             app.status_msg.as_deref(),
-            Some("line 67/93 (72%), col 1/41 (2%), char 2976/4082 (72%)")
+            Some("line 67/93 (72%), col 1/41 (2%), char 2538/3644 (69%)")
         );
 
         app.cursor_y = app.lines.iter().position(|l| l == "> FADE OUT").unwrap();
@@ -343,7 +343,7 @@ And Beat itself, of course: https://www.beat-app.fi/
         app.report_cursor_position();
         assert_eq!(
             app.status_msg.as_deref(),
-            Some("line 93/93 (100%), col 11/11 (100%), char 4082/4082 (100%)")
+            Some("line 93/93 (100%), col 11/11 (100%), char 3644/3644 (100%)")
         );
 
         app.cursor_y = usize::MAX;
@@ -351,53 +351,48 @@ And Beat itself, of course: https://www.beat-app.fi/
 
         let render = crate::export::export_document(&app.layout, &app.lines, &app.config, &app.theme, false);
 
-        let reference_render = r#"                      Title: Fount Tutorial
+        let reference_render = r#"                      Title: Fount Adventure
                       Credit: Written by
-                      Author: René Coignard
-                      Draft date: Version 0.2.17
+                      Author: Beetle and Bee
+                      Draft date: Version 1.0.0
                       Contact:
-                        contact@renecoignard.com
+                        contact@beetle.and.be
 
-     1      INT. FLAT IN WOLFEN-NORD - DAY                                    1.
+     1      INT. BEETLE CAVE - DAY                                            1.
 
-            RENÉ sits at his desk, typing.
+            BEETLE sits at a glowing terminal, typing.
 
-                                RENÉ
+                                BEETLE
                             (turning round)
                        Oh, hello there. It seems you've
-                       found my terminal Rust port of
-                       Beat. Sit back and I'll show you
-                       how everything works.
+                       found Fount, the distraction-free
+                       screenplay editor. Sit back and
+                       let's craft something amazing.
 
-            I sometimes write screenplays on my Gentoo laptop, and doing
-            it in plain nano isn't terribly comfortable (I work entirely
-            in the terminal there). So I decided to put this port of
-            Beat together. I used Beat's source code as a reference when
-            writing Fount, so things work more or less the same way.
+            We are writing a beautiful screenplay directly in our
+            terminal using FountTUI. It feels incredibly premium,
+            responsive, and distraction-free.
 
-            As you may have already noticed, the navigation is rather
-            reminiscent of nano, because I did look at its source code
-            and took inspiration, for the sake of authenticity. I'm
-            rather fond of it, and I hope you will be too. Not quite as
-            nerdy as vim, but honestly, I'm an average nano enjoyer and
-            I'm not ashamed of it.
+            Fount is developed with maximum love and care, with a zero-
+            panic guarantee, clean code, and zero warnings. It is
+            designed to be the ultimate companion for screenwriters.
 
             Anyway, let's get into it.
 
-     2      EXT. NORDPARK - DAY
+     2      EXT. DIGITAL FOREST - DAY
 
-            As I mentioned, things work much the same as in Beat. If you
-            start a line with int. or ext., Fount will automatically
-            turn it into a scene heading. You can also use tab: on an
-            empty line, it will first turn it into a character cue, then
-            a scene heading, and then a transition. If you simply start
-            typing IN CAPS ON AN EMPTY LINE, LIKE SO, the text will
+            As I mentioned, things work beautifully. If you start a line
+            with int. or ext., Fount will automatically turn it into a
+            scene heading. You can also use tab: on an empty line, it
+            will first turn it into a character cue, then a scene
+            heading, and then a transition. If you simply start typing
+            IN CAPS ON AN EMPTY LINE, LIKE SO, the text will
             automatically become a character cue.
 
             You can also use notes...
 
-                                SAILOR
-                       I'm not a sailor, actually.
+                                BEE
+                       I'm not a bug, actually.
 
             Fount automatically inserts two blank lines after certain
             elements, just as Beat does, though this can be adjusted in
@@ -413,13 +408,11 @@ And Beat itself, of course: https://www.beat-app.fi/
             That alone is quite enough to write a proper screenplay. But
             there's more! For instance, we also have these...
 
-     3      INT. EDEKA - ABEND                                                2.
+     3      INT. CODEBASE - EVENING
 
-            Unlike Beat, there's no full render or PDF export here, but
-            you can always save your screenplay and open it in Beat to
-            do that. In Beat, synopses wouldn't appear in the rendered
-            script, nor would comments. Which is why they share the same
-            colour here, incidentally.
+            Unlike other editors, Fount is built specifically for             2.
+            terminal enthusiasts. Everything is optimized to look
+            stunningly beautiful, modern, and clean.
 
             As you may have noticed, there's support for bold text,
             italics, and even underlined text. When your cursor isn't on
@@ -435,7 +428,7 @@ And Beat itself, of course: https://www.beat-app.fi/
 
                                  AN ABRUPT TRANSITION TO THE NEXT SCENE:
 
-     4      EXT. WOLFEN(BITTERFELD) RAILWAY STATION - MORNING
+     4      EXT. PRODUCTION ENVIRONMENT - MORNING
 
             Lyrics are supported too, using a tilde at the start of the
             line...
@@ -449,7 +442,7 @@ And Beat itself, of course: https://www.beat-app.fi/
 
             That's Wise Guys. Onwards.
 
-     5      EXT. LEIPZIG HBF - MORNING
+     5      EXT. RELEASE BUILD - MORNING
 
             Well, do have a go on it, write something from scratch, or
             edit this screenplay. You might even turn up a bug or two;
@@ -461,7 +454,8 @@ And Beat itself, of course: https://www.beat-app.fi/
             You can find more information about the Fountain markup
             language at https://www.fountain.io/
 
-            And Beat itself, of course: https://www.beat-app.fi/
+            And Fount itself, of course:
+            https://github.com/BeetleBot/FountTUI
 
                                                                 FADE OUT
 "#;
@@ -471,4 +465,3 @@ And Beat itself, of course: https://www.beat-app.fi/
             "Reference render does not match expected output."
         );
     }
-
