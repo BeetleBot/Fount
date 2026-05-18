@@ -8,6 +8,7 @@ pub struct IndexCard {
     pub end_line: usize,
     pub heading: String,
     pub synopsis: String,
+    pub synopses: Vec<String>,
     pub preview: String,
     pub scene_num: Option<String>,
     pub color: Option<ratatui::style::Color>,
@@ -40,6 +41,7 @@ impl App {
                     end_line: self.lines.len().saturating_sub(1),
                     heading: clean_heading,
                     synopsis: String::new(),
+                    synopses: Vec::new(),
                     preview: String::new(),
                     scene_num,
                     color: None,
@@ -47,10 +49,12 @@ impl App {
                 });
             } else if let Some(ref mut card) = current_card {
                 if lt == LineType::Synopsis {
+                    let clean_syn = crate::layout::strip_sigils(line, lt).trim().to_string();
+                    card.synopses.push(clean_syn.clone());
                     if !card.synopsis.is_empty() {
                         card.synopsis.push('\n');
                     }
-                    card.synopsis.push_str(crate::layout::strip_sigils(line, lt));
+                    card.synopsis.push_str(&clean_syn);
                 } else if card.preview.is_empty() && (lt == LineType::Action || lt == LineType::Dialogue) {
                     card.preview = line.clone();
                 }
@@ -132,7 +136,8 @@ impl App {
         
         self.selected_card_idx = if cards.is_empty() { 0 } else { after_idx + 1 };
         self.is_card_editing = true;
-        self.is_heading_editing = true;
+        self.active_card_field = 0;
+        self.is_card_field_writing = true;
         self.card_input_buffer = String::new();
     }
 
@@ -157,15 +162,14 @@ impl App {
         self.selected_card_idx = idx.saturating_sub(1);
     }
 
-    pub fn update_card_content(&mut self, idx: usize, heading: String, synopsis: String) {
+    pub fn update_card_full(&mut self, idx: usize, heading: String, synopses: Vec<String>) {
         let cards = self.index_cards.clone();
         if idx >= cards.len() {
             return;
         }
         self.save_state(true);
         let card = &cards[idx];
-        
-        // Update Heading
+
         let clean_heading = if heading.is_empty() { 
             if card.is_section { "UNTITLED SECTION".to_string() } else { "UNTITLED SCENE".to_string() }
         } else { 
@@ -177,25 +181,25 @@ impl App {
         } else {
             if clean_heading.starts_with('.') { clean_heading } else { format!(".{}", clean_heading) }
         };
-        
-        // Update Synopsis
-        let mut syn_found = false;
-        for i in card.start_line + 1..=card.end_line {
+
+        for i in (card.start_line + 1..=card.end_line).rev() {
             if i < self.types.len() && self.types[i] == LineType::Synopsis {
-                self.lines[i] = format!("= {}", synopsis);
-                syn_found = true;
-                break;
+                self.lines.remove(i);
+                if i < self.revised_lines.len() {
+                    self.revised_lines.remove(i);
+                }
             }
         }
-        
-        if !syn_found {
-            self.lines.insert(card.start_line + 1, format!("= {}", synopsis));
-            if card.start_line + 1 < self.revised_lines.len() {
-                self.revised_lines.insert(card.start_line + 1, false);
+
+        for (offset, syn) in synopses.iter().enumerate() {
+            let insert_pos = card.start_line + 1 + offset;
+            self.lines.insert(insert_pos, format!("= {}", syn));
+            if insert_pos <= self.revised_lines.len() {
+                self.revised_lines.insert(insert_pos, false);
             }
         }
+
         self.revised_lines.resize(self.lines.len(), false);
-        
         self.parse_document();
         self.update_layout();
     }

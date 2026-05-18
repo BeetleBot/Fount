@@ -1035,38 +1035,94 @@ impl App {
                     if self.is_card_editing {
                         match key.code {
                             KeyCode::Esc => {
-                                self.is_card_editing = false;
-                                self.is_heading_editing = false;
-                                self.card_input_buffer.clear();
+                                if self.is_card_field_writing {
+                                    self.is_card_field_writing = false;
+                                    self.card_input_buffer.clear();
+                                    self.set_status("Edit cancelled");
+                                } else {
+                                    self.is_card_editing = false;
+                                    self.active_card_field = 0;
+                                    self.card_input_buffer.clear();
+                                    self.set_status("Modal closed");
+                                }
                             }
                             KeyCode::Enter => {
-                                let idx = self.selected_card_idx;
-                                let mut h = String::new();
-                                let mut s = String::new();
-                                
-                                if let Some(card) = cards.get(idx) {
-                                    h = card.heading.clone();
-                                    s = card.synopsis.clone();
+                                if let Some(card) = cards.get(self.selected_card_idx) {
+                                    if self.is_card_field_writing {
+                                        let mut syns = card.synopses.clone();
+                                        let mut head = card.heading.clone();
+                                        
+                                        if self.active_card_field == 0 {
+                                            head = self.card_input_buffer.clone();
+                                        } else {
+                                            let s_idx = self.active_card_field - 1;
+                                            if s_idx < syns.len() {
+                                                syns[s_idx] = self.card_input_buffer.clone();
+                                            }
+                                        }
+                                        
+                                        self.update_card_full(self.selected_card_idx, head, syns);
+                                        self.is_card_field_writing = false;
+                                        self.card_input_buffer.clear();
+                                        self.set_status("Field saved");
+                                        *text_changed = true;
+                                    } else {
+                                        self.is_card_field_writing = true;
+                                        if self.active_card_field == 0 {
+                                            self.card_input_buffer = card.heading.clone();
+                                        } else {
+                                            let s_idx = self.active_card_field - 1;
+                                            self.card_input_buffer = card.synopses.get(s_idx).cloned().unwrap_or_default();
+                                        }
+                                        self.set_status("Editing field... [Enter] to save, [Esc] to cancel");
+                                    }
                                 }
-
-                                if self.is_heading_editing {
-                                    self.update_card_content(idx, self.card_input_buffer.clone(), s);
-                                    self.is_heading_editing = false;
-                                    let updated_cards = &self.index_cards;
-                                    self.card_input_buffer = updated_cards.get(idx).map(|c| c.synopsis.clone()).unwrap_or_default();
-                                    self.set_status("Editing Synopsis... [Enter] to finish");
-                                } else {
-                                    self.update_card_content(idx, h, self.card_input_buffer.clone());
-                                    self.is_card_editing = false;
-                                    self.card_input_buffer.clear();
-                                    self.set_status("Card updated");
-                                }
-                                *text_changed = true;
                             }
-                            KeyCode::Backspace => {
+                            KeyCode::Up if !self.is_card_field_writing => {
+                                self.active_card_field = self.active_card_field.saturating_sub(1);
+                            }
+                            KeyCode::Down if !self.is_card_field_writing => {
+                                if let Some(card) = cards.get(self.selected_card_idx) {
+                                    let total_fields = 1 + card.synopses.len();
+                                    if self.active_card_field + 1 < total_fields {
+                                        self.active_card_field += 1;
+                                    }
+                                }
+                            }
+                            KeyCode::Char('s') | KeyCode::Char('S') if !self.is_card_field_writing => {
+                                if let Some(card) = cards.get(self.selected_card_idx) {
+                                    let mut syns = card.synopses.clone();
+                                    syns.push(String::new());
+                                    self.update_card_full(self.selected_card_idx, card.heading.clone(), syns);
+                                    
+                                    self.active_card_field = card.synopses.len() + 1;
+                                    self.is_card_field_writing = true;
+                                    self.card_input_buffer = String::new();
+                                    self.set_status("New synopsis added! Type and press [Enter]");
+                                    *text_changed = true;
+                                }
+                            }
+                            KeyCode::Char('d') | KeyCode::Char('D') if !self.is_card_field_writing => {
+                                if self.active_card_field >= 1 {
+                                    if let Some(card) = cards.get(self.selected_card_idx) {
+                                        let s_idx = self.active_card_field - 1;
+                                        let mut syns = card.synopses.clone();
+                                        if s_idx < syns.len() {
+                                            syns.remove(s_idx);
+                                            self.update_card_full(self.selected_card_idx, card.heading.clone(), syns);
+                                            self.active_card_field = self.active_card_field.saturating_sub(1);
+                                            self.set_status("Synopsis deleted");
+                                            *text_changed = true;
+                                        }
+                                    }
+                                } else {
+                                    self.set_status("Cannot delete the scene heading!");
+                                }
+                            }
+                            KeyCode::Backspace if self.is_card_field_writing => {
                                 self.card_input_buffer.pop();
                             }
-                            KeyCode::Char(c) if !ctrl => {
+                            KeyCode::Char(c) if !ctrl && self.is_card_field_writing => {
                                 self.card_input_buffer.push(c);
                                 *text_changed = true;
                             }
@@ -1167,13 +1223,12 @@ impl App {
                                     }
                                 }
                             }
-                            KeyCode::Enter => {
-                                if let Some(card) = cards.get(self.selected_card_idx) {
-                                    self.is_card_editing = true;
-                                    self.is_heading_editing = true;
-                                    self.card_input_buffer = card.heading.clone();
-                                    self.set_status("Editing Title... [Enter] to next");
-                                }
+                            KeyCode::Enter if cards.get(self.selected_card_idx).is_some() => {
+                                self.is_card_editing = true;
+                                self.active_card_field = 0;
+                                self.is_card_field_writing = false;
+                                self.card_input_buffer.clear();
+                                self.set_status("Card modal opened");
                             }
                             KeyCode::Char('n') | KeyCode::Char('N') => {
                                 let is_section = shift || key.code == KeyCode::Char('N');
