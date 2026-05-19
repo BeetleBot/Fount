@@ -17,12 +17,11 @@ use crate::pdf::{
     screenplay::{Dialogue, DialogueElement, Element, Span, TitlePage},
 };
 
-const FONT_SIZE: usize = 12; // standard screenplay size
-const FONT_WIDTH: f32 = 7.2; // 12 * 0.6 (Courier Prime's aspect ratio)
+const FONT_SIZE: usize = 12;
+const FONT_WIDTH: f32 = 7.2;
 
-/// The font bundled together with Rustwell; Courier Prime.
-/// Includes the data of the font styles Regular, Bold, Italic
-/// and BoldItalic, in stated order.
+/// Courier Prime font files compiled directly into the application for screenplay rendering.
+/// Variants: Regular, Bold, Italic, BoldItalic, and their Sans equivalents.
 const FONTS: [&[u8]; 8] = [
     include_bytes!("fonts/CourierPrime-Regular.ttf"),
     include_bytes!("fonts/CourierPrime-Bold.ttf"),
@@ -34,7 +33,6 @@ const FONTS: [&[u8]; 8] = [
     include_bytes!("fonts/CourierPrimeSans-BoldItalic.ttf"),
 ];
 
-/// A family of fonts with the standard variants.
 struct FontFamily {
     pub regular: Font,
     pub bold: Font,
@@ -46,16 +44,13 @@ struct FontFamily {
     pub sans_bold_italic: Font,
 }
 
-/// Dimensions of a paper in points (pts).
 pub struct PaperSize {
     pub x: usize,
     pub y: usize,
 }
 
-/// The size of an `A4` paper in points (pts).
-pub const A4: PaperSize = PaperSize { x: 595, y: 842 }; // A4 size in pts
-/// The size of a `US letter` paper in points (pts).
-pub const LETTER: PaperSize = PaperSize { x: 612, y: 792 }; // Letter size in pts
+pub const A4: PaperSize = PaperSize { x: 595, y: 842 };
+pub const LETTER: PaperSize = PaperSize { x: 612, y: 792 };
 
 impl Default for PaperSize {
     fn default() -> Self {
@@ -63,32 +58,40 @@ impl Default for PaperSize {
     }
 }
 
-/// The margin at the top of a page. Applicable on every page. In points.
-const TOP_MARGIN: usize = 72;
-/// The margin at the bottom of a page. Applicable on every page. In points.
-const BOTTOM_MARGIN: usize = 72;
+impl PaperSize {
+    fn top_margin(&self) -> usize {
+        72
+    }
 
-/// Left- and right margins, in points, going inwards - meaning left margin is relative to the left
-/// side, and the right margin is relative to the right side.
+    fn bottom_margin(&self) -> usize {
+        72
+    }
+
+    fn page_left_margin(&self) -> f32 {
+        108.0
+    }
+
+    fn page_right_margin(&self) -> f32 {
+        self.x as f32 - 540.0
+    }
+}
+
 struct Margin {
     pub left: f32,
     pub right: f32,
 }
 
-/// Collection of margins for the dialogue components.
 struct DialogueMargins {
     pub character: Margin,
     pub parenthetical: Margin,
     pub line: Margin,
 }
 
-/// Collection of margins for the dual dialogue components.
 struct DualDialogueMargins {
     pub left: DialogueMargins,
     pub right: DialogueMargins,
 }
 
-/// Collection of all margins for all different screenplay [`Elements`].
 struct Margins {
     pub heading: Margin,
     pub action: Margin,
@@ -101,118 +104,112 @@ struct Margins {
     pub page_number: Margin,
 }
 
-/// The standard margins for all different screenplay [`Elements`].
-const MARGINS: Margins = Margins {
-    heading: Margin {
-        left: 108.0,
-        right: 72.0,
-    },
-    action: Margin {
-        left: 108.0,
-        right: 72.0,
-    },
-    dialogue: DialogueMargins {
-        character: Margin {
-            left: 252.0,
-            right: 108.0,
+fn get_margins(size: &PaperSize) -> Margins {
+    let page_left = size.page_left_margin();
+    let page_right = size.page_right_margin();
+    let page_w = size.x as f32;
+    let half_page = page_w / 2.0;
+
+    Margins {
+        heading: Margin {
+            left: page_left,
+            right: page_right,
         },
-        parenthetical: Margin {
-            left: 223.2,
-            right: 180.0,
+        action: Margin {
+            left: page_left,
+            right: page_right,
         },
-        line: Margin {
-            left: 180.0,
-            right: 144.0,
-        },
-    },
-    dual_dialogue: DualDialogueMargins {
-        left: DialogueMargins {
+        dialogue: DialogueMargins {
             character: Margin {
-                left: 198.0,
-                right: 288.0,
+                left: 266.4,
+                right: page_w - 410.4,
             },
             parenthetical: Margin {
-                left: 162.0,
-                right: 324.0,
+                left: 223.2,
+                right: page_w - 396.0,
             },
             line: Margin {
-                left: 144.0,
-                right: 288.0,
+                left: 180.0,
+                right: page_w - 432.0,
             },
         },
-        right: DialogueMargins {
-            character: Margin {
-                left: 414.0,
-                right: 72.0,
+        dual_dialogue: DualDialogueMargins {
+            left: DialogueMargins {
+                character: Margin {
+                    left: 198.0,
+                    right: 288.0,
+                },
+                parenthetical: Margin {
+                    left: 162.0,
+                    right: 324.0,
+                },
+                line: Margin {
+                    left: 144.0,
+                    right: 288.0,
+                },
             },
-            parenthetical: Margin {
-                left: 378.0,
-                right: 90.0,
-            },
-            line: Margin {
-                left: 360.0,
-                right: 72.0,
+            right: DialogueMargins {
+                character: Margin {
+                    left: half_page + 90.0,
+                    right: page_right,
+                },
+                parenthetical: Margin {
+                    left: half_page + 54.0,
+                    right: page_right + 18.0,
+                },
+                line: Margin {
+                    left: half_page + 36.0,
+                    right: page_right,
+                },
             },
         },
-    },
-    lyrics: Margin {
-        left: 180.0,
-        right: 144.0,
-    },
-    transition: Margin {
-        left: 108.0,
-        right: 72.0,
-    },
-    centered: Margin {
-        left: 144.0,
-        right: 144.0,
-    },
-    synopsis: Margin {
-        left: 108.0,
-        right: 72.0,
-    },
-    page_number: Margin {
-        left: 108.0,
-        right: 72.0,
-    },
-};
+        lyrics: Margin {
+            left: 144.0,
+            right: page_w - 432.0,
+        },
+        transition: Margin {
+            left: page_left,
+            right: page_right,
+        },
+        centered: Margin {
+            left: 144.0,
+            right: page_w - 432.0,
+        },
+        synopsis: Margin {
+            left: page_left,
+            right: page_right,
+        },
+        page_number: Margin {
+            left: page_left,
+            right: page_right,
+        },
+    }
+}
 
 struct LayoutInfo<'a> {
     pub size: &'a PaperSize,
     pub fonts: &'a FontFamily,
     pub export_font: &'a str,
     pub revised_lines: &'a [bool],
+    pub margins: Margins,
 }
 
-/// A [`Screenplay`] exporter for `pdf`
-///
-/// The variables configure the exporter
 #[derive(Default)]
 pub struct PdfExporter {
-    /// Whether to include synopses in the output
     pub synopses: bool,
-    /// Whether to include sections in the output
     pub sections: bool,
-    /// What size (type) of paper (e.g. A4 or US letter)
     pub paper_size: PaperSize,
-    /// Apply bold formatting to scene headings
     pub bold_scene_headings: bool,
-    /// Whether to mirror scene numbers to the right side
     pub mirror_scene_numbers: MirrorOption,
-    /// The font family to use for the entire document
     pub export_font: String,
-    /// Line indices that are revised
     pub revised_lines: Vec<bool>,
 }
 
 impl Exporter for PdfExporter {
-    /// The `.pdf` extension.
     fn file_extension(&self) -> &'static str {
         "pdf"
     }
 
-    /// Exports a `pdf` file and writes it to the provided writer. The pdf creation can fail if
-    /// certain elements do not fit within a single page.
     fn export(&self, screenplay: &Screenplay, writer: &mut dyn Write) -> std::io::Result<()> {
         let mut document = Document::new();
 
@@ -240,6 +237,7 @@ impl Exporter for PdfExporter {
             fonts: &fonts,
             export_font: &self.export_font,
             revised_lines: &self.revised_lines,
+            margins: get_margins(&self.paper_size),
         };
 
         self.generate_pdf(&mut document, &layout_info, screenplay)?;
@@ -259,7 +257,6 @@ enum Alignment {
 }
 
 impl PdfExporter {
-    /// Generates a `pdf` document from a [`Screenplay`]. Runs in (more or less) a single pass.
     fn generate_pdf(
         &self,
         document: &mut Document,
@@ -267,14 +264,11 @@ impl PdfExporter {
         screenplay: &Screenplay,
     ) -> std::io::Result<()> {
         let mut element_iter = screenplay.elements.iter().peekable();
-
-        // The index for which page in the document is currently being written.
         let mut page_idx = 0;
 
-        // The maximum number of writable lines which can fit on a page, considering the top and
-        // bottom margins.
-        let max_lines_per_page =
-            (layout_info.size.y - (TOP_MARGIN + BOTTOM_MARGIN)) / FONT_SIZE - 1;
+        let top = layout_info.size.top_margin();
+        let bottom = layout_info.size.bottom_margin();
+        let max_lines_per_page = (layout_info.size.y - (top + bottom)) / FONT_SIZE - 1;
         // If an element does not fit within a page this will be Some(index), where index is pointing
         // to the breakpoint in the breakpoint list which should be on the start of the next page.
         let mut residual_breakpoint_idx = None;
@@ -299,7 +293,6 @@ impl PdfExporter {
             let mut surface = page.surface();
             let mut line_idx = 0;
 
-            // Writes the page number.
             if (screenplay.titlepage.is_none() && page_idx > 0)
                 || (screenplay.titlepage.is_some() && page_idx > 1)
             {
@@ -308,37 +301,36 @@ impl PdfExporter {
                     layout_info,
                     surface: &mut surface,
                     line_index: &mut p_line_idx,
-                    max_lines: 36, // Specific for page numbers?
+                    max_lines: 36,
                     is_revised: false,
                 };
+                let page_num_text: RichString = format!(
+                    "{}.",
+                    if screenplay.titlepage.is_some() {
+                        page_idx
+                    } else {
+                        page_idx + 1
+                    }
+                )
+                .into();
                 let residual_page_number = write_element_custom_top_margin(
                     &mut ctx,
-                    &format!(
-                        "{}.",
-                        if screenplay.titlepage.is_some() {
-                            page_idx
-                        } else {
-                            page_idx + 1
-                        }
-                    )
-                    .into(),
-                    &MARGINS.page_number,
+                    &page_num_text,
+                    &layout_info.margins.page_number,
                     &mut 0,
                     Alignment::RightToLeft,
                     36,
                     36,
                 )?;
 
-                // Page number cannot be larger than what fits on a single line on the page.
                 if residual_page_number.is_some() {
                     return Err(std::io::Error::new(
                         std::io::ErrorKind::InvalidData,
-                        "There cannot be more pages than the number which fits on a page.",
+                        "Page number exceeds available space.",
                     ));
                 }
             }
 
-            // Element loop, iterates through the screenplay elements.
             while let Some(Span {
                 start_line: _,
                 end_line: _,
@@ -351,8 +343,6 @@ impl PdfExporter {
 
                 let mut breakpoint_idx = match residual_breakpoint_idx {
                     Some(i) => {
-                        // If we're in a dialogue element, we need to preserve
-                        // `residual_breakpoint_idx`.
                         if !matches!(element, Element::Dialogue(_)) {
                             residual_breakpoint_idx = std::option::Option::None;
                         }
@@ -380,8 +370,6 @@ impl PdfExporter {
                     is_revised,
                 };
 
-                /// Macro for the most common usage of write_element(...), as most types of
-                /// [`Element`]s call this function with almost identical parameters.
                 macro_rules! write_element {
                     ($content:expr, $margin:expr, $text_direction:expr) => {
                         residual_breakpoint_idx = write_element(
@@ -396,6 +384,19 @@ impl PdfExporter {
 
                 match &element {
                     Element::Heading { slug, number } => {
+                        let heading_lines = {
+                            let span = glyph_span(
+                                layout_info.size,
+                                layout_info.margins.heading.left,
+                                layout_info.margins.heading.right,
+                            );
+                            break_points(slug, span).len() + 1
+                        };
+                        let lines_remaining = max_lines_per_page.saturating_sub(*ctx.line_index);
+                        if lines_remaining < heading_lines + 3 {
+                            break;
+                        }
+
                         if number.is_some() {
                             let mut initial_line_index = *ctx.line_index;
                             let mut ctx_number = DrawContext {
@@ -408,11 +409,15 @@ impl PdfExporter {
 
                             let left_number_margin = Margin {
                                 left: 54.0,
-                                right: layout_info.size.x as f32 - MARGINS.heading.left + 18.0,
+                                right: layout_info.size.x as f32
+                                    - layout_info.margins.heading.left
+                                    + 18.0,
                             };
                             let right_number_margin = Margin {
-                                left: layout_info.size.x as f32 - 72.0 - 54.0, // Anchored at 72 (page num pos), 54pt span
-                                right: 72.0, // Aligned with page numbers
+                                left: layout_info.size.x as f32
+                                    - layout_info.size.page_right_margin()
+                                    - 54.0,
+                                right: layout_info.size.page_right_margin(),
                             };
 
                             let rich_number = &number.as_ref().unwrap().into();
@@ -448,9 +453,8 @@ impl PdfExporter {
                             XyzDestination::new(
                                 page_idx,
                                 Point {
-                                    x: MARGINS.heading.left,
-                                    y: (TOP_MARGIN + ((*ctx.line_index) * FONT_SIZE) - FONT_SIZE)
-                                        as f32,
+                                    x: layout_info.margins.heading.left,
+                                    y: (top + ((*ctx.line_index) * FONT_SIZE) - FONT_SIZE) as f32,
                                 },
                             ),
                         ));
@@ -461,10 +465,14 @@ impl PdfExporter {
                             }
                         }
 
-                        write_element!(&slug_to_print, &MARGINS.heading, Alignment::LeftToRight);
+                        write_element!(
+                            &slug_to_print,
+                            &layout_info.margins.heading,
+                            Alignment::LeftToRight
+                        );
                     }
                     Element::Action(s) => {
-                        write_element!(s, &MARGINS.action, Alignment::LeftToRight);
+                        write_element!(s, &layout_info.margins.action, Alignment::LeftToRight);
                     }
                     Element::Dialogue(dialogue) => {
                         let premature_exit = write_dialogue(
@@ -472,7 +480,7 @@ impl PdfExporter {
                             dialogue,
                             &mut residual_dialogue_idx,
                             &mut residual_breakpoint_idx,
-                            &MARGINS.dialogue,
+                            &layout_info.margins.dialogue,
                         )?;
                         if residual_dialogue_idx.is_some() || premature_exit {
                             break;
@@ -491,7 +499,7 @@ impl PdfExporter {
                                     dialogue0,
                                     &mut residual_dual_dialogue_idx.0,
                                     &mut residual_dual_breakpoint_idx.0,
-                                    &MARGINS.dual_dialogue.left,
+                                    &layout_info.margins.dual_dialogue.left,
                                 )?;
                         }
                         if (residual_dual_dialogue_idx.1.is_none()
@@ -511,7 +519,7 @@ impl PdfExporter {
                                     dialogue1,
                                     &mut residual_dual_dialogue_idx.1,
                                     &mut residual_dual_breakpoint_idx.1,
-                                    &MARGINS.dual_dialogue.right,
+                                    &layout_info.margins.dual_dialogue.right,
                                 )?;
                             *ctx.line_index = (*ctx.line_index).max(initial_line_index);
                         }
@@ -523,13 +531,25 @@ impl PdfExporter {
                         }
                     }
                     Element::Lyrics(s) => {
-                        write_element!(s, &MARGINS.lyrics, Alignment::RightToLeft);
+                        let mut s_styled = s.clone();
+                        for element in &mut s_styled.elements {
+                            element.set_italic();
+                        }
+                        write_element!(
+                            &s_styled,
+                            &layout_info.margins.lyrics,
+                            Alignment::Centered
+                        );
                     }
                     Element::Transition(s) => {
-                        write_element!(s, &MARGINS.transition, Alignment::RightToLeft);
+                        write_element!(
+                            s,
+                            &layout_info.margins.transition,
+                            Alignment::RightToLeft
+                        );
                     }
                     Element::CenteredText(s) => {
-                        write_element!(s, &MARGINS.centered, Alignment::Centered);
+                        write_element!(s, &layout_info.margins.centered, Alignment::Centered);
                     }
                     Element::Shot(s) => {
                         let mut s_styled = s.clone();
@@ -539,7 +559,11 @@ impl PdfExporter {
                                 element.set_bold();
                             }
                         }
-                        write_element!(&s_styled, &MARGINS.action, Alignment::LeftToRight);
+                        write_element!(
+                            &s_styled,
+                            &layout_info.margins.action,
+                            Alignment::LeftToRight
+                        );
                     }
                     Element::Synopsis(s) => {
                         if self.synopses {
@@ -551,7 +575,11 @@ impl PdfExporter {
                                     element.set_sans();
                                 }
                             }
-                            write_element!(&s_styled, &MARGINS.synopsis, Alignment::LeftToRight);
+                            write_element!(
+                                &s_styled,
+                                &layout_info.margins.synopsis,
+                                Alignment::LeftToRight
+                            );
                         }
                     }
                     Element::Section(s) => {
@@ -564,7 +592,11 @@ impl PdfExporter {
                                     element.set_sans();
                                 }
                             }
-                            write_element!(&s_styled, &MARGINS.action, Alignment::LeftToRight);
+                            write_element!(
+                                &s_styled,
+                                &layout_info.margins.action,
+                                Alignment::LeftToRight
+                            );
                         }
                     }
                     Element::PageBreak => {
@@ -573,7 +605,6 @@ impl PdfExporter {
                     }
                 }
 
-                // Newline separator between all elements
                 line_idx += 1;
 
                 if residual_breakpoint_idx.is_some() {
@@ -593,9 +624,6 @@ impl PdfExporter {
     }
 }
 
-/// Writes a diologue [`Element`] to the `pdf` document. If a dialogue spans multiple pages it will
-/// write the character name with the extension `(CONT'D)` on each new page. Returns a
-/// [Option<bool>] which is true if the whole dialogue element did not fit on the same page.
 struct DrawContext<'a, 'b> {
     layout_info: &'a LayoutInfo<'a>,
     surface: &'a mut Surface<'b>,
@@ -653,15 +681,13 @@ fn write_dialogue(
     while dialogue_index < dialogue.elements.len() {
         if *ctx.line_index >= ctx.max_lines {
             *residual_dialogue = Some(dialogue_index);
-            // If a dialogue continues on the next page, writes `(MORE)` at the bottom of the
-            // current page, inside the bottom margin.
             write_element_custom_top_margin(
                 ctx,
                 &"(MORE)".into(),
                 &dialogue_margins.character,
                 &mut 0,
                 Alignment::LeftToRight,
-                TOP_MARGIN,
+                ctx.layout_info.size.top_margin(),
                 ctx.max_lines + 1,
             )?;
 
@@ -712,7 +738,7 @@ fn write_element(
         margin,
         breakpoint_index,
         text_direction,
-        TOP_MARGIN,
+        ctx.layout_info.size.top_margin(),
         ctx.max_lines,
     )
 }
@@ -921,23 +947,14 @@ fn write_line(
     Ok(())
 }
 
-struct TitlePageMargins {
-    pub margin: Margin,
-}
+const TITLE_TOP_MARGIN: f32 = 72.0;
+const TITLE_BOTTOM_MARGIN: f32 = 72.0;
+const TITLE_SIDE_MARGIN: f32 = 72.0;
 
-const TITLE_PAGE_MARGINS: TitlePageMargins = TitlePageMargins {
-    margin: Margin {
-        left: 72.0,
-        right: 72.0,
-    },
-};
-
-/// Writes the [`TitlePage`] to the `pdf` document. Fails if everything does not fit on one page,
-/// but allows for overlapping contact information and draft dates with the rest of the elements.
 fn write_titlepage(
     titlepage: &TitlePage,
     layout_info: &LayoutInfo,
-    max_lines: usize,
+    _max_lines: usize,
     document: &mut Document,
 ) -> std::io::Result<()> {
     let mut page = document.start_page_with(
@@ -946,156 +963,199 @@ fn write_titlepage(
     );
     let mut surface = page.surface();
 
-    let mut line_idx = max_lines / 3;
+    let content_width = layout_info.size.x as f32 - 2.0 * TITLE_SIDE_MARGIN;
+    let title_margin = Margin {
+        left: TITLE_SIDE_MARGIN,
+        right: TITLE_SIDE_MARGIN,
+    };
 
-    /// Writes the [`TitlePage`] elements using the [`write_element`] function. Will add newlines
-    /// between each type of element, as per (some) standards.
-    macro_rules! write_title_element {
-        // For the elements which are centered an written below each other.
-        ($element:ident) => {
-            if !titlepage.$element.is_empty() {
-                for s in &titlepage.$element {
-                    let mut ctx = DrawContext {
-                        layout_info,
-                        surface: &mut surface,
-                        line_index: &mut line_idx,
-                        max_lines,
-                        is_revised: false,
-                    };
-                    let residual = write_element(
-                        &mut ctx,
-                        s,
-                        &TITLE_PAGE_MARGINS.margin,
-                        &mut 0,
-                        Alignment::Centered,
-                    )?;
-
-                    if residual.is_some() {
-                        return Err(std::io::Error::new(
-                            std::io::ErrorKind::InvalidData,
-                            "Title page cannot be longer than a single page.",
-                        ));
-                    }
-                }
-            }
-        };
-        // For elements which have specific alignments and are written from the bottom up.
-        ($element:ident, $alignment:expr) => {
-            if !titlepage.$element.is_empty() {
-                let mut total_lines = titlepage.$element.len();
-                for s in &titlepage.$element {
-                    total_lines += break_points(
-                        s,
-                        glyph_span(
-                            layout_info.size,
-                            TITLE_PAGE_MARGINS.margin.left,
-                            TITLE_PAGE_MARGINS.margin.right,
-                        ),
-                    )
-                    .len();
-
-                    if total_lines > max_lines {
-                        return Err(std::io::Error::new(
-                            std::io::ErrorKind::InvalidData,
-                            "Title page cannot be longer than a single page.",
-                        ));
-                    }
-                }
-                line_idx = max_lines - total_lines;
-
-                for s in &titlepage.$element {
-                    let mut ctx = DrawContext {
-                        layout_info,
-                        surface: &mut surface,
-                        line_index: &mut line_idx,
-                        max_lines,
-                        is_revised: false,
-                    };
-                    write_element(&mut ctx, s, &TITLE_PAGE_MARGINS.margin, &mut 0, $alignment)?;
-                }
-            }
-        };
-    }
+    let top_block_y = TITLE_TOP_MARGIN;
+    let title_offset_lines = 20;
+    let mut line_idx = title_offset_lines;
+    let page_max_lines =
+        ((layout_info.size.y as f32 - TITLE_TOP_MARGIN - TITLE_BOTTOM_MARGIN) / FONT_SIZE as f32)
+            as usize;
 
     if !titlepage.title.is_empty() {
-        let mut title_line_idx = max_lines / 3;
         for s in &titlepage.title {
-            let mut bold_underlined_title = s.clone();
-            for element in &mut bold_underlined_title.elements {
+            let mut styled = s.clone();
+            for element in &mut styled.elements {
                 element.text = element.text.to_uppercase();
                 element.set_bold();
             }
-
             let mut ctx = DrawContext {
                 layout_info,
                 surface: &mut surface,
-                line_index: &mut title_line_idx,
-                max_lines,
+                line_index: &mut line_idx,
+                max_lines: page_max_lines,
                 is_revised: false,
             };
-            write_element(
+            write_element_custom_top_margin(
                 &mut ctx,
-                &bold_underlined_title,
-                &TITLE_PAGE_MARGINS.margin,
+                &styled,
+                &title_margin,
                 &mut 0,
                 Alignment::Centered,
+                top_block_y as usize,
+                page_max_lines,
             )?;
         }
-        line_idx = title_line_idx;
     }
 
-    line_idx += 2; // 2 lines after title
-    write_title_element!(credit);
-    write_title_element!(authors);
-    let _ = line_idx; // Ready for footer
+    line_idx += 1;
 
-    // Footer stacking at the bottom left
-    let footer_elements = [
-        &titlepage.source,
-        &titlepage.draft_date,
-        &titlepage.contact,
-        &titlepage.notes,
-    ];
-
-    let mut footer_total_lines = 0;
-    for lines in footer_elements.iter() {
-        if lines.is_empty() {
-            continue;
+    if !titlepage.credit.is_empty() {
+        for s in &titlepage.credit {
+            let mut ctx = DrawContext {
+                layout_info,
+                surface: &mut surface,
+                line_index: &mut line_idx,
+                max_lines: page_max_lines,
+                is_revised: false,
+            };
+            write_element_custom_top_margin(
+                &mut ctx,
+                s,
+                &title_margin,
+                &mut 0,
+                Alignment::Centered,
+                top_block_y as usize,
+                page_max_lines,
+            )?;
         }
-        if footer_total_lines > 0 {
-            footer_total_lines += 1;
-        } // Gap between groups
+    }
+
+    if !titlepage.authors.is_empty() {
+        for s in &titlepage.authors {
+            let mut ctx = DrawContext {
+                layout_info,
+                surface: &mut surface,
+                line_index: &mut line_idx,
+                max_lines: page_max_lines,
+                is_revised: false,
+            };
+            write_element_custom_top_margin(
+                &mut ctx,
+                s,
+                &title_margin,
+                &mut 0,
+                Alignment::Centered,
+                top_block_y as usize,
+                page_max_lines,
+            )?;
+        }
+    }
+
+    if !titlepage.source.is_empty() {
+        line_idx += 1;
+        for s in &titlepage.source {
+            let mut ctx = DrawContext {
+                layout_info,
+                surface: &mut surface,
+                line_index: &mut line_idx,
+                max_lines: page_max_lines,
+                is_revised: false,
+            };
+            write_element_custom_top_margin(
+                &mut ctx,
+                s,
+                &title_margin,
+                &mut 0,
+                Alignment::Centered,
+                top_block_y as usize,
+                page_max_lines,
+            )?;
+        }
+    }
+
+    let bottom_block_y = 440.0_f32;
+    let available_bottom_height =
+        layout_info.size.y as f32 - bottom_block_y - TITLE_BOTTOM_MARGIN - 48.0;
+    let bottom_max_lines = (available_bottom_height / FONT_SIZE as f32) as usize;
+
+    let left_col_width = content_width * 0.65 - 10.0;
+    let right_col_width = content_width * 0.35 - 10.0;
+
+    let left_margin = Margin {
+        left: TITLE_SIDE_MARGIN,
+        right: layout_info.size.x as f32 - TITLE_SIDE_MARGIN - left_col_width,
+    };
+    let right_margin = Margin {
+        left: layout_info.size.x as f32 - TITLE_SIDE_MARGIN - right_col_width,
+        right: TITLE_SIDE_MARGIN,
+    };
+
+    let left_elements: Vec<&Vec<RichString>> = [&titlepage.contact, &titlepage.notes]
+        .iter()
+        .filter(|v| !v.is_empty())
+        .copied()
+        .collect();
+
+    let mut left_total_lines = 0;
+    for (i, lines) in left_elements.iter().enumerate() {
+        if i > 0 {
+            left_total_lines += 1;
+        }
         for s in *lines {
-            footer_total_lines +=
-                1 + break_points(s, glyph_span(layout_info.size, 72.0, 72.0)).len();
+            left_total_lines +=
+                1 + break_points(s, glyph_span(layout_info.size, left_margin.left, left_margin.right)).len();
         }
     }
 
-    let mut footer_idx = max_lines.saturating_sub(footer_total_lines + 2); // 2 lines safety margin from bottom
+    let mut right_total_lines = 0;
+    if !titlepage.draft_date.is_empty() {
+        for s in &titlepage.draft_date {
+            right_total_lines +=
+                1 + break_points(s, glyph_span(layout_info.size, right_margin.left, right_margin.right)).len();
+        }
+    }
 
-    let mut first = true;
-    for lines in footer_elements.iter() {
-        if lines.is_empty() {
-            continue;
+    let mut left_line_idx = bottom_max_lines.saturating_sub(left_total_lines);
+    let mut right_line_idx = bottom_max_lines.saturating_sub(right_total_lines);
+
+    let mut first_left = true;
+    for lines in &left_elements {
+        if !first_left {
+            left_line_idx += 1;
         }
-        if !first {
-            footer_idx += 1; // Gap between groups
-        }
-        first = false;
+        first_left = false;
         for s in *lines {
             let mut ctx = DrawContext {
                 layout_info,
                 surface: &mut surface,
-                line_index: &mut footer_idx,
-                max_lines,
+                line_index: &mut left_line_idx,
+                max_lines: bottom_max_lines,
                 is_revised: false,
             };
-            write_element(
+            write_element_custom_top_margin(
                 &mut ctx,
                 s,
-                &TITLE_PAGE_MARGINS.margin,
+                &left_margin,
                 &mut 0,
                 Alignment::LeftToRight,
+                bottom_block_y as usize,
+                bottom_max_lines,
+            )?;
+        }
+    }
+
+    if !titlepage.draft_date.is_empty() {
+        for s in &titlepage.draft_date {
+            let mut ctx = DrawContext {
+                layout_info,
+                surface: &mut surface,
+                line_index: &mut right_line_idx,
+                max_lines: bottom_max_lines,
+                is_revised: false,
+            };
+            write_element_custom_top_margin(
+                &mut ctx,
+                s,
+                &right_margin,
+                &mut 0,
+                Alignment::RightToLeft,
+                bottom_block_y as usize,
+                bottom_max_lines,
             )?;
         }
     }
@@ -1105,34 +1165,22 @@ fn write_titlepage(
     Ok(())
 }
 
-/// Calculates the span in a margin. Returns how many characters with the standard font width will
-/// fit between the left and right margin.
 fn glyph_span(size: &PaperSize, left_margin: f32, right_margin: f32) -> usize {
     ((size.x as f32 - (left_margin + right_margin)) / FONT_WIDTH) as usize
 }
 
-/// The different ways to break a line into multiple lines.
 #[derive(Debug, PartialEq, Eq, Clone, Hash)]
 enum BreakType {
-    /// Standard type of line break, by just adding a newline somewhere.
     NewLine,
-    /// Break the line by adding a newline inside a word.
     BreakWord,
 }
 
-/// Where in the string a line break should occur.
 #[derive(Debug, PartialEq, Eq, Clone, Hash)]
 struct BreakPoint {
     pub index: usize,
-    /// If it should add a newline after a word, or inside a word.
     pub break_type: BreakType,
 }
 
-/// Given a [`RichString`] and a number of allowed glyphs on a single line, calculates where
-/// eventual [`BreakPoint`]s should be placed in the string.
-///
-/// Greedily places [`BreakPoint`]s. Will only place one inside a word if the word does not fit on
-/// a line by itself. Respects newline characters in the string.
 fn break_points(content: &RichString, span: usize) -> Vec<BreakPoint> {
     debug_assert!(span >= 2);
 
