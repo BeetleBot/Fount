@@ -4,3 +4,4 @@ Cargo.lock
 **/*.save.*
 .DS_Store
 Cargo.lock
+.agents/
