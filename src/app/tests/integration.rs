@@ -52,9 +52,9 @@ For very, very, very long notes.
 
 [[Comments can look like this as well. They don't differ much from other comment types, but all comment types are fully supported.]]
 
-# This is a new section
+#This is a new section
 
-= And this is a synopsis.
+=And this is a synopsis.
 
 INT. CODEBASE - EVENING
 
@@ -127,8 +127,8 @@ And Fount itself, of course: https://github.com/BeetleBot/FountTUI
         let boneyard1_idx = get_idx("/* Two beetles");
         let trans1_idx = get_exact_idx("CUT TO:");
         let boneyard_multiline_idx = get_exact_idx("/*");
-        let section_idx = get_idx("# This is");
-        let syn_idx = get_idx("= And this");
+        let section_idx = get_idx("#This is");
+        let syn_idx = get_idx("=And this");
         let inline_note_idx = get_idx("[[Comments");
         let markup_idx = get_idx("As you may have noticed, there's support for");
         let center_idx = get_exact_idx(">Centred text<");
@@ -321,7 +321,7 @@ And Fount itself, of course: https://github.com/BeetleBot/FountTUI
         app.report_cursor_position();
         assert_eq!(
             app.status_msg.as_deref(),
-            Some("line 8/93 (8%), col 1/23 (4%), char 124/3644 (3%)")
+            Some("line 8/93 (8%), col 1/23 (4%), char 124/3642 (3%)")
         );
 
         app.cursor_y = app
@@ -334,7 +334,7 @@ And Fount itself, of course: https://github.com/BeetleBot/FountTUI
         app.report_cursor_position();
         assert_eq!(
             app.status_msg.as_deref(),
-            Some("line 67/93 (72%), col 1/41 (2%), char 2538/3644 (69%)")
+            Some("line 67/93 (72%), col 1/41 (2%), char 2536/3642 (69%)")
         );
 
         app.cursor_y = app.lines.iter().position(|l| l == "> FADE OUT").unwrap();
@@ -343,7 +343,7 @@ And Fount itself, of course: https://github.com/BeetleBot/FountTUI
         app.report_cursor_position();
         assert_eq!(
             app.status_msg.as_deref(),
-            Some("line 93/93 (100%), col 11/11 (100%), char 3644/3644 (100%)")
+            Some("line 93/93 (100%), col 11/11 (100%), char 3642/3642 (100%)")
         );
 
         app.cursor_y = usize::MAX;

@@ -28,8 +28,8 @@ impl App {
         let mut lines = Vec::new();
         
         for beat in &struct_data.beats {
-            lines.push(format!("# {}", beat.label));
-            lines.push(format!("= {}", beat.description));
+            lines.push(format!("#{}", beat.label));
+            lines.push(format!("={}", beat.description));
             lines.push(String::new());
             lines.push(String::new());
             lines.push(String::new());
@@ -70,11 +70,11 @@ impl App {
         }
 
         for beat in &struct_data.beats {
-            self.lines.insert(insert_idx, format!("# {}", beat.label));
+            self.lines.insert(insert_idx, format!("#{}", beat.label));
             self.revised_lines.insert(insert_idx, self.revision_mode);
             insert_idx += 1;
             
-            self.lines.insert(insert_idx, format!("= {}", beat.description));
+            self.lines.insert(insert_idx, format!("={}", beat.description));
             self.revised_lines.insert(insert_idx, self.revision_mode);
             insert_idx += 1;
             
@@ -104,17 +104,21 @@ fn parse_structures(content: &str) -> Vec<Structure> {
             continue;
         }
         
-        if let Some(rest) = line.strip_prefix("## ") {
+        if line.starts_with("##") {
+            let rest = &line[2..];
+            let rest = rest.trim_start();
             if let Some(beat) = current_beat.take()
                 && let Some(ref mut s) = current_struct
             {
                 s.beats.push(beat);
             }
             current_beat = Some(StructureBeat {
-                label: rest.trim().to_string(),
+                label: rest.to_string(),
                 description: String::new(),
             });
-        } else if let Some(rest) = line.strip_prefix("# ") {
+        } else if line.starts_with('#') {
+            let rest = &line[1..];
+            let rest = rest.trim_start();
             if let Some(beat) = current_beat.take()
                 && let Some(ref mut s) = current_struct
             {
@@ -124,12 +128,14 @@ fn parse_structures(content: &str) -> Vec<Structure> {
                 structures.push(s);
             }
             current_struct = Some(Structure {
-                name: rest.trim().to_string(),
+                name: rest.to_string(),
                 description: String::new(),
                 beats: Vec::new(),
             });
-        } else if let Some(rest) = line.strip_prefix("= ") {
-            let desc = rest.trim().to_string();
+        } else if line.starts_with('=') {
+            let rest = &line[1..];
+            let rest = rest.trim_start();
+            let desc = rest.to_string();
             if let Some(ref mut beat) = current_beat {
                 if beat.description.is_empty() {
                     beat.description = desc;

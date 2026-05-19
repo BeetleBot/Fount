@@ -430,9 +430,9 @@ For very, very, very long notes.
 
 [[Comments can look like this as well. They don't differ much from other comment types, but for compatibility with Beat, all the same comment types are supported.]]
 
-# This is a new section
+#This is a new section
 
-= And this is a synopsis.
+=And this is a synopsis.
 
 INT. EDEKA - ABEND
 

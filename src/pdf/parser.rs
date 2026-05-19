@@ -161,6 +161,7 @@ impl<'a> Parser<'a> {
             line,
             |_, s| s.trim_start().strip_prefix('='),
             |this, inner| {
+                let inner = inner.trim_start();
                 if this.state == State::InBlock
                     && let Some(Span {
                         start_line: _,
