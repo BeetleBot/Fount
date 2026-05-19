@@ -465,3 +465,60 @@ And Fount itself, of course: https://github.com/BeetleBot/FountTUI
             "Reference render does not match expected output."
         );
     }
+
+    #[test]
+    fn test_fountain_export_toggles() {
+        let script = r#"Title: Sample Script
+Author: John Doe
+
+# Section 1
+## Section 1.1
+
+= Park scene description.
+
+EXT. PARK - DAY
+
+JOHN
+Hello there! [[props: Gun]]
+"#;
+
+        let mut app = create_empty_app();
+        app.lines = script.lines().map(|s| s.to_string()).collect();
+
+        // 1. Export with everything ON
+        app.config.include_title_page = true;
+        app.config.export_sections = true;
+        app.config.export_synopses = true;
+        app.config.export_production_tags = true;
+
+        let temp_dir = std::env::temp_dir();
+        let test_path = temp_dir.join("test_fountain_export_on.fountain");
+        app.export_fountain(&test_path).unwrap();
+        let output_on = std::fs::read_to_string(&test_path).unwrap();
+        let _ = std::fs::remove_file(&test_path);
+
+        assert!(output_on.contains("Title: Sample Script"));
+        assert!(output_on.contains("# Section 1"));
+        assert!(output_on.contains("= Park scene description."));
+        assert!(output_on.contains("[[props: Gun]]"));
+
+        // 2. Export with everything OFF
+        app.config.include_title_page = false;
+        app.config.export_sections = false;
+        app.config.export_synopses = false;
+        app.config.export_production_tags = false;
+
+        let test_path_off = temp_dir.join("test_fountain_export_off.fountain");
+        app.export_fountain(&test_path_off).unwrap();
+        let output_off = std::fs::read_to_string(&test_path_off).unwrap();
+        let _ = std::fs::remove_file(&test_path_off);
+
+        assert!(!output_off.contains("Title:"));
+        assert!(!output_off.contains("Sample Script"));
+        assert!(!output_off.contains("# Section 1"));
+        assert!(!output_off.contains("= Park scene description."));
+        assert!(!output_off.contains("[[props: Gun]]"));
+        // Dialogue and scene heading should still be there
+        assert!(output_off.contains("EXT. PARK - DAY"));
+        assert!(output_off.contains("Hello there!"));
+    }

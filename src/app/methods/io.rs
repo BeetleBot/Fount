@@ -111,10 +111,106 @@ impl App {
     }
 
     pub fn export_fountain(&self, path: &std::path::Path) -> std::io::Result<()> {
-        let mut content = self.lines.join("\n");
+        let mut output_lines = Vec::new();
+        let mut in_title_page = true;
+        let mut lines_iter = self.lines.iter().peekable();
+
+        // 1. Process Title Page
+        while let Some(line) = lines_iter.peek() {
+            if !in_title_page {
+                break;
+            }
+            if let Some((_key, val)) = line.split_once(':') {
+                let line_consumed = lines_iter.next().unwrap();
+                if self.config.include_title_page {
+                    output_lines.push(line_consumed.clone());
+                }
+                if val.trim().is_empty() {
+                    while let Some(next_line) = lines_iter.peek() {
+                        if next_line.starts_with("   ") || next_line.starts_with('\t') {
+                            let next_consumed = lines_iter.next().unwrap();
+                            if self.config.include_title_page {
+                                output_lines.push(next_consumed.clone());
+                            }
+                        } else {
+                            break;
+                        }
+                    }
+                }
+            } else {
+                in_title_page = false;
+                if line.trim().is_empty() {
+                    let sep = lines_iter.next().unwrap();
+                    if self.config.include_title_page {
+                        output_lines.push(sep.clone());
+                    }
+                }
+            }
+        }
+
+        // 2. Process the remaining lines (Sections and Synopses)
+        for line in lines_iter {
+            let trimmed = line.trim();
+            if trimmed.starts_with('#') {
+                if self.config.export_sections {
+                    output_lines.push(line.clone());
+                }
+            } else if trimmed.starts_with('=') {
+                if self.config.export_synopses {
+                    output_lines.push(line.clone());
+                }
+            } else {
+                output_lines.push(line.clone());
+            }
+        }
+
+        let mut content = output_lines.join("\n");
+
+        // 3. Process Production Tags if turned off
+        if !self.config.export_production_tags {
+            content = Self::strip_production_tags_from_text(&content);
+        }
+
         content.push_str(&self.get_revision_block());
         std::fs::write(path, content)
     }
+
+fn strip_production_tags_from_text(text: &str) -> String {
+    let mut result = String::new();
+    let chars: Vec<char> = text.chars().collect();
+    let mut i = 0;
+    while i < chars.len() {
+        if i + 2 <= chars.len() && chars[i] == '[' && chars[i+1] == '[' {
+            // Find closing ']]'
+            let mut found_close = None;
+            for j in (i+2)..(chars.len() - 1) {
+                if chars[j] == ']' && chars[j+1] == ']' {
+                    found_close = Some(j);
+                    break;
+                }
+            }
+            if let Some(close_idx) = found_close {
+                let inner: String = chars[(i+2)..close_idx].iter().collect();
+                if let Some((cat, _item)) = inner.split_once(':') {
+                    let cat_trimmed = cat.trim().to_lowercase();
+                    let is_prod_tag = matches!(
+                        cat_trimmed.as_str(),
+                        "cast" | "props" | "wardrobe" | "makeup" | "sfx" | "vfx" | "music" |
+                        "extras" | "stunts" | "vehicles" | "animals" | "setdressing" |
+                        "sound" | "equipment" | "security" | "greenery"
+                    );
+                    if is_prod_tag {
+                        i = close_idx + 2;
+                        continue;
+                    }
+                }
+            }
+        }
+        result.push(chars[i]);
+        i += 1;
+    }
+    result
+}
 
     pub fn export_pdf(&self, path: &std::path::Path) -> std::io::Result<()> {
         let fountain_text = self.lines.join("\n");

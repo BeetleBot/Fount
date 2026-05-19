@@ -737,7 +737,7 @@ pub fn draw_export_modal(f: &mut Frame, app: &App) {
                 ),
                 Span::styled(" [ EXPORT SCREENPLAY ] ", export_style),
             ])));
-        } else if format == "fdx" {
+        } else if format == "fdx" || format == "fountain" {
             options.push(render_option(1, "Include Sections", if app.config.export_sections { if app.config.use_nerd_fonts { "󰄲 " } else { "[X]" } } else { if app.config.use_nerd_fonts { "󰄱 " } else { "[ ]" } }, app.selected_export_option == 1));
             options.push(render_option(2, "Include Synopses", if app.config.export_synopses { if app.config.use_nerd_fonts { "󰄲 " } else { "[X]" } } else { if app.config.use_nerd_fonts { "󰄱 " } else { "[ ]" } }, app.selected_export_option == 2));
             options.push(render_option(3, "Include Production Tags", if app.config.export_production_tags { if app.config.use_nerd_fonts { "󰄲 " } else { "[X]" } } else { if app.config.use_nerd_fonts { "󰄱 " } else { "[ ]" } }, app.selected_export_option == 3));
