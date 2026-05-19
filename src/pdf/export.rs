@@ -9,6 +9,7 @@
 //! to only return Error when there is an issue with the writer.
 
 pub mod pdf;
+pub mod fdx;
 
 use std::{
     fs::File,

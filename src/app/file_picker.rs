@@ -240,6 +240,7 @@ impl App {
             FilePickerAction::ExportScript => {
                 let result = match self.config.export_format.as_str() {
                     "fountain" => self.export_fountain(&path),
+                    "fdx" => self.export_fdx(&path),
                     _ => self.export_pdf(&path),
                 };
                 match result {

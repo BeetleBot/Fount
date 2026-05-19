@@ -699,6 +699,7 @@ pub fn draw_export_modal(f: &mut Frame, app: &App) {
         let format_label = match app.config.export_format.as_str() {
             "pdf" => "PDF",
             "fountain" => "Fountain",
+            "fdx" => "Final Draft (FDX)",
             _ => "PDF",
         };
         let font_label = match app.config.export_font.as_str() {
@@ -708,35 +709,76 @@ pub fn draw_export_modal(f: &mut Frame, app: &App) {
         };
 
         options.push(render_option(0, "Format", format_label, app.selected_export_option == 0));
-        options.push(render_option(1, "Paper Size", &app.config.paper_size.to_uppercase(), app.selected_export_option == 1));
-        options.push(render_option(2, "Font", font_label, app.selected_export_option == 2));
-        options.push(render_option(3, "Bold Headings", if app.config.export_bold_scene_headings { if app.config.use_nerd_fonts { "󰄲 " } else { "[X]" } } else { if app.config.use_nerd_fonts { "󰄱 " } else { "[ ]" } }, app.selected_export_option == 3));
-        options.push(render_option(4, "Scene Numbers", if app.config.mirror_scene_numbers != crate::config::MirrorOption::Off { if app.config.use_nerd_fonts { "󰄲 " } else { "[X]" } } else { if app.config.use_nerd_fonts { "󰄱 " } else { "[ ]" } }, app.selected_export_option == 4));
-        options.push(render_option(5, "Include Sections", if app.config.export_sections { if app.config.use_nerd_fonts { "󰄲 " } else { "[X]" } } else { if app.config.use_nerd_fonts { "󰄱 " } else { "[ ]" } }, app.selected_export_option == 5));
-        options.push(render_option(6, "Include Synopses", if app.config.export_synopses { if app.config.use_nerd_fonts { "󰄲 " } else { "[X]" } } else { if app.config.use_nerd_fonts { "󰄱 " } else { "[ ]" } }, app.selected_export_option == 6));
-        options.push(render_option(7, "Title Page", if app.config.include_title_page { if app.config.use_nerd_fonts { "󰄲 " } else { "[X]" } } else { if app.config.use_nerd_fonts { "󰄱 " } else { "[ ]" } }, app.selected_export_option == 7));
-        
-        options.push(ListItem::new(Line::raw("")));
-        let export_style = if app.selected_export_option == 8 {
-            Style::default().bg(theme.ui.success.clone().into()).fg(theme.ui.selection_fg.clone().into()).add_modifier(Modifier::BOLD)
-        } else {
-            theme.success_style()
-        };
-        options.push(ListItem::new(Line::from(vec![
-            Span::styled(
-                if app.selected_export_option == 8 {
-                    if app.config.use_nerd_fonts {
-                        "󰁔 "
+
+        let format = app.config.export_format.as_str();
+        if format == "pdf" {
+            options.push(render_option(1, "Paper Size", &app.config.paper_size.to_uppercase(), app.selected_export_option == 1));
+            options.push(render_option(2, "Font", font_label, app.selected_export_option == 2));
+            options.push(render_option(3, "Bold Headings", if app.config.export_bold_scene_headings { if app.config.use_nerd_fonts { "󰄲 " } else { "[X]" } } else { if app.config.use_nerd_fonts { "󰄱 " } else { "[ ]" } }, app.selected_export_option == 3));
+            options.push(render_option(4, "Scene Numbers", if app.config.mirror_scene_numbers != crate::config::MirrorOption::Off { if app.config.use_nerd_fonts { "󰄲 " } else { "[X]" } } else { if app.config.use_nerd_fonts { "󰄱 " } else { "[ ]" } }, app.selected_export_option == 4));
+            options.push(render_option(5, "Include Sections", if app.config.export_sections { if app.config.use_nerd_fonts { "󰄲 " } else { "[X]" } } else { if app.config.use_nerd_fonts { "󰄱 " } else { "[ ]" } }, app.selected_export_option == 5));
+            options.push(render_option(6, "Include Synopses", if app.config.export_synopses { if app.config.use_nerd_fonts { "󰄲 " } else { "[X]" } } else { if app.config.use_nerd_fonts { "󰄱 " } else { "[ ]" } }, app.selected_export_option == 6));
+            options.push(render_option(7, "Title Page", if app.config.include_title_page { if app.config.use_nerd_fonts { "󰄲 " } else { "[X]" } } else { if app.config.use_nerd_fonts { "󰄱 " } else { "[ ]" } }, app.selected_export_option == 7));
+
+            options.push(ListItem::new(Line::raw("")));
+            let export_style = if app.selected_export_option == 8 {
+                Style::default().bg(theme.ui.success.clone().into()).fg(theme.ui.selection_fg.clone().into()).add_modifier(Modifier::BOLD)
+            } else {
+                theme.success_style()
+            };
+            options.push(ListItem::new(Line::from(vec![
+                Span::styled(
+                    if app.selected_export_option == 8 {
+                        if app.config.use_nerd_fonts { "󰁔 " } else { "> " }
                     } else {
-                        "> "
-                    }
-                } else {
-                    "   "
-                },
-                export_style,
-            ),
-            Span::styled(" [ EXPORT SCREENPLAY ] ", export_style),
-        ])));
+                        "   "
+                    },
+                    export_style,
+                ),
+                Span::styled(" [ EXPORT SCREENPLAY ] ", export_style),
+            ])));
+        } else if format == "fdx" {
+            options.push(render_option(1, "Include Sections", if app.config.export_sections { if app.config.use_nerd_fonts { "󰄲 " } else { "[X]" } } else { if app.config.use_nerd_fonts { "󰄱 " } else { "[ ]" } }, app.selected_export_option == 1));
+            options.push(render_option(2, "Include Synopses", if app.config.export_synopses { if app.config.use_nerd_fonts { "󰄲 " } else { "[X]" } } else { if app.config.use_nerd_fonts { "󰄱 " } else { "[ ]" } }, app.selected_export_option == 2));
+            options.push(render_option(3, "Include Production Tags", if app.config.export_production_tags { if app.config.use_nerd_fonts { "󰄲 " } else { "[X]" } } else { if app.config.use_nerd_fonts { "󰄱 " } else { "[ ]" } }, app.selected_export_option == 3));
+            options.push(render_option(4, "Title Page", if app.config.include_title_page { if app.config.use_nerd_fonts { "󰄲 " } else { "[X]" } } else { if app.config.use_nerd_fonts { "󰄱 " } else { "[ ]" } }, app.selected_export_option == 4));
+
+            options.push(ListItem::new(Line::raw("")));
+            let export_style = if app.selected_export_option == 5 {
+                Style::default().bg(theme.ui.success.clone().into()).fg(theme.ui.selection_fg.clone().into()).add_modifier(Modifier::BOLD)
+            } else {
+                theme.success_style()
+            };
+            options.push(ListItem::new(Line::from(vec![
+                Span::styled(
+                    if app.selected_export_option == 5 {
+                        if app.config.use_nerd_fonts { "󰁔 " } else { "> " }
+                    } else {
+                        "   "
+                    },
+                    export_style,
+                ),
+                Span::styled(" [ EXPORT SCREENPLAY ] ", export_style),
+            ])));
+        } else {
+            options.push(ListItem::new(Line::raw("")));
+            let export_style = if app.selected_export_option == 1 {
+                Style::default().bg(theme.ui.success.clone().into()).fg(theme.ui.selection_fg.clone().into()).add_modifier(Modifier::BOLD)
+            } else {
+                theme.success_style()
+            };
+            options.push(ListItem::new(Line::from(vec![
+                Span::styled(
+                    if app.selected_export_option == 1 {
+                        if app.config.use_nerd_fonts { "󰁔 " } else { "> " }
+                    } else {
+                        "   "
+                    },
+                    export_style,
+                ),
+                Span::styled(" [ EXPORT SCREENPLAY ] ", export_style),
+            ])));
+        }
     } else {
         // Reports Tab
         let report_label = match app.config.report_format.as_str() {

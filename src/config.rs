@@ -264,6 +264,9 @@ pub struct Config {
     /// Include synopses in exports
     pub export_synopses: bool,
 
+    /// Include production tags in exports
+    pub export_production_tags: bool,
+
     /// Font for PDF export
     pub export_font: String,
 
@@ -320,6 +323,7 @@ impl Default for Config {
             legacy_windows: false,
             export_sections: false,
             export_synopses: false,
+            export_production_tags: true,
             export_font: "courier_prime".to_string(),
             show_line_numbers: true,
             show_production_tags: false,
@@ -398,6 +402,7 @@ impl Config {
                         "use_nerd_fonts" => self.use_nerd_fonts = true,
                         "export_sections" => self.export_sections = true,
                         "export_synopses" => self.export_synopses = true,
+                        "export_production_tags" | "export_prodtags" => self.export_production_tags = true,
                         "export_font" => self.export_font = val,
                         "line_numbers" => self.show_line_numbers = true,
                         "prodtags" => self.show_production_tags = true,
@@ -429,6 +434,7 @@ impl Config {
                         "include_title_page" => self.include_title_page = false,
                         "export_sections" => self.export_sections = false,
                         "export_synopses" => self.export_synopses = false,
+                        "export_production_tags" | "export_prodtags" => self.export_production_tags = false,
                         "line_numbers" => self.show_line_numbers = false,
                         "prodtags" => self.show_production_tags = false,
                         _ => {}

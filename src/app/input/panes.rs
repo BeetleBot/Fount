@@ -395,7 +395,11 @@ impl App {
                     return Ok(false);
                 }
                 AppMode::ExportPane => {
-                    let screenplay_options_count = 9;
+                    let screenplay_options_count = match self.config.export_format.as_str() {
+                        "fountain" => 2,
+                        "fdx" => 6,
+                        _ => 9,
+                    };
                     let reports_options_count = 2;
                     let current_options_count = if self.export_tab == 0 { screenplay_options_count } else { reports_options_count };
 
@@ -435,15 +439,41 @@ impl App {
                         KeyCode::Enter | KeyCode::Char(' ') | KeyCode::Tab => {
                             if self.export_tab == 0 {
                                 // Screenplay Options
-                                match self.selected_export_option {
+                                let action = match self.config.export_format.as_str() {
+                                    "fountain" => match self.selected_export_option {
+                                        0 => 0,
+                                        1 => 8,
+                                        _ => 99,
+                                    },
+                                    "fdx" => match self.selected_export_option {
+                                        0 => 0,
+                                        1 => 5,
+                                        2 => 6,
+                                        3 => 9,
+                                        4 => 7,
+                                        5 => 8,
+                                        _ => 99,
+                                    },
+                                    _ => self.selected_export_option,
+                                };
+
+                                match action {
                                     0 => {
-                                        let formats = ["pdf", "fountain"];
+                                        let formats = ["pdf", "fountain", "fdx"];
                                         if let Some(idx) = formats.iter().position(|&x| x == self.config.export_format.as_str()) {
                                             self.config.export_format = formats[(idx + 1) % formats.len()].to_string();
                                         } else {
                                             self.config.export_format = "pdf".to_string();
                                         }
                                         let _ = crate::config::Config::save_string_setting("export_format", &self.config.export_format);
+                                        let max_opt = match self.config.export_format.as_str() {
+                                            "fountain" => 2,
+                                            "fdx" => 6,
+                                            _ => 9,
+                                        };
+                                        if self.selected_export_option >= max_opt {
+                                            self.selected_export_option = max_opt - 1;
+                                        }
                                     }
                                     1 => {
                                         if self.config.paper_size == "a4" {
@@ -486,10 +516,15 @@ impl App {
                                         self.config.include_title_page = !self.config.include_title_page;
                                         let _ = crate::config::Config::save_setting("include_title_page", self.config.include_title_page);
                                     }
+                                    9 => {
+                                        self.config.export_production_tags = !self.config.export_production_tags;
+                                        let _ = crate::config::Config::save_setting("export_production_tags", self.config.export_production_tags);
+                                    }
                                     8 => {
                                         let ext = match self.config.export_format.as_str() {
                                             "pdf" => "pdf",
                                             "fountain" => "fountain",
+                                            "fdx" => "fdx",
                                             _ => "pdf",
                                         };
                                         let file_stem = self.file.as_ref()

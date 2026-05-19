@@ -168,7 +168,8 @@ impl crate::app::App {
         let all_tags = vec![
             "props:", "wardrobe:", "makeup:", "sfx:", "vfx:", "music:", "cast:", 
             "dnotes:", "scenestatus:", "tags:", "subtext:", "scenetype:", "sceneclr:",
-            "note:", "marker:", "synopsis:",
+            "note:", "marker:", "synopsis:", "extras:", "stunts:", "vehicles:",
+            "animals:", "setdressing:", "sound:", "equipment:", "security:", "greenery:",
         ];
         
         let query = self.metadata_query.to_lowercase();
