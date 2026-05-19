@@ -111,7 +111,10 @@ impl<'a> Parser<'a> {
                         .push(DialogueElement::Line(RichString::from(trimmed)));
                 }
                 State::InBlock => {
-                    if self.try_centered(trimmed, i)
+                    if self.try_section(trimmed, i)
+                        || self.try_synopsis(trimmed, i)
+                        || self.try_page_break(trimmed, i)
+                        || self.try_centered(trimmed, i)
                         || self.try_lyrics(trimmed, i)
                         || self.try_action(line, i)
                     {}

@@ -569,7 +569,6 @@ impl PdfExporter {
                         if self.synopses {
                             let mut s_styled = s.clone();
                             for element in &mut s_styled.elements {
-                                element.set_bold();
                                 element.set_italic();
                                 if self.export_font == "courier_prime_sans" {
                                     element.set_sans();

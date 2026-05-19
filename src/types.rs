@@ -236,10 +236,16 @@ pub fn base_style(lt: LineType, config: &Config, theme: &Theme) -> Style {
         LineType::Lyrics => {
             Style::default().add_modifier(Modifier::ITALIC)
         }
-        LineType::Section | LineType::Synopsis => {
+        LineType::Section => {
             let mut s = Style::default();
-            let color = if lt == LineType::Section { &theme.syntax.section } else { &theme.syntax.synopsis };
-            if let Some(c) = color {
+            if let Some(c) = &theme.syntax.section {
+                s = s.fg(c.clone().into());
+            }
+            s
+        }
+        LineType::Synopsis => {
+            let mut s = Style::default().add_modifier(Modifier::ITALIC);
+            if let Some(c) = &theme.syntax.synopsis {
                 s = s.fg(c.clone().into());
             }
             s

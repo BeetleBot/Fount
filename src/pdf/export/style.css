@@ -150,7 +150,7 @@
 }
 
 /* Dual Dialogue */
-.fount-export .dual > div {
+.fount-export .dual>div {
     float: left;
     width: 48% !important;
 }
@@ -181,12 +181,14 @@
     padding-left: 6.4em;
     width: 25.6em;
     text-transform: uppercase;
+    font-style: italic;
 }
 
 /* Synopsis */
 .fount-export .synopsis p {
     padding-left: 2em;
     color: rgb(145, 145, 145);
+    font-style: italic;
 }
 
 /* Scene Numbers */
