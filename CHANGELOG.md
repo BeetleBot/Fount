@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.10.2] - 2026-05-19
+
+### Improvements
+- **Industry Standard PDF Margins**: Completely overhauled the PDF export engine to strictly adhere to the Final Draft formatting standard.
+- **Absolute Element Anchoring**: Scene headings, action, dialogue, and character names now use exact absolute distances from the left edge (1.5", 2.5", 3.7", etc.), guaranteeing identical pagination and pacing regardless of whether you export to US Letter or A4.
+- **Dynamic Right Margins**: Fount now dynamically calculates right margins to enforce the strict 6.0" maximum action block width and 3.5" dialogue width across all paper sizes.
+- **Centered Lyrics**: Fixed Lyrics formatting to ensure they are properly centered, italicized, and elegantly indented rather than sticking to the right margin.
+
 ## [0.10.1] - 2026-05-18
 
 ### Changes
