@@ -601,7 +601,11 @@ pub fn draw(f: &mut Frame, app: &mut App) {
     }
 
     if app.mode == AppMode::SceneTree {
-        let selected_bg = Color::from(theme.ui.selection_bg.clone());
+        let selected_bg = if theme.ui.selection_bg.is_light() {
+            Color::DarkGray
+        } else {
+            Color::from(theme.ui.selection_bg.clone())
+        };
         let selected_fg = Color::from(theme.ui.selection_fg.clone());
         let header_color = theme.sidebar.section_header.clone().map(Color::from).unwrap_or(mode_bg);
 
@@ -627,11 +631,18 @@ pub fn draw(f: &mut Frame, app: &mut App) {
                 let indent = "  ".repeat(*depth);
 
                 if item.is_section {
-                    let style = if is_selected {
+                    let mut style = if is_selected {
                         Style::default().fg(selected_fg).bg(selected_bg).add_modifier(Modifier::BOLD)
+                    } else if let Some(c) = item.color {
+                        Style::default().fg(c).add_modifier(Modifier::BOLD)
                     } else {
                         Style::default().fg(header_color).add_modifier(Modifier::BOLD)
                     };
+                    if is_selected {
+                        if let Some(c) = item.color {
+                            style = style.fg(c);
+                        }
+                    }
 
                     let is_collapsed = app.collapsed_sections.contains(&item.line_idx);
                     let arrow = if is_collapsed {
@@ -656,7 +667,7 @@ pub fn draw(f: &mut Frame, app: &mut App) {
                     }
 
                     if !item.synopses.is_empty() {
-                        let dim_style = if is_selected { Style::default().fg(selected_fg).bg(selected_bg).add_modifier(Modifier::ITALIC) } else { theme.secondary_style().add_modifier(Modifier::ITALIC) };
+                        let dim_style = theme.secondary_style().add_modifier(Modifier::ITALIC);
                         let bullet = if app.config.use_nerd_fonts { "• " } else { "- " };
                         let max_w = (tree_area.width as usize).saturating_sub(4);
                         for syn in &item.synopses {
@@ -675,13 +686,18 @@ pub fn draw(f: &mut Frame, app: &mut App) {
                         }
                     }
                 } else {
-                    let base_style = if is_selected {
+                    let mut base_style = if is_selected {
                         Style::default().fg(selected_fg).bg(selected_bg).add_modifier(Modifier::BOLD)
                     } else if let Some(c) = item.color {
                         Style::default().fg(c).add_modifier(Modifier::BOLD)
                     } else {
                         Style::default().add_modifier(Modifier::BOLD)
                     };
+                    if is_selected {
+                        if let Some(c) = item.color {
+                            base_style = base_style.fg(c);
+                        }
+                    }
 
                     let s_tag = if let Some(ref s) = item.scene_num { format!("{}. ", s) } else { String::new() };
                     let indent_str = "  ".repeat(*depth);
@@ -698,7 +714,7 @@ pub fn draw(f: &mut Frame, app: &mut App) {
                     lines.push(Line::from(Span::styled(current_line, base_style)));
 
                     if !item.synopses.is_empty() {
-                        let dim_style = if is_selected { base_style } else { theme.secondary_style().add_modifier(Modifier::ITALIC) };
+                        let dim_style = theme.secondary_style().add_modifier(Modifier::ITALIC);
                         let bullet = if app.config.use_nerd_fonts { "• " } else { "- " };
                         let max_w = (tree_area.width as usize).saturating_sub(4);
                         for syn in &item.synopses {

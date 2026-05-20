@@ -11,7 +11,6 @@ pub use self::export::pdf::A4;
 pub use self::export::pdf::LETTER;
 pub use self::export::pdf::PaperSize;
 pub use self::export::pdf::PdfExporter;
-pub use self::export::fdx::FdxExporter;
 
 /// Parses a Fountain source string into a [Screenplay] structure.
 ///
@@ -53,24 +52,6 @@ pub fn export_to_pdf(
         synopses: config.export_synopses,
         export_font: config.export_font,
         revised_lines: config.revised_lines,
-    };
-    exporter.export_to_file(&screenplay, path)
-}
-
-/// Exports Fountain text to a Final Draft (.fdx) file.
-pub fn export_to_fdx(
-    fountain_text: &str,
-    path: &std::path::Path,
-    config: &crate::config::Config,
-) -> std::io::Result<()> {
-    let screenplay = parse(fountain_text);
-    let raw_lines = fountain_text.lines().map(|s| s.to_string()).collect::<Vec<_>>();
-    let exporter = FdxExporter {
-        raw_lines,
-        include_title_page: config.include_title_page,
-        export_sections: config.export_sections,
-        export_synopses: config.export_synopses,
-        export_production_tags: config.export_production_tags,
     };
     exporter.export_to_file(&screenplay, path)
 }

@@ -234,3 +234,50 @@ use super::*;
         }
         assert!(found_gray_colon, "Metadata colon not found on screen");
     }
+
+    #[test]
+    fn test_draw_scene_tree_selected_color() {
+        use ratatui::{Terminal, backend::TestBackend};
+        let mut app = create_empty_app();
+        app.lines = vec![
+            "EXT. WOODS - DAY [[sceneclr: red]]".to_string(),
+        ];
+        app.parse_document();
+        app.update_layout();
+        app.open_scene_tree();
+
+        let backend = TestBackend::new(80, 24);
+        let mut terminal = Terminal::new(backend).unwrap();
+
+        terminal.draw(|f| crate::app::ui::draw(f, &mut app)).unwrap();
+
+        let buffer = terminal.backend().buffer();
+        
+        let mut found = false;
+        for y in 0..24 {
+            for x in 0..80 {
+                let mut match_word = true;
+                let word = "WOODS";
+                for (offset, ch) in word.chars().enumerate() {
+                    let cell_x = x + offset as u16;
+                    if cell_x >= 80 || buffer[(cell_x, y)].symbol() != ch.to_string() {
+                        match_word = false;
+                        break;
+                    }
+                }
+                if match_word {
+                    let cell = &buffer[(x, y)];
+                    assert!(
+                        cell.fg == Color::Red || cell.fg == Color::Rgb(175, 0, 0),
+                        "Expected WOODS cell to have Red foreground color, got {:?}", cell.fg
+                    );
+                    found = true;
+                    break;
+                }
+            }
+            if found {
+                break;
+            }
+        }
+        assert!(found, "The scene label WOODS was not found in the rendered buffer");
+    }

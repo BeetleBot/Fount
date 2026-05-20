@@ -235,10 +235,6 @@ fn strip_production_tags_from_text(text: &str) -> String {
         )
     }
 
-    pub fn export_fdx(&self, path: &std::path::Path) -> std::io::Result<()> {
-        let fountain_text = self.lines.join("\n");
-        crate::pdf::export_to_fdx(&fountain_text, path, &self.config)
-    }
 
     pub fn export_scene_csv(&self, path: &std::path::Path) -> std::io::Result<()> {
         let mut csv = String::new();
