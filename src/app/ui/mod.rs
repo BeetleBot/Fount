@@ -638,10 +638,8 @@ pub fn draw(f: &mut Frame, app: &mut App) {
                     } else {
                         Style::default().fg(header_color).add_modifier(Modifier::BOLD)
                     };
-                    if is_selected {
-                        if let Some(c) = item.color {
-                            style = style.fg(c);
-                        }
+                    if is_selected && let Some(c) = item.color {
+                        style = style.fg(c);
                     }
 
                     let is_collapsed = app.collapsed_sections.contains(&item.line_idx);
@@ -693,10 +691,8 @@ pub fn draw(f: &mut Frame, app: &mut App) {
                     } else {
                         Style::default().add_modifier(Modifier::BOLD)
                     };
-                    if is_selected {
-                        if let Some(c) = item.color {
-                            base_style = base_style.fg(c);
-                        }
+                    if is_selected && let Some(c) = item.color {
+                        base_style = base_style.fg(c);
                     }
 
                     let s_tag = if let Some(ref s) = item.scene_num { format!("{}. ", s) } else { String::new() };

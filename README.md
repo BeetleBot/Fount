@@ -39,6 +39,10 @@ cargo install fount
 ## ✍️ Developer's Note
 
 > [!NOTE]
+> **Project Status (v0.11.0)**
+> Fount has reached a highly mature milestone. With version 0.11.0, the application is running smoothly, passing all unit tests, compiler checks, and code lints. Since the core feature set is now complete and solid for daily writing, development will transition to a slower pace, focusing primarily on bug fixes, performance maintenance, and ensuring long-term compatibility rather than major new features.
+
+> [!NOTE]
 > **A Letter from the Creator**
 > 
 > As a credited Tamil/Indian screenwriter—writing predominantly in **English and Tanglish**—I found myself at a crossroads when I transitioned to Linux. I deeply missed **[Beat](https://github.com/lmparppei/Beat)**, my long-time companion for storytelling, and couldn't find a minimalist alternative that felt "right" in the terminal.

@@ -159,12 +159,13 @@ pub fn draw_ensemble(f: &mut Frame, area: Rect, app: &App, data: &XRayData) {
 
         Row::new(vec![
             Cell::from(format!(" {} {} {}", a, icon, b))
-                .style(Style::default().add_modifier(Modifier::BOLD)),
+                .style(Style::default().fg(theme.primary_fg()).add_modifier(Modifier::BOLD)),
             Cell::from(count.to_string())
                 .style(Style::default().fg(accent).add_modifier(Modifier::BOLD)),
             Cell::from(bar)
                 .style(Style::default().fg(accent)),
         ])
+        .style(Style::default().fg(theme.primary_fg()))
     }).collect();
 
     let table_title = if nerd { " 󰼭 INTERACTIONS " } else { " INTERACTIONS " };

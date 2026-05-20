@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.11.0] - 2026-05-20
+
+### Maturity Milestone
+- **Project Status (v0.11.0)**: Fount has reached a highly mature milestone. The application is running smoothly, passing all unit tests, compiler checks, and code lints. Since the core feature set is now complete and solid for daily writing, development will transition to a slower pace, focusing primarily on bug fixes, performance maintenance, and ensuring long-term compatibility.
+
+### Fixes
+- **X-Ray Theme Contrast**: Fixed the font color contrast of character pair names in the X-Ray "Interactions" panel. Character pair names now dynamically inherit the theme's primary foreground color, making them perfectly readable in light themes (like "Lilac" and "Paper") instead of defaulting to terminal text color.
+
+### Internal & Refactoring
+- **Clippy Code Polish**: Resolved clippy lint warnings regarding collapsible nested if-let structures in TUI list rendering, ensuring a clean and zero-warning build state.
+
 ## [0.10.2] - 2026-05-19
 
 ### Improvements
